@@ -7,3 +7,13 @@ matrix:
   - go: tip
 script:
 - "./.travis/build-all"
+deploy:
+  provider: releases
+  api_key:
+    secure: hB1RqmT4fAul/hlTYI3sUrbAiJZhx0x8+AU0wAN4P+CxBjwQA101sPjEVzbfrK3KdCDLLe2pK3ETWe270E8XnAAo0aas1kdlFbByF1IWVs3j1oxI3XIC414kLnIOeeGmU/+kCm7jQKBXDMQ6XAJpvahuUQ9jIL0k2MY8cOogNgBNnjjdk3TsrSKMqbs6tOR6WiHmxJ+RIj/GItGtZuORL+iECmeftCLh9RQ61L0X124pp99A7ng7057+A6vMHHoiVRQwBbis6zJALcTH3wUI+l0eOxqzSgtCK6JnRb2gOyglRgDHfMVHp7wrYfl+YUo9D1CCmGsm5szstGQg6XvWzafx/oAe6SDWhfruNHNDpgaKrThc5qts3/hFIpZnenx2xRyTeTQ0eL7PDvCoiaUtUmiNTH8vNu3tuXLNn9uEWbH068b8Ldu1XUS6O2YH83nfiD5Knpy+UZNmNchpq4MCZjsd7XUO9No9VgdYuHrl/kHnn202cMmEJ1Tr2NO87pZcaLIGxEkP5cqK9vqTq2ELhHNhlCB4Z9q/HbrwjcsuaJcxcoPE4WZSZdN2yI3Lf7MdBDBcWeIHcQ4BztOLKeYLmb8HQXCqZ+QJ7QvE/g5ezM+7bXvTZ8j76b2ckwMWO6JEgUCWAsDPFkmZkbUCRi5+AacqTxsk7ryPvlroiDmUYZM=
+  file_glob: true
+  file:
+    - "rss2email-*"
+  skip_cleanup: true
+  on:
+    tags: true

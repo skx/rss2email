@@ -7,10 +7,10 @@ BASE="rss2email"
 go get -t -v -d $(go list ./...)
 
 #
-# We build on multiple platforms/archs
+# We build on only a single platform/arch.
 #
-BUILD_PLATFORMS="linux windows darwin freebsd"
-BUILD_ARCHS="amd64 386"
+BUILD_PLATFORMS="linux"
+BUILD_ARCHS="amd64"
 
 # For each platform
 for OS in ${BUILD_PLATFORMS[@]}; do
