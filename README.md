@@ -60,5 +60,17 @@ The emails will be sent to your user when they appear, via the environmental
 variable `USER`.
 
 
+## Assumptions
+
+Because this application is so minimal there are a number of assumptions
+baked in:
+
+* We assume that `/usr/sbin/sendmail` exists and will send email to the local user `steve` when invoked like this:
+   * "`/usr/sbin/sendmail -f steve steve`"
+* We assume that you'll invoke it via `cron`.
+  * `$LOGIN` will be used to determine where the email is sent to.
+* The sender of the email address will be `user@rss2email.invalid`.
+  * This matches `r2e` meaning my existing mail filter(s) accept it and file appropriately.
+
 Steve
 --
