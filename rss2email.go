@@ -13,7 +13,8 @@ package main
 import (
 	"bufio"
 	"crypto/sha1"
-	"encoding/base64"
+	"encoding/hex"
+	"flag"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -25,6 +26,9 @@ import (
 	"github.com/k3a/html2text"
 	"github.com/mmcdole/gofeed"
 )
+
+// Flags set via the command-line arguments
+var VERBOSE = false
 
 // SendMail is a simple function that emails the given address.
 //
@@ -91,13 +95,17 @@ func FetchFeed(url string) (string, error) {
 func GUID2Hash(guid string) string {
 	hasher := sha1.New()
 	hasher.Write([]byte(guid))
-	sha := base64.URLEncoding.EncodeToString(hasher.Sum(nil))
-	return sha
+	hashBytes := hasher.Sum(nil)
+
+	// Hexadecimal conversion
+	hexSha1 := hex.EncodeToString(hashBytes)
+
+	return hexSha1
 }
 
 // HasSeen will return true if we've previously emailed this feed-entry.
-func HasSeen(guid string) bool {
-	sha := GUID2Hash(guid)
+func HasSeen(item *gofeed.Item) bool {
+	sha := GUID2Hash(item.GUID)
 	if _, err := os.Stat(os.Getenv("HOME") + "/.rss2email/seen/" + sha); os.IsNotExist(err) {
 		return false
 	}
@@ -106,17 +114,21 @@ func HasSeen(guid string) bool {
 
 // RecordSeen will update our state to record the given GUID as having
 // been seen.
-func RecordSeen(guid string) {
+func RecordSeen(item *gofeed.Item) {
 	dir := os.Getenv("HOME") + "/.rss2email/seen"
 	os.MkdirAll(dir, os.ModePerm)
 
-	d1 := []byte("\n")
-	sha := GUID2Hash(guid)
+	d1 := []byte(item.Link)
+	sha := GUID2Hash(item.GUID)
 	_ = ioutil.WriteFile(dir+"/"+sha, d1, 0644)
 }
 
 // Given a feed URL process it.
 func ProcessURL(input string) {
+
+	if VERBOSE {
+		fmt.Printf("Fetching %s\n", input)
+	}
 
 	// Fetch the URL
 	txt, err := FetchFeed(input)
@@ -133,11 +145,19 @@ func ProcessURL(input string) {
 		return
 	}
 
+	if VERBOSE {
+		fmt.Printf("Found %d entries\n", len(feed.Items))
+	}
+
 	// For each entry in the feed ..
 	for _, i := range feed.Items {
 
 		// If we've not already notified about this one.
-		if !HasSeen(i.GUID) {
+		if !HasSeen(i) {
+
+			if VERBOSE {
+				fmt.Printf("New item: %s\n", i.GUID)
+			}
 
 			// Convert the body to text.
 			text := html2text.HTML2Text(i.Content)
@@ -146,13 +166,19 @@ func ProcessURL(input string) {
 			SendMail(os.Getenv("USER"), i.Title, text)
 
 			// Only then record this item as having been seen
-			RecordSeen(i.GUID)
+			RecordSeen(i)
 		}
 	}
 }
 
 // main is our entry-point
 func main() {
+
+	verbose := flag.Bool("verbose", false, "Should we be verbose?")
+	flag.Parse()
+
+	// Update our global variables appropriately
+	VERBOSE = *verbose
 
 	//
 	// Open our input-file
