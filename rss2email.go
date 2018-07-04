@@ -27,8 +27,12 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
-// Flags set via the command-line arguments
+// VERBOSE is a value set via a command-line flag, and controls how
+// noisy we should be.
 var VERBOSE = false
+
+// VERSION is our version, as set via CI.
+var version = "master/unreleased"
 
 // SendMail is a simple function that emails the given address.
 //
@@ -123,7 +127,8 @@ func RecordSeen(item *gofeed.Item) {
 	_ = ioutil.WriteFile(dir+"/"+sha, d1, 0644)
 }
 
-// Given a feed URL process it.
+// ProcessURL takes an URL as input, fetches the contents, and then
+// processes each feed item found within it.
 func ProcessURL(input string) {
 
 	if VERBOSE {
@@ -175,7 +180,13 @@ func ProcessURL(input string) {
 func main() {
 
 	verbose := flag.Bool("verbose", false, "Should we be verbose?")
+	showver := flag.Bool("version", false, "Show our version and terminate.")
 	flag.Parse()
+
+	if *showver {
+		fmt.Printf("rss2email %s\n", version)
+		os.Exit(0)
+	}
 
 	// Update our global variables appropriately
 	VERBOSE = *verbose
