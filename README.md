@@ -25,6 +25,7 @@ me to remove a bunch of Python packages I otherwise have no need for:
        python3-html5lib python3-lxml python3-six python3-webencodings
        upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
 
+This project, being built in go, is self-contained and easy to deploy without the need for additional external libraries.
 
 
 ## Installation
@@ -35,40 +36,35 @@ via:
      go get -u github.com/skx/rss2email
      go install github.com/skx/rss2email
 
-Once installed you'll want to configure a list of feeds, and add it to your
-`crontab`.
+If you prefer you can fetch a binary from [our release page](github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
 
 ## Configuration
 
-RSS2Email is designed to be invoked by `cron`, and when executed it will
-process a list of feed-URLs.  Each URL will be processed in turn, and the items
-in the feed examined one by one:
+Once you have a binary you'll need to configure it.  Configuration consists
+of two simple steps:
 
-* If the item in the feed has been seen before it will be ignored.
-* If the item in the feed has not been seen:
-  * An email will be sent.
-  * The item will be recorded as having been notified already.
+* Specifying the list of RSS/Atom feeds to poll.
+* Ensuring the binary runs regularly.
 
-The the list of URLs to be fetched should be stored in the file:
+The the list of feeds to fetch should be stored in the file `~/.rss2email/feeds`.
 
-* `~/.rss2email/feeds`
-   * One URL per line.
+* Lines prefixed with "`#`" will be ignored as comments.
+* One URL per line.
 
-Assuming you've added your entries you should then add the binary to
-your `crontab`, via a line such as this:
+Once you've added your feeds you should then add the binary to your
+`crontab`, to ensure it runs regularly, via a line such as this:
 
      # Announce feed-changes to email
      */15 * * * * $HOME/go/bin/rss2email
 
-The emails will be sent to your user when they appear, via the environmental
-variable `USER`.
+When the feeds are updated to include new-entries they will be sent to you
+via email.
 
 
 ## Assumptions
 
-Because this application is so minimal there are a number of assumptions
-baked in:
+Because this application is so minimal there are a number of assumptions baked in:
 
 * We assume that `/usr/sbin/sendmail` exists and will send email to the local user `steve` when invoked like this:
    * "`/usr/sbin/sendmail -f steve steve`"
