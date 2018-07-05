@@ -14,6 +14,7 @@ import (
 	"bufio"
 	"crypto/sha1"
 	"encoding/hex"
+	"errors"
 	"flag"
 	"fmt"
 	"io/ioutil"
@@ -38,18 +39,23 @@ var version = "master/unreleased"
 //
 // This is done via `/usr/sbin/sendmail` rather than via the use of SMTP.
 //
-func SendMail(addr string, subject string, body string) {
+func SendMail(addr string, subject string, body string) error {
+	if addr == "" {
+		e := errors.New("Empty recipient address, is '$LOGNAME' set?")
+		fmt.Printf("%s\n", e.Error())
+		return e
+	}
 	sendmail := exec.Command("/usr/sbin/sendmail", "-f", addr, addr)
 	stdin, err := sendmail.StdinPipe()
 	if err != nil {
 		fmt.Printf("Error sending email: %s\n", err.Error())
-		return
+		return err
 	}
 
 	stdout, err := sendmail.StdoutPipe()
 	if err != nil {
 		fmt.Printf("Error sending email: %s\n", err.Error())
-		return
+		return err
 	}
 
 	// What we'll send
@@ -61,14 +67,27 @@ func SendMail(addr string, subject string, body string) {
 	msg += body
 
 	sendmail.Start()
-	stdin.Write([]byte(msg))
+	_, err = stdin.Write([]byte(msg))
+	if err != nil {
+		fmt.Printf("Failed to write to sendmail pipe: %s\n", err.Error())
+		return err
+	}
 	stdin.Close()
-	_, err = ioutil.ReadAll(stdout)
+	var out []byte
+	out, err = ioutil.ReadAll(stdout)
 	if err != nil {
 		fmt.Printf("Error reading mail output: %s\n", err.Error())
-		return
+		return nil
 	}
-	sendmail.Wait()
+	if VERBOSE {
+		fmt.Printf("%s\n", out)
+	}
+	err = sendmail.Wait()
+
+	if err != nil {
+		fmt.Printf("Waiting for process to terminate failed: %s\n", err.Error())
+	}
+	return nil
 }
 
 // FetchFeed fetches a feed from the remote URL.
@@ -172,10 +191,12 @@ func ProcessURL(input string) {
 			text := html2text.HTML2Text(i.Content)
 
 			// Send the email
-			SendMail(os.Getenv("USER"), i.Title, text)
+			err := SendMail(os.Getenv("LOGNAME"), i.Title, text)
 
 			// Only then record this item as having been seen
-			RecordSeen(i)
+			if err == nil {
+				RecordSeen(i)
+			}
 		}
 	}
 }
