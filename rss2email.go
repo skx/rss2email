@@ -63,7 +63,11 @@ func SendMail(addr string, subject string, body string) {
 	sendmail.Start()
 	stdin.Write([]byte(msg))
 	stdin.Close()
-	_, _ = ioutil.ReadAll(stdout)
+	_, err = ioutil.ReadAll(stdout)
+	if err != nil {
+		fmt.Printf("Error reading mail output: %s\n", err.Error())
+		return
+	}
 	sendmail.Wait()
 }
 
