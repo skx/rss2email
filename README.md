@@ -41,25 +41,33 @@ If you prefer you can fetch a binary from [our release page](github.com/skx/rss2
 
 ## Configuration
 
-Once you have a binary you'll need to configure it.  Configuration consists
-of two simple steps:
+Once you have a binary you'll need to configure your list of feeds, you do
+that by adding them one by one:
 
-* Specifying the list of RSS/Atom feeds to poll.
-* Ensuring the binary runs regularly.
+     $ rss2email add https://example.com/blog.rss
+     $ rss2email add https://example.net/index.rss
+     $ rss2email add https://example.com/foo.rss
 
-The the list of feeds to fetch should be stored in the file `~/.rss2email/feeds`.
+You can see the configured feeds via:
 
-* Lines prefixed with "`#`" will be ignored as comments.
-* One URL per line.
+     $ rss2email list
+
+Or delete a feed by specifying it:
+
+     $ rss2email delete https://example.com/foo.rss
+
+> **NOTE**: Feeds are stored in `~/.rss2email/feeds`, you might prefer to edit that directly.  Just add one URI per line.
+
 
 Once you've added your feeds you should then add the binary to your
 `crontab`, to ensure it runs regularly, via a line such as this:
 
      # Announce feed-changes to email
-     */15 * * * * $HOME/go/bin/rss2email
+     */15 * * * * $HOME/go/bin/rss2email cron
 
 When the feeds are updated to include new-entries they will be sent to you
-via email.
+via email.  Emails will be multi-part, containing both `text/plain` and
+`text/html` items for each feed update.
 
 
 ## Assumptions
