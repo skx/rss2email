@@ -1,43 +1,31 @@
 //
-// RSS2Email.
+// This is the cron-subcommand.
 //
-// When launched read ~/.rss2email/feeds which will contain a list of URLS
-// to fetch.
-//
-// For each feed send new entries via email.
-//
+// It is a little ropy as it was ported in a hurry.
 //
 
 package main
 
 import (
-	"bufio"
 	"bytes"
+	"context"
 	"crypto/sha1"
 	"encoding/hex"
 	"errors"
 	"flag"
 	"fmt"
 	"html"
+	"html/template"
 	"io/ioutil"
 	"mime/quotedprintable"
 	"net/http"
-	"os/exec"
-	"strings"
-	"text/template"
-
 	"os"
+	"os/exec"
 
+	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
 	"github.com/mmcdole/gofeed"
 )
-
-// VERBOSE is a value set via a command-line flag, and controls how
-// noisy we should be.
-var VERBOSE = false
-
-// VERSION is our version, as set via CI.
-var version = "master/unreleased"
 
 // Template is our text/template which is designed used to send an
 // email to the local user.  We're using a template such that we
@@ -73,7 +61,7 @@ Content-Transfer-Encoding: quoted-printable
 // toQuotedPrintable will convert the given input-string to a
 // quoted-printable format.  This is required for our MIME-part
 // body.
-func toQuotedPrintable(s string) (string, error) {
+func (p *cronCmd) toQuotedPrintable(s string) (string, error) {
 	var ac bytes.Buffer
 	w := quotedprintable.NewWriter(&ac)
 	_, err := w.Write([]byte(s))
@@ -93,7 +81,7 @@ func toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(addr string, subject string, textstr string, htmlstr string) error {
+func (p *cronCmd) SendMail(addr string, subject string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -123,11 +111,11 @@ func SendMail(addr string, subject string, textstr string, htmlstr string) error
 	var x TemplateParms
 	x.To = addr
 	x.From = "user@rss2email.invalid"
-	x.Text, err = toQuotedPrintable(textstr)
+	x.Text, err = p.toQuotedPrintable(textstr)
 	if err != nil {
 		return err
 	}
-	x.HTML, err = toQuotedPrintable(html.UnescapeString(htmlstr))
+	x.HTML, err = p.toQuotedPrintable(html.UnescapeString(htmlstr))
 	if err != nil {
 		return err
 	}
@@ -182,7 +170,7 @@ func SendMail(addr string, subject string, textstr string, htmlstr string) error
 		return nil
 	}
 
-	if VERBOSE {
+	if p.verbose {
 		fmt.Printf("%s\n", out)
 	}
 	err = sendmail.Wait()
@@ -199,7 +187,7 @@ func SendMail(addr string, subject string, textstr string, htmlstr string) error
 // because reddit, and some other sites, will just return a HTTP error-code
 // if we're using a standard "spider" User-Agent.
 //
-func FetchFeed(url string) (string, error) {
+func (p *cronCmd) FetchFeed(url string) (string, error) {
 	client := &http.Client{}
 	req, err := http.NewRequest("GET", url, nil)
 	if err != nil {
@@ -222,7 +210,7 @@ func FetchFeed(url string) (string, error) {
 
 // GUID2Hash converts a GUID into something we can use on the filesystem,
 // via the use of the SHA1-hash.
-func GUID2Hash(guid string) string {
+func (p *cronCmd) GUID2Hash(guid string) string {
 	hasher := sha1.New()
 	hasher.Write([]byte(guid))
 	hashBytes := hasher.Sum(nil)
@@ -234,8 +222,8 @@ func GUID2Hash(guid string) string {
 }
 
 // HasSeen will return true if we've previously emailed this feed-entry.
-func HasSeen(item *gofeed.Item) bool {
-	sha := GUID2Hash(item.GUID)
+func (p *cronCmd) HasSeen(item *gofeed.Item) bool {
+	sha := p.GUID2Hash(item.GUID)
 	if _, err := os.Stat(os.Getenv("HOME") + "/.rss2email/seen/" + sha); os.IsNotExist(err) {
 		return false
 	}
@@ -244,25 +232,25 @@ func HasSeen(item *gofeed.Item) bool {
 
 // RecordSeen will update our state to record the given GUID as having
 // been seen.
-func RecordSeen(item *gofeed.Item) {
+func (p *cronCmd) RecordSeen(item *gofeed.Item) {
 	dir := os.Getenv("HOME") + "/.rss2email/seen"
 	os.MkdirAll(dir, os.ModePerm)
 
 	d1 := []byte(item.Link)
-	sha := GUID2Hash(item.GUID)
+	sha := p.GUID2Hash(item.GUID)
 	_ = ioutil.WriteFile(dir+"/"+sha, d1, 0644)
 }
 
 // ProcessURL takes an URL as input, fetches the contents, and then
 // processes each feed item found within it.
-func ProcessURL(input string) {
+func (p *cronCmd) ProcessURL(input string) {
 
-	if VERBOSE {
+	if p.verbose {
 		fmt.Printf("Fetching %s\n", input)
 	}
 
 	// Fetch the URL
-	txt, err := FetchFeed(input)
+	txt, err := p.FetchFeed(input)
 	if err != nil {
 		fmt.Printf("Error processing %s - %s\n", input, err.Error())
 		return
@@ -276,17 +264,17 @@ func ProcessURL(input string) {
 		return
 	}
 
-	if VERBOSE {
-		fmt.Printf("Found %d entries\n", len(feed.Items))
+	if p.verbose {
+		fmt.Printf("\tFound %d entries\n", len(feed.Items))
 	}
 
 	// For each entry in the feed ..
 	for _, i := range feed.Items {
 
 		// If we've not already notified about this one.
-		if !HasSeen(i) {
+		if !p.HasSeen(i) {
 
-			if VERBOSE {
+			if p.verbose {
 				fmt.Printf("New item: %s\n", i.GUID)
 			}
 
@@ -294,55 +282,59 @@ func ProcessURL(input string) {
 			text := html2text.HTML2Text(i.Content)
 
 			// Send the email
-			err := SendMail(os.Getenv("LOGNAME"), i.Title, text, i.Content)
+			err := p.SendMail(os.Getenv("LOGNAME"), i.Title, text, i.Content)
 
 			// Only then record this item as having been seen
 			if err == nil {
-				RecordSeen(i)
+				p.RecordSeen(i)
 			}
 		}
 	}
 }
 
-// main is our entry-point
-func main() {
+// The options set by our command-line flags.
+//
+type cronCmd struct {
+	verbose bool
+}
 
-	verbose := flag.Bool("verbose", false, "Should we be verbose?")
-	showver := flag.Bool("version", false, "Show our version and terminate.")
-	flag.Parse()
+//
+// Glue
+//
+func (*cronCmd) Name() string     { return "cron" }
+func (*cronCmd) Synopsis() string { return "Process each of the feeds." }
+func (*cronCmd) Usage() string {
+	return `cron :
+  Read the list of feeds and send email for each new item found in them.
+`
+}
 
-	if *showver {
-		fmt.Printf("rss2email %s\n", version)
-		os.Exit(0)
-	}
+//
+// Flag setup: NOP
+//
+func (p *cronCmd) SetFlags(f *flag.FlagSet) {
+	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
+}
 
-	// Update our global variables appropriately
-	VERBOSE = *verbose
+//
+// Entry-point.
+//
+func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
 	//
-	// Open our input-file
+	// Create the helper
 	//
-	path := os.Getenv("HOME") + "/.rss2email/feeds"
-	file, err := os.Open(path)
-	if err != nil {
-		fmt.Printf("Error opening %s - %s\n", path, err.Error())
-		return
-	}
-	defer file.Close()
+	list := NewFeed()
 
 	//
-	// Process it line by line.
+	// For each entry in the list ..
 	//
-	scanner := bufio.NewScanner(file)
-	for scanner.Scan() {
-		tmp := scanner.Text()
-		tmp = strings.TrimSpace(tmp)
+	for _, uri := range list.Entries() {
 
 		//
-		// Skip lines that begin with a comment.
+		// Handle it.
 		//
-		if (tmp != "") && (!strings.HasPrefix(tmp, "#")) {
-			ProcessURL(tmp)
-		}
+		p.ProcessURL(uri)
 	}
+	return subcommands.ExitSuccess
 }
