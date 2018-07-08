@@ -15,12 +15,12 @@ import (
 	"flag"
 	"fmt"
 	"html"
-	"html/template"
 	"io/ioutil"
 	"mime/quotedprintable"
 	"net/http"
 	"os"
 	"os/exec"
+	"text/template"
 
 	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
