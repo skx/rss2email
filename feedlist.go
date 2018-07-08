@@ -13,10 +13,13 @@ import (
 
 // FeedList is the list of our feeds.
 type FeedList struct {
+	// entries contains an array of feed URLS.
 	entries []string
 }
 
-// New returns a new instance of the feedlist
+// NewFeed returns a new instance of the feedlist.
+// The existing feed-list will be read, if present, to populate the list of
+// feeds.
 func NewFeed() *FeedList {
 	m := new(FeedList)
 
@@ -48,17 +51,19 @@ func NewFeed() *FeedList {
 	return m
 }
 
-// Entries returns the currently configured entries
+// Entries returns the configured feeds.
 func (f *FeedList) Entries() []string {
 	return (f.entries)
 }
 
-// Add adds a new entry
+// Add adds a new entry to the feed-list.
+// You must call `Save` if you wish this addition to be persisted.
 func (f *FeedList) Add(uri string) {
 	f.entries = append(f.entries, uri)
 }
 
-// Delete removes an entry from our list
+// Delete removes an entry from our list of feeds.
+// You must call `Save` if you wish this addition to be persisted.
 func (f *FeedList) Delete(uri string) {
 
 	var tmp []string
@@ -72,7 +77,7 @@ func (f *FeedList) Delete(uri string) {
 	f.entries = tmp
 }
 
-// Save saves our entries to disc
+// Save saves our entries to disc.
 func (f *FeedList) Save() {
 
 	// Ensure we have a directory.
