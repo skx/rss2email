@@ -41,33 +41,48 @@ If you prefer you can fetch a binary from [our release page](github.com/skx/rss2
 
 ## Configuration
 
-Once you have a binary you'll need to configure your list of feeds, you do
-that by adding them one by one:
+Once you have a binary you'll need to configure the feeds to monitor. To
+add a new feed use the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
      $ rss2email add https://example.net/index.rss
      $ rss2email add https://example.com/foo.rss
 
-You can see the configured feeds via:
+You can view the currently configured feeds via the `list` subcommand:
 
      $ rss2email list
 
-Or delete a feed by specifying it:
+Or delete a feed by specifying the item to remove:
 
      $ rss2email delete https://example.com/foo.rss
 
 > **NOTE**: Feeds are stored in `~/.rss2email/feeds`, you might prefer to edit that directly.  Just add one URI per line.
 
-
 Once you've added your feeds you should then add the binary to your
-`crontab`, to ensure it runs regularly, via a line such as this:
+`crontab`, to ensure it runs regularly to actually send you the emails.
+You should add something similar to this to your `crontab`:
 
-     # Announce feed-changes to email
+     # Announce feed-changes via email
      */15 * * * * $HOME/go/bin/rss2email cron
 
-When the feeds are updated to include new-entries they will be sent to you
-via email.  Emails will be multi-part, containing both `text/plain` and
-`text/html` items for each feed update.
+When new items apepar in the feeds they will then be sent to you via email.
+Each email will be multi-part, containing both `text/plain` and `text/html`
+parts for each new post.
+
+
+### Initial Run
+
+When you add a new feed all the items will initially be unseen/new, and
+this means you'll receive a flood of emails if you were to run:
+
+     $ rss2email add https://blog.steve.fi/index.rss
+     $ rss2email cron
+
+To avoid this you can use the `-send=false` flag, which will merely
+record each item as having been seen, rather than sending you emails:
+
+     $ rss2email add https://blog.steve.fi/index.rss
+     $ rss2email cron -send=false
 
 
 ## Assumptions

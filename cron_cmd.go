@@ -81,14 +81,24 @@ func (p *cronCmd) ProcessURL(input string) {
 				fmt.Printf("New item: %s\n", i.GUID)
 			}
 
-			// Convert the body to text.
-			text := html2text.HTML2Text(i.Content)
+			// If we're supposed to send email then do that
+			if p.send {
 
-			// Send the email
-			err := SendMail(os.Getenv("LOGNAME"), i.Title, text, i.Content)
+				// Convert the body to text.
+				text := html2text.HTML2Text(i.Content)
 
-			// Only then record this item as having been seen
-			if err == nil {
+				// Send the mail
+				err := SendMail(os.Getenv("LOGNAME"), i.Title, text, i.Content)
+
+				// Assuming no errors then this item
+				// has been processed.
+				if err == nil {
+					RecordSeen(i)
+				}
+			} else {
+
+				// We're not sending email, so just record
+				// this item as having been processed.
 				RecordSeen(i)
 			}
 		}
@@ -97,7 +107,11 @@ func (p *cronCmd) ProcessURL(input string) {
 
 // The options set by our command-line flags.
 type cronCmd struct {
+	// Should we be verbose in operation?
 	verbose bool
+
+	// Should we send emails?
+	send bool
 }
 
 //
@@ -116,6 +130,7 @@ func (*cronCmd) Usage() string {
 //
 func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
+	f.BoolVar(&p.send, "send", true, "Should we send emails, or just pretend to?")
 }
 
 //
