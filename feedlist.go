@@ -8,6 +8,8 @@ import (
 	"bufio"
 	"fmt"
 	"os"
+	"os/user"
+	"path"
 	"strings"
 )
 
@@ -23,10 +25,19 @@ type FeedList struct {
 func NewFeed() *FeedList {
 	m := new(FeedList)
 
-	//
+	// Default to using $HOME for our storage
+	home := os.Getenv("HOME")
+
+	// Get the current user, and use their home if possible.
+	usr, err := user.Current()
+	if err == nil {
+		home = usr.HomeDir
+	}
+
+	// Now build up our file-path
+	path := path.Join(home, ".rss2email", "feeds")
+
 	// Open our input-file
-	//
-	path := os.Getenv("HOME") + "/.rss2email/feeds"
 	file, err := os.Open(path)
 	if err == nil {
 		defer file.Close()
@@ -46,6 +57,8 @@ func NewFeed() *FeedList {
 				m.entries = append(m.entries, tmp)
 			}
 		}
+	} else {
+		fmt.Printf("WARNING: %s not found\n", path)
 	}
 
 	return m
@@ -80,18 +93,31 @@ func (f *FeedList) Delete(uri string) {
 // Save saves our entries to disc.
 func (f *FeedList) Save() {
 
-	// Ensure we have a directory.
-	dir := os.Getenv("HOME") + "/.rss2email/"
-	_ = os.Mkdir(dir, os.ModePerm)
+	// Default to using $HOME for our storage
+	home := os.Getenv("HOME")
+
+	// Get the current user, and use their home if possible.
+	usr, err := user.Current()
+	if err == nil {
+		home = usr.HomeDir
+	}
+
+	// Now build up our file-path
+	file := path.Join(home, ".rss2email", "feeds")
+
+	// Of course we need to make sure the directory exists before
+	// we can write beneath it.
+	dir, _ := path.Split(file)
+	os.MkdirAll(dir, os.ModePerm)
 
 	// Open the file
-	file, err := os.Create(dir + "feeds")
+	fh, err := os.Create(file)
 	if err != nil {
 		fmt.Printf("Error writing to %s%s - %s\n", dir, "feeds", err.Error())
 		os.Exit(1)
 	}
 
-	w := bufio.NewWriter(file)
+	w := bufio.NewWriter(fh)
 
 	// For each entry
 	for _, i := range f.entries {
@@ -100,5 +126,5 @@ func (f *FeedList) Save() {
 	}
 
 	w.Flush()
-	file.Close()
+	fh.Close()
 }
