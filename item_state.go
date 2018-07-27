@@ -17,7 +17,7 @@ import (
 // item2Path is used to return a (unique) filename for a specific feed
 // item.
 // We assume it is possible to determine whether a feed-item has been
-// seen before via the existance of this file.
+// seen before via the presence of this file.
 func item2Path(item *gofeed.Item) string {
 
 	// Default to using $HOME
