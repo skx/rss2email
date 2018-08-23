@@ -17,9 +17,9 @@ import (
 	"text/template"
 )
 
-// Template is our text/template which is designed used to send an
-// email to the local user.  We're using a template such that we
-// can send both HTML and Text versions of the RSS feed item.
+// Template is our text/template which is used to send an email to the local
+// user.  We're using a template such that we can send both HTML and Text
+// versions of the RSS feed item.
 var Template = `Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
 From: {{.From}}
 To: {{.To}}
