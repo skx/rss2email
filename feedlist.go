@@ -76,7 +76,7 @@ func (f *FeedList) Add(uri string) {
 }
 
 // Delete removes an entry from our list of feeds.
-// You must call `Save` if you wish this addition to be persisted.
+// You must call `Save` if you wish this removal to be persisted.
 func (f *FeedList) Delete(uri string) {
 
 	var tmp []string
@@ -90,7 +90,7 @@ func (f *FeedList) Delete(uri string) {
 	f.entries = tmp
 }
 
-// Save saves our entries to disc.
+// Save syncs our entries to disc.
 func (f *FeedList) Save() {
 
 	// Default to using $HOME for our storage
