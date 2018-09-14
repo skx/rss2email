@@ -88,7 +88,7 @@ func (p *cronCmd) ProcessURL(input string) {
 				text := html2text.HTML2Text(i.Content)
 
 				// Send the mail
-				err := SendMail(os.Getenv("LOGNAME"), i.Title, text, i.Content)
+				err := SendMail(os.Getenv("LOGNAME"), i.Title, i.Link, text, i.Content)
 
 				// Assuming no errors then this item
 				// has been processed.

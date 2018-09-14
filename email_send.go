@@ -36,12 +36,18 @@ Content-Type: multipart/alternative; boundary=4186c39e13b2140c88094b3933206336f2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
+{{.Link}}
+
 {{.Text}}
+
+{{.Link}}
 --4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
 Content-Type: text/html; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
+<p><a href="{{.Link}}">{{.Link}}</a></p>
 {{.HTML}}
+<p><a href="{{.Link}}">{{.Link}}</a></p>
 --4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2--
 
 --76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497--
@@ -71,7 +77,7 @@ func toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(addr string, subject string, textstr string, htmlstr string) error {
+func SendMail(addr string, subject string, link string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -93,6 +99,7 @@ func SendMail(addr string, subject string, textstr string, htmlstr string) error
 		Text    string
 		HTML    string
 		Subject string
+		Link    string
 	}
 
 	//
@@ -110,6 +117,7 @@ func SendMail(addr string, subject string, textstr string, htmlstr string) error
 		return err
 	}
 	x.Subject = subject
+	x.Link = link
 
 	//
 	// Render our template into a buffer.
