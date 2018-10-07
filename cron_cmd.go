@@ -79,16 +79,28 @@ func (p *cronCmd) ProcessURL(input string) {
 
 			if p.verbose {
 				fmt.Printf("New item: %s\n", i.GUID)
+				fmt.Printf("\tTitle: %s\n", i.Title)
 			}
 
 			// If we're supposed to send email then do that
 			if p.send {
 
-				// Convert the body to text.
-				text := html2text.HTML2Text(i.Content)
+				// The body should be stored in the
+				// "Content" field.
+				content := i.Content
+
+				// If the Content field is empty then
+				// use the Description instead, if it
+				// is non-empty itself.
+				if (content == "") && i.Description != "" {
+					content = i.Description
+				}
+
+				// Convert the content to text.
+				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(os.Getenv("LOGNAME"), i.Title, i.Link, text, i.Content)
+				err := SendMail(os.Getenv("LOGNAME"), i.Title, i.Link, text, content)
 
 				// Assuming no errors then this item
 				// has been processed.
