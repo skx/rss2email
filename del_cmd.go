@@ -50,14 +50,14 @@ func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	before := len(list.Entries())
 
 	//
-	// For each argument add it to the list
+	// For each argument remove it from the list, if present.
 	//
 	for _, entry := range f.Args() {
 		list.Delete(entry)
 	}
 
 	//
-	// If we made a change then save it
+	// If we made a change then save it.
 	//
 	if len(list.Entries()) != before {
 		list.Save()
