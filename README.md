@@ -30,11 +30,9 @@ This project, being built in go, is self-contained and easy to deploy without th
 
 ## Installation
 
-Assuming you have a working golang installation you can install the binary
-via:
+Assuming you have a working golang installation you can install the binary via:
 
      go get -u github.com/skx/rss2email
-     go install github.com/skx/rss2email
 
 If you prefer you can fetch a binary from [our release page](github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
