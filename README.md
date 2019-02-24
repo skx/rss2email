@@ -93,5 +93,16 @@ Because this application is so minimal there are a number of assumptions baked i
 * The sender of the email address will be `user@rss2email.invalid`.
   * This matches `r2e` meaning my existing mail filter(s) accept it and file appropriately.
 
+
+## Github Setup
+
+This repository is configured to run tests upon every commit, and when
+pull-requests are created/updated.  The testing is carried out via
+[.github/run-tests.sh](.github/run-tests.sh) which is used by the
+[github-action-tester](https://github.com/skx/github-action-tester) action.
+
+Releases are automated in a similar fashion via [.github/build](.github/build),
+and the [github-action-publish-binaries](https://github.com/skx/github-action-publish-binaries) action.
+
 Steve
 --
