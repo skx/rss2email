@@ -1,4 +1,3 @@
-[![Travis CI](https://img.shields.io/travis/skx/rss2email/master.svg?style=flat-square)](https://travis-ci.org/skx/rss2email)
 [![Go Report Card](https://goreportcard.com/badge/github.com/skx/rss2email)](https://goreportcard.com/report/github.com/skx/rss2email)
 [![license](https://img.shields.io/github/license/skx/rss2email.svg)](https://github.com/skx/rss2email/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/release/skx/rss2email.svg)](https://github.com/skx/rss2email/releases/latest)
