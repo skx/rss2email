@@ -47,7 +47,7 @@ This project, being built in go, is self-contained and easy to deploy without th
 
 There are two ways to install this project from source, which depend on the version of the [go](https://golang.org/) version you're using.
 
-If you prefer you can fetch a binary from [our release page](github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
+If you prefer you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
 ## Build without Go Modules (Go before 1.11)
 
