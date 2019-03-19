@@ -36,7 +36,7 @@ me to remove a bunch of Python packages I otherwise have no need for:
       The following packages will be REMOVED:
        python-xdg python3-bs4 python3-chardet python3-feedparser python3-html2text
        python3-html5lib python3-lxml python3-six python3-webencodings
-       upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
+      0 upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
 
 This project, being built in go, is self-contained and easy to deploy without the need for additional external libraries.
 
