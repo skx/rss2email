@@ -3,9 +3,6 @@
 # The basename of our binary
 BASE="rss2email"
 
-# Get the dependencies
-go mod init
-
 #
 # We build on only a single platform/arch.
 #
