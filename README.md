@@ -59,9 +59,6 @@ If you prefer you can fetch a binary from [our release page](https://github.com/
     cd rss2email
     go install
 
-If you don't have a golang environment setup you should be able to download various binaries from the github release page:
-
-
 
 # Configuration
 
@@ -89,9 +86,9 @@ You should add something similar to this to your `crontab`:
      # Announce feed-changes via email
      */15 * * * * $HOME/go/bin/rss2email cron
 
-When new items apepar in the feeds they will then be sent to you via email.
+When new items appear in the feeds they will then be sent to you via email.
 Each email will be multi-part, containing both `text/plain` and `text/html`
-parts for each new post.
+versions of the new post(s).
 
 
 ## Initial Run
