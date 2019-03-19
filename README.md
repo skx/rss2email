@@ -2,6 +2,20 @@
 [![license](https://img.shields.io/github/license/skx/rss2email.svg)](https://github.com/skx/rss2email/blob/master/LICENSE)
 [![Release](https://img.shields.io/github/release/skx/rss2email.svg)](https://github.com/skx/rss2email/releases/latest)
 
+Table of Contents
+=================
+
+* [RSS2Email](#rss2email)
+  * [Rationale](#rationale)
+* [Installation](#installation)
+  * [Build without Go Modules (Go before 1.11)](#build-without-go-modules-go-before-111)
+  * [Build with Go Modules (Go 1.11 or higher)](#build-with-go-modules-go-111-or-higher)
+* [Configuration](#configuration)
+  * [Initial Run](#initial-run)
+* [Assumptions](#assumptions)
+* [Github Setup](#github-setup)
+
+
 # RSS2Email
 
 This project is a naive port of the [r2e](https://github.com/wking/rss2email) project to golang.
@@ -22,21 +36,31 @@ me to remove a bunch of Python packages I otherwise have no need for:
       The following packages will be REMOVED:
        python-xdg python3-bs4 python3-chardet python3-feedparser python3-html2text
        python3-html5lib python3-lxml python3-six python3-webencodings
-       upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
+      0 upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
 
 This project, being built in go, is self-contained and easy to deploy without the need for additional external libraries.
 
 
-## Installation
-
-Assuming you have a working golang installation you can install the binary via:
-
-     go get -u github.com/skx/rss2email
-
-If you prefer you can fetch a binary from [our release page](github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
 
-## Configuration
+# Installation
+
+There are two ways to install this project from source, which depend on the version of the [go](https://golang.org/) version you're using.
+
+If you prefer you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
+
+## Build without Go Modules (Go before 1.11)
+
+    go get -u github.com/skx/rss2email
+
+## Build with Go Modules (Go 1.11 or higher)
+
+    git clone https://github.com/skx/rss2email ;# make sure to clone outside of GOPATH
+    cd rss2email
+    go install
+
+
+# Configuration
 
 Once you have a binary you'll need to configure the feeds to monitor. To
 add a new feed use the `add` sub-command:
@@ -62,12 +86,12 @@ You should add something similar to this to your `crontab`:
      # Announce feed-changes via email
      */15 * * * * $HOME/go/bin/rss2email cron
 
-When new items apepar in the feeds they will then be sent to you via email.
+When new items appear in the feeds they will then be sent to you via email.
 Each email will be multi-part, containing both `text/plain` and `text/html`
-parts for each new post.
+versions of the new post(s).
 
 
-### Initial Run
+## Initial Run
 
 When you add a new feed all the items will initially be unseen/new, and
 this means you'll receive a flood of emails if you were to run:
@@ -82,7 +106,7 @@ record each item as having been seen, rather than sending you emails:
      $ rss2email cron -send=false
 
 
-## Assumptions
+# Assumptions
 
 Because this application is so minimal there are a number of assumptions baked in:
 
@@ -94,7 +118,7 @@ Because this application is so minimal there are a number of assumptions baked i
   * This matches `r2e` meaning my existing mail filter(s) accept it and file appropriately.
 
 
-## Github Setup
+# Github Setup
 
 This repository is configured to run tests upon every commit, and when
 pull-requests are created/updated.  The testing is carried out via
