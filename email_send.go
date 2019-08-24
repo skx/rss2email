@@ -84,7 +84,7 @@ func SendMail(addr string, subject string, link string, textstr string, htmlstr 
 	// Ensure we have a recipient.
 	//
 	if addr == "" {
-		e := errors.New("Empty recipient address, is '$LOGNAME' set?")
+		e := errors.New("empty recipient address, is '$LOGNAME' set?")
 		fmt.Printf("%s\n", e.Error())
 		return e
 	}
@@ -126,6 +126,9 @@ func SendMail(addr string, subject string, link string, textstr string, htmlstr 
 	t := template.Must(template.New("tmpl").Parse(src))
 	buf := &bytes.Buffer{}
 	err = t.Execute(buf, x)
+	if err != nil {
+		return err
+	}
 
 	//
 	// Prepare to run sendmail, with a pipe we can write our
