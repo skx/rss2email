@@ -46,7 +46,7 @@ func (p *cronCmd) FetchFeed(url string) (string, error) {
 
 // ProcessURL takes an URL as input, fetches the contents, and then
 // processes each feed item found within it.
-func (p *cronCmd) ProcessURL(input string) {
+func (p *cronCmd) ProcessURL(input string) error {
 
 	if p.verbose {
 		fmt.Printf("Fetching %s\n", input)
@@ -55,16 +55,14 @@ func (p *cronCmd) ProcessURL(input string) {
 	// Fetch the URL
 	txt, err := p.FetchFeed(input)
 	if err != nil {
-		fmt.Printf("Error processing %s - %s\n", input, err.Error())
-		return
+		return fmt.Errorf("error processing %s - %s", input, err.Error())
 	}
 
 	// Parse it
 	fp := gofeed.NewParser()
 	feed, err := fp.ParseString(txt)
 	if err != nil {
-		fmt.Printf("Error parsing %s contents: %s\n", input, err.Error())
-		return
+		return fmt.Errorf("error parsing %s contents: %s", input, err.Error())
 	}
 
 	if p.verbose {
@@ -81,6 +79,9 @@ func (p *cronCmd) ProcessURL(input string) {
 				fmt.Printf("New item: %s\n", i.GUID)
 				fmt.Printf("\tTitle: %s\n", i.Title)
 			}
+
+			// Mark the item as having been seen.
+			RecordSeen(i)
 
 			// If we're supposed to send email then do that
 			if p.send {
@@ -101,20 +102,14 @@ func (p *cronCmd) ProcessURL(input string) {
 
 				// Send the mail
 				err := SendMail(os.Getenv("LOGNAME"), i.Title, i.Link, text, content)
-
-				// Assuming no errors then this item
-				// has been processed.
-				if err == nil {
-					RecordSeen(i)
+				if err != nil {
+					return err
 				}
-			} else {
-
-				// We're not sending email, so just record
-				// this item as having been processed.
-				RecordSeen(i)
 			}
 		}
 	}
+
+	return nil
 }
 
 // The options set by our command-line flags.
@@ -163,7 +158,11 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		//
 		// Handle it.
 		//
-		p.ProcessURL(uri)
+		err := p.ProcessURL(uri)
+		if err != nil {
+			fmt.Printf("error processing %s - %s\n", uri, err)
+			return subcommands.ExitFailure
+		}
 	}
 
 	//
