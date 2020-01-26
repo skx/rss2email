@@ -84,7 +84,7 @@ Once you've added your feeds you should then add the binary to your
 You should add something similar to this to your `crontab`:
 
      # Announce feed-changes via email
-     */15 * * * * $HOME/go/bin/rss2email cron
+     */15 * * * * $HOME/go/bin/rss2email cron user@example.com
 
 When new items appear in the feeds they will then be sent to you via email.
 Each email will be multi-part, containing both `text/plain` and `text/html`
@@ -110,12 +110,9 @@ record each item as having been seen, rather than sending you emails:
 
 Because this application is so minimal there are a number of assumptions baked in:
 
-* We assume that `/usr/sbin/sendmail` exists and will send email to the local user `steve` when invoked like this:
-   * "`/usr/sbin/sendmail -f steve steve`"
-* We assume that you'll invoke it via `cron`.
-  * `$LOGNAME` will be used to determine where the email is sent to.
-* The sender of the email address will be `user@rss2email.invalid`.
-  * This matches `r2e` meaning my existing mail filter(s) accept it and file appropriately.
+* We assume that `/usr/sbin/sendmail` exists and will send email successfully.
+* We assume the recipient and sender email addresses can be the same.
+  * i.e. If you mail output to `bob@example.com` that will be used as the sender address.
 
 
 # Github Setup

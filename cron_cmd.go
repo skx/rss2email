@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"os"
+	"strings"
 
 	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
@@ -101,7 +101,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(os.Getenv("LOGNAME"), i.Title, i.Link, text, content)
+				err := SendMail(p.emails, i.Title, i.Link, text, content)
 				if err != nil {
 					return err
 				}
@@ -116,6 +116,10 @@ func (p *cronCmd) ProcessURL(input string) error {
 type cronCmd struct {
 	// Should we be verbose in operation?
 	verbose bool
+
+	// Emails has the list of emails to which we should send our
+	// notices
+	emails []string
 
 	// Should we send emails?
 	send bool
@@ -144,6 +148,26 @@ func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 // Entry-point.
 //
 func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+
+	//
+	// No argument?  That's a bug
+	//
+	if len(f.Args()) == 0 {
+		fmt.Printf("Usage: rss2email cron email1@example.com .. emailN@example.com\n")
+		return subcommands.ExitFailure
+	}
+
+	//
+	// Save each argument away, checking it is fully-qualified.
+	//
+	for _, email := range f.Args() {
+		if strings.Contains(email, "@") {
+			p.emails = append(p.emails, email)
+		} else {
+			fmt.Printf("Usage: rss2email cron email1 .. emailN\n")
+			return subcommands.ExitFailure
+		}
+	}
 
 	//
 	// Create the helper
