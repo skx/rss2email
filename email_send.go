@@ -24,6 +24,8 @@ var Template = `Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb
 From: {{.From}}
 To: {{.To}}
 Subject: [rss2email] {{.Subject}}
+X-RSS-Link: {{.Link}}
+X-RSS-Feed: {{.Feed}}
 Mime-Version: 1.0
 
 --21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
@@ -77,7 +79,7 @@ func toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(addresses []string, subject string, link string, textstr string, htmlstr string) error {
+func SendMail(feedURL string, addresses []string, subject string, link string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -99,6 +101,7 @@ func SendMail(addresses []string, subject string, link string, textstr string, h
 		// template.
 		//
 		type TemplateParms struct {
+			Feed    string
 			To      string
 			From    string
 			Text    string
@@ -112,6 +115,7 @@ func SendMail(addresses []string, subject string, link string, textstr string, h
 		//
 		var x TemplateParms
 		x.To = addr
+		x.Feed = feedURL
 		x.From = addr
 		x.Text, err = toQuotedPrintable(textstr)
 		if err != nil {
