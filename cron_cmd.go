@@ -101,7 +101,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(p.emails, i.Title, i.Link, text, content)
+				err := SendMail(input, p.emails, i.Title, i.Link, text, content)
 				if err != nil {
 					return err
 				}
