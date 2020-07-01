@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
 	"strings"
 
 	"github.com/google/subcommands"
@@ -175,6 +176,12 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	list := NewFeed()
 
 	//
+	// If we receive errors we'll store them here,
+	// so we can keep processing subsequent URIs.
+	//
+	var errors []string
+
+	//
 	// For each entry in the list ..
 	//
 	for _, uri := range list.Entries() {
@@ -184,13 +191,26 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		//
 		err := p.ProcessURL(uri)
 		if err != nil {
-			fmt.Printf("error processing %s - %s\n", uri, err)
-			return subcommands.ExitFailure
+			errors = append(errors, fmt.Sprintf("error processing %s - %s\n", uri, err))
 		}
 	}
 
 	//
-	// All done.
+	// If we found errors then handle that.
+	//
+	if len(errors) > 0 {
+
+		// Show each error to STDERR
+		for _, err := range errors {
+			fmt.Fprintln(os.Stderr, err)
+		}
+
+		// Use a suitable exit-code.
+		return subcommands.ExitFailure
+	}
+
+	//
+	// All good.
 	//
 	return subcommands.ExitSuccess
 }
