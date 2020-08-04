@@ -102,7 +102,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(input, p.emails, i.Title, i.Link, text, content)
+				err := SendMail(input, p.fromAddr, p.emails, i.Title, i.Link, text, content)
 				if err != nil {
 					return err
 				}
@@ -124,6 +124,10 @@ type cronCmd struct {
 
 	// Should we send emails?
 	send bool
+
+	// The address all emails should be sent from.  If omitted,
+	// the From: address is the same as the To: address.
+	fromAddr string
 }
 
 //
@@ -143,6 +147,7 @@ func (*cronCmd) Usage() string {
 func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
 	f.BoolVar(&p.send, "send", true, "Should we send emails, or just pretend to?")
+	f.StringVar(&p.fromAddr, "from", "", "Specify an email address the email will be sent from.")
 }
 
 //
