@@ -47,9 +47,9 @@ Content-Transfer-Encoding: quoted-printable
 Content-Type: text/html; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-<p><a href="{{.Link}}">{{.Link}}</a></p>
+<p><a href=3D"{{.Link}}">{{.Link}}</a></p>
 {{.HTML}}
-<p><a href="{{.Link}}">{{.Link}}</a></p>
+<p><a href=3D"{{.Link}}">{{.Link}}</a></p>
 --4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2--
 
 --76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497--
@@ -126,7 +126,10 @@ func SendMail(feedURL string, addresses []string, subject string, link string, t
 			return err
 		}
 		x.Subject = subject
-		x.Link = link
+		x.Link, err = toQuotedPrintable(link)
+		if err != nil {
+			return err
+		}
 
 		//
 		// Render our template into a buffer.
