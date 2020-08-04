@@ -79,7 +79,7 @@ func toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(feedURL string, addresses []string, subject string, link string, textstr string, htmlstr string) error {
+func SendMail(feedURL string, fromAddr string, addresses []string, subject string, link string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -117,6 +117,9 @@ func SendMail(feedURL string, addresses []string, subject string, link string, t
 		x.To = addr
 		x.Feed = feedURL
 		x.From = addr
+		if fromAddr != "" {
+			x.From = fromAddr
+		}
 		x.Text, err = toQuotedPrintable(textstr)
 		if err != nil {
 			return err
