@@ -147,7 +147,8 @@ func (*cronCmd) Usage() string {
 func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
 	f.BoolVar(&p.send, "send", true, "Should we send emails, or just pretend to?")
-	f.StringVar(&p.fromAddr, "from", "", "Specify an email address the email will be sent from.")
+	f.StringVar(&p.fromAddr, "from", "", "Specify the sending email address to use.")
+
 }
 
 //
