@@ -84,6 +84,21 @@ func (p *cronCmd) ProcessURL(input string) error {
 			// Mark the item as having been seen.
 			RecordSeen(i)
 
+			// Expand the subject format-string
+			subject := p.subject
+
+			// Feed
+			subject = strings.ReplaceAll(subject, "#{FEED.TITLE}", feed.Title)
+			subject = strings.ReplaceAll(subject, "#{FEED.LINK}", feed.Link)
+
+			// Item
+			subject = strings.ReplaceAll(subject, "#{ITEM.TITLE}", i.Title)
+			subject = strings.ReplaceAll(subject, "#{ITEM.LINK}", i.Link)
+
+			// Author
+			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.NAME}", i.Author.Name)
+			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.EMAIL}", i.Author.Email)
+
 			// If we're supposed to send email then do that
 			if p.send {
 
@@ -102,7 +117,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(input, p.fromAddr, p.emails, i.Title, i.Link, text, content)
+				err := SendMail(input, p.fromAddr, p.emails, subject, i.Link, text, content)
 				if err != nil {
 					return err
 				}
@@ -128,6 +143,9 @@ type cronCmd struct {
 	// The address all emails should be sent from.  If omitted,
 	// the From: address is the same as the To: address.
 	fromAddr string
+
+	// Template-string which is expanded into the email subjects
+	subject string
 }
 
 //
@@ -137,7 +155,26 @@ func (*cronCmd) Name() string     { return "cron" }
 func (*cronCmd) Synopsis() string { return "Process each of the feeds." }
 func (*cronCmd) Usage() string {
 	return `cron :
-  Read the list of feeds and send email for each new item found in them.
+Read the list of feeds and send email for each new item found in them.
+
+By default emails are sent to the address specified upon the command-line,
+with the same sender, however you can use the '--from' flag to change that.
+
+Emails are constructed with a static template, however it is possible to
+customize the subject via a series of template-variables.  The default
+subjects will be:
+
+   --subject="[rss2email] #{ITEM.TITLE}"
+
+Valid template values include:
+
+  #{FEED.TITLE}
+  #{FEED.LINK}
+  #{ITEM.TITLE}
+  #{ITEM.LINK}
+  #{ITEM.AUTHOR.NAME}
+  #{ITEM.AUTHOR.EMAIL}
+
 `
 }
 
@@ -148,6 +185,7 @@ func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
 	f.BoolVar(&p.send, "send", true, "Should we send emails, or just pretend to?")
 	f.StringVar(&p.fromAddr, "from", "", "Specify the sending email address to use.")
+	f.StringVar(&p.subject, "subject", "[rss2email] $ITEM.TITLE", "A format string used to generate the email subject.")
 
 }
 

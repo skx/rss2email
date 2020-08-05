@@ -23,7 +23,7 @@ import (
 var Template = `Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
 From: {{.From}}
 To: {{.To}}
-Subject: [rss2email] {{.Subject}}
+Subject: {{.Subject}}
 X-RSS-Link: {{.Link}}
 X-RSS-Feed: {{.Feed}}
 Mime-Version: 1.0
