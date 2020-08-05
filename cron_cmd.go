@@ -96,8 +96,16 @@ func (p *cronCmd) ProcessURL(input string) error {
 			subject = strings.ReplaceAll(subject, "#{ITEM.LINK}", i.Link)
 
 			// Author
-			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.NAME}", i.Author.Name)
-			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.EMAIL}", i.Author.Email)
+			aMail := ""
+			aName := ""
+			if i.Author != nil && i.Author.Name != "" {
+				aName = i.Author.Name
+			}
+			if i.Author != nil && i.Author.Email != "" {
+				aMail = i.Author.Email
+			}
+			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.NAME}", aName)
+			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.EMAIL}", aMail)
 
 			// If we're supposed to send email then do that
 			if p.send {
