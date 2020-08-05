@@ -23,8 +23,7 @@ This project is a naive port of the [r2e](https://github.com/wking/rss2email) pr
 
 ## Rationale
 
-I prefer to keep my server(s) pretty minimal, and replacing `r2e` allowed
-me to remove a bunch of Python packages I otherwise have no need for:
+I prefer to keep my server(s) pretty minimal, and replacing `r2e` allowed me to remove a bunch of Python packages I otherwise had no need for:
 
       steve@ssh ~ $ sudo dpkg --purge rss2email
       Removing rss2email (1:3.9-2.1) ...
@@ -38,7 +37,7 @@ me to remove a bunch of Python packages I otherwise have no need for:
        python3-html5lib python3-lxml python3-six python3-webencodings
       0 upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
 
-This project, being built in go, is self-contained and easy to deploy without the need for additional external libraries.
+This project, being built in [golang](https://golang.org), is self-contained and easy to deploy without the need for additional external libraries.
 
 
 
@@ -62,8 +61,7 @@ If you prefer you can fetch a binary from [our release page](https://github.com/
 
 # Configuration
 
-Once you have a binary you'll need to configure the feeds to monitor. To
-add a new feed use the `add` sub-command:
+Once you have a binary you'll need to configure the feeds to monitor. To add a new feed use the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
      $ rss2email add https://example.net/index.rss
@@ -79,35 +77,28 @@ Or delete a feed by specifying the item to remove:
 
 > **NOTE**: Feeds are stored in `~/.rss2email/feeds`, you might prefer to edit that directly.  Just add one URI per line.
 
-Once you've added your feeds you should then add the binary to your
-`crontab`, to ensure it runs regularly to actually send you the emails.
-You should add something similar to this to your `crontab`:
+Once you've added your feeds you should then add the binary to your `crontab`, to ensure it runs regularly to actually send you the emails. You should add something similar to this to your `crontab`:
 
-     # Announce feed-changes via email
+     # Announce feed-changes via email every fifteen minutes
      */15 * * * * $HOME/go/bin/rss2email cron user@example.com
 
 When new items appear in the feeds they will then be sent to you via email.
-Each email will be multi-part, containing both `text/plain` and `text/html`
-versions of the new post(s).
 
-If you run `rss2email help cron` you'll see that it is possible to customize
-the senders' email address, as well as a format-string used to construct the
-email `Subject:` header.  By default generated emails will use the following
-template-string, which matches that produced by the original `rss2email` project:
+Each email will be multi-part, containing both `text/plain` and `text/html` versions of the new post(s).
+
+If you run `rss2email help cron` you'll see that it is possible to customize the senders' email address, as well as a format-string used to construct the email `Subject:` header.  By default generated emails will use the following template-string, which matches that produced by the original `r2e` project:
 
 * `[rss2email] #{ITEM.TITLE}`
 
 
 ## Initial Run
 
-When you add a new feed all the items will initially be unseen/new, and
-this means you'll receive a flood of emails if you were to run:
+When you add a new feed all the items will initially be unseen/new, and this means you'll receive a flood of emails if you were to run:
 
      $ rss2email add https://blog.steve.fi/index.rss
      $ rss2email cron
 
-To avoid this you can use the `-send=false` flag, which will merely
-record each item as having been seen, rather than sending you emails:
+To avoid this you can use the `-send=false` flag, which will merely record each item as having been seen, rather than sending you emails:
 
      $ rss2email add https://blog.steve.fi/index.rss
      $ rss2email cron -send=false
@@ -115,22 +106,20 @@ record each item as having been seen, rather than sending you emails:
 
 # Assumptions
 
-Because this application is so minimal there are a number of assumptions baked in:
+There are a number of assumptions baked into this application:
 
 * We assume that `/usr/sbin/sendmail` exists and will send email successfully.
 * We assume the recipient and sender email addresses can be the same.
   * i.e. If you mail output to `bob@example.com` that will be used as the sender address.
+  * But you can change that if you wish, via `-from`
 
 
 # Github Setup
 
-This repository is configured to run tests upon every commit, and when
-pull-requests are created/updated.  The testing is carried out via
-[.github/run-tests.sh](.github/run-tests.sh) which is used by the
-[github-action-tester](https://github.com/skx/github-action-tester) action.
+This repository is configured to run tests upon every commit, and when pull-requests are created/updated.  The testing is carried out via [.github/run-tests.sh](.github/run-tests.sh) which is used by the [github-action-tester](https://github.com/skx/github-action-tester) action.
 
-Releases are automated in a similar fashion via [.github/build](.github/build),
-and the [github-action-publish-binaries](https://github.com/skx/github-action-publish-binaries) action.
+Releases are automated in a similar fashion via [.github/build](.github/build), and the [github-action-publish-binaries](https://github.com/skx/github-action-publish-binaries) action.
+
 
 Steve
 --
