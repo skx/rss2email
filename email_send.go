@@ -38,18 +38,18 @@ Content-Type: multipart/alternative; boundary=4186c39e13b2140c88094b3933206336f2
 Content-Type: text/plain; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-{{.Link}}
+{{quoteprintable .Link}}
 
 {{.Text}}
 
-{{.Link}}
+{{quoteprintable .Link}}
 --4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
 Content-Type: text/html; charset=UTF-8
 Content-Transfer-Encoding: quoted-printable
 
-<p><a href=3D"{{.Link}}">{{.Link}}</a></p>
+<p><a href=3D"{{quoteprintable .Link}}">{{quoteprintable .Subject}}</a></p>
 {{.HTML}}
-<p><a href=3D"{{.Link}}">{{.Link}}</a></p>
+<p><a href=3D"{{quoteprintable .Link}}">{{quoteprintable .Link}}</a></p>
 --4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2--
 
 --76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497--
@@ -129,16 +129,20 @@ func SendMail(feedURL string, fromAddr string, addresses []string, subject strin
 			return err
 		}
 		x.Subject = subject
-		x.Link, err = toQuotedPrintable(link)
-		if err != nil {
-			return err
+		x.Link = link
+
+		//
+		// Function map allows exporting functions to the template
+		//
+		funcMap := template.FuncMap{
+			"quoteprintable": toQuotedPrintable,
 		}
 
 		//
 		// Render our template into a buffer.
 		//
 		src := string(Template)
-		t := template.Must(template.New("tmpl").Parse(src))
+		t := template.Must(template.New("tmpl").Funcs(funcMap).Parse(src))
 		buf := &bytes.Buffer{}
 		err = t.Execute(buf, x)
 		if err != nil {
