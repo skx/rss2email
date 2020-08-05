@@ -45,6 +45,40 @@ func (p *cronCmd) FetchFeed(url string) (string, error) {
 	return string(output), nil
 }
 
+// expandTemplate expands strings such as "#{FEED.TITLE}" to the appropriate
+// values - this is used for both expanding a from-address, and the generated
+// Subject: header.
+func (p *cronCmd) expandTemplate(feed *gofeed.Feed, item *gofeed.Item, template string) string {
+
+	// From: address is most likely empty, so we can
+	// save work by testing for that empty template first.
+	if template == "" {
+		return ""
+	}
+
+	// Feed
+	template = strings.ReplaceAll(template, "#{FEED.TITLE}", feed.Title)
+	template = strings.ReplaceAll(template, "#{FEED.LINK}", feed.Link)
+
+	// Item
+	template = strings.ReplaceAll(template, "#{ITEM.TITLE}", item.Title)
+	template = strings.ReplaceAll(template, "#{ITEM.LINK}", item.Link)
+
+	// Author
+	aMail := ""
+	aName := ""
+	if item.Author != nil && item.Author.Name != "" {
+		aName = item.Author.Name
+	}
+	if item.Author != nil && item.Author.Email != "" {
+		aMail = item.Author.Email
+	}
+	template = strings.ReplaceAll(template, "#{ITEM.AUTHOR.NAME}", aName)
+	template = strings.ReplaceAll(template, "#{ITEM.AUTHOR.EMAIL}", aMail)
+
+	return template
+}
+
 // ProcessURL takes an URL as input, fetches the contents, and then
 // processes each feed item found within it.
 func (p *cronCmd) ProcessURL(input string) error {
@@ -84,32 +118,14 @@ func (p *cronCmd) ProcessURL(input string) error {
 			// Mark the item as having been seen.
 			RecordSeen(i)
 
-			// Expand the subject format-string
-			subject := p.subject
-
-			// Feed
-			subject = strings.ReplaceAll(subject, "#{FEED.TITLE}", feed.Title)
-			subject = strings.ReplaceAll(subject, "#{FEED.LINK}", feed.Link)
-
-			// Item
-			subject = strings.ReplaceAll(subject, "#{ITEM.TITLE}", i.Title)
-			subject = strings.ReplaceAll(subject, "#{ITEM.LINK}", i.Link)
-
-			// Author
-			aMail := ""
-			aName := ""
-			if i.Author != nil && i.Author.Name != "" {
-				aName = i.Author.Name
-			}
-			if i.Author != nil && i.Author.Email != "" {
-				aMail = i.Author.Email
-			}
-			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.NAME}", aName)
-			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.EMAIL}", aMail)
+			// Expand the format-strings
+			subject := p.expandTemplate(feed, i, p.subject)
+			from := p.expandTemplate(feed, i, p.fromAddr)
 
 			// Show the expansion.
 			if p.verbose {
 				fmt.Printf("\tExpanded Subject-template '%s' -> '%s'\n", p.subject, subject)
+				fmt.Printf("\tExpanded email-template '%s' -> '%s'\n", p.fromAddr, from)
 			}
 
 			// If we're supposed to send email then do that
@@ -188,6 +204,10 @@ Valid template values include:
   #{ITEM.AUTHOR.NAME}
   #{ITEM.AUTHOR.EMAIL}
 
+The same template-strings can be used in the from-addres, via something
+like this:
+
+   --from='"#{FEED.TITLE}" <example@example.com'
 `
 }
 
