@@ -107,6 +107,11 @@ func (p *cronCmd) ProcessURL(input string) error {
 			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.NAME}", aName)
 			subject = strings.ReplaceAll(subject, "#{ITEM.AUTHOR.EMAIL}", aMail)
 
+			// Show the expansion.
+			if p.verbose {
+				fmt.Printf("\tExpanded Subject-template '%s' -> '%s'\n", p.subject, subject)
+			}
+
 			// If we're supposed to send email then do that
 			if p.send {
 
