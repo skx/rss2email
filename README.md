@@ -90,6 +90,13 @@ When new items appear in the feeds they will then be sent to you via email.
 Each email will be multi-part, containing both `text/plain` and `text/html`
 versions of the new post(s).
 
+If you run `rss2email help cron` you'll see that it is possible to customize
+the senders' email address, as well as a format-string used to construct the
+email `Subject:` header.  By default generated emails will use the following
+template-string, which matches that produced by the original `rss2email` project:
+
+* `[rss2email] #{ITEM.TITLE}`
+
 
 ## Initial Run
 
