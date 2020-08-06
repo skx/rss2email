@@ -16,6 +16,8 @@ import (
 	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
 	"github.com/mmcdole/gofeed"
+	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/withstate"
 )
 
 // FetchFeed fetches a feed from the remote URL.
@@ -71,10 +73,13 @@ func (p *cronCmd) ProcessURL(input string) error {
 	}
 
 	// For each entry in the feed ..
-	for _, i := range feed.Items {
+	for _, xp := range feed.Items {
+
+		// Wrap it so we can use our helper methods
+        i := withstate.FeedItem{Item:xp}
 
 		// If we've not already notified about this one.
-		if !HasSeen(i) {
+		if i.IsNew() {
 
 			if p.verbose {
 				fmt.Printf("New item: %s\n", i.GUID)
@@ -82,7 +87,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 			}
 
 			// Mark the item as having been seen.
-			RecordSeen(i)
+			i.RecordSeen()
 
 			// If we're supposed to send email then do that
 			if p.send {
@@ -139,7 +144,7 @@ func (*cronCmd) Usage() string {
 	return `This sub-command polls all configured feeds, fetching any entries which are
 new and sending an email for each item that is new.
 
-State is maintained beneath ~/.rss2email/seen, and the feed list itself is
+State is maintained beneath ~/.rss2email/seen/, and the feed list itself is
 read from ~/.rss2email/feeds.
 
 Example:
@@ -188,7 +193,7 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	//
 	// Create the helper
 	//
-	list := NewFeed()
+	list := feedlist.New("")
 
 	//
 	// If we receive errors we'll store them here,

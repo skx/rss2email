@@ -10,6 +10,7 @@ import (
 	"fmt"
 
 	"github.com/google/subcommands"
+	"github.com/skx/rss2email/feedlist"
 )
 
 //
@@ -46,7 +47,7 @@ func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	//
 	// Create the helper
 	//
-	list := NewFeed()
+	list := feedlist.New("")
 
 	//
 	// Count the entries
