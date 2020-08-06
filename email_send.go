@@ -18,6 +18,8 @@ import (
 	"os/user"
 	"path"
 	"text/template"
+
+	"github.com/mmcdole/gofeed"
 )
 
 var (
@@ -106,7 +108,7 @@ func toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(feedURL string, fromAddr string, addresses []string, subject string, link string, textstr string, htmlstr string) error {
+func SendMail(feed *gofeed.Feed, fromAddr string, addresses []string, subject string, link string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -128,20 +130,22 @@ func SendMail(feedURL string, fromAddr string, addresses []string, subject strin
 		// template.
 		//
 		type TemplateParms struct {
-			Feed    string
-			To      string
-			From    string
-			Text    string
-			HTML    string
-			Subject string
-			Link    string
+			Feed      string
+			FeedTitle string
+			To        string
+			From      string
+			Text      string
+			HTML      string
+			Subject   string
+			Link      string
 		}
 
 		//
 		// Populate it appropriately.
 		//
 		var x TemplateParms
-		x.Feed = feedURL
+		x.Feed = feed.Link
+		x.FeedTitle = feed.Title
 		x.From = addr
 		x.Link = link
 		x.Subject = subject
