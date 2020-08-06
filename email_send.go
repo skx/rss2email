@@ -17,10 +17,22 @@ import (
 	"text/template"
 )
 
-// Template is our text/template which is used to send an email to the local
-// user.  We're using a template such that we can send both HTML and Text
-// versions of the RSS feed item.
-var Template = `Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
+var (
+	// The compiled template we use to generate our email
+	tmpl *template.Template
+)
+
+// setupTemplate loads the template we use for generating the email
+// notification.
+func setupTemplate() *template.Template {
+
+	// Already setup?  Return it.
+	if tmpl != nil {
+		return tmpl
+	}
+
+	// Otherwise create it now from a hardwired string.
+	src := `Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
 From: {{.From}}
 To: {{.To}}
 Subject: [rss2email] {{.Subject}}
@@ -56,9 +68,24 @@ Content-Transfer-Encoding: quoted-printable
 --21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1--
 `
 
+	//
+	// Function map allows exporting functions to the template
+	//
+	funcMap := template.FuncMap{
+		"quoteprintable": toQuotedPrintable,
+	}
+
+	tmpl = template.Must(template.New("tmpl").Funcs(funcMap).Parse(src))
+
+	return tmpl
+}
+
 // toQuotedPrintable will convert the given input-string to a
 // quoted-printable format.  This is required for our MIME-part
 // body.
+//
+// NOTE: We use this function both directly, and from within our
+// template.
 func toQuotedPrintable(s string) (string, error) {
 	var ac bytes.Buffer
 	w := quotedprintable.NewWriter(&ac)
@@ -94,8 +121,8 @@ func SendMail(feedURL string, fromAddr string, addresses []string, subject strin
 	//
 	// Process each address
 	//
-
 	for _, addr := range addresses {
+
 		//
 		// Here is a temporary structure we'll use to popular our email
 		// template.
@@ -114,12 +141,19 @@ func SendMail(feedURL string, fromAddr string, addresses []string, subject strin
 		// Populate it appropriately.
 		//
 		var x TemplateParms
-		x.To = addr
 		x.Feed = feedURL
 		x.From = addr
+		x.Link = link
+		x.Subject = subject
+		x.To = addr
+
+		// Sender-address might be overridden.
 		if fromAddr != "" {
 			x.From = fromAddr
 		}
+
+		// The real meat of the mail is the text & HTML
+		// parts.  They need to be encoded, unconditionally.
 		x.Text, err = toQuotedPrintable(textstr)
 		if err != nil {
 			return err
@@ -128,21 +162,11 @@ func SendMail(feedURL string, fromAddr string, addresses []string, subject strin
 		if err != nil {
 			return err
 		}
-		x.Subject = subject
-		x.Link = link
-
-		//
-		// Function map allows exporting functions to the template
-		//
-		funcMap := template.FuncMap{
-			"quoteprintable": toQuotedPrintable,
-		}
 
 		//
 		// Render our template into a buffer.
 		//
-		src := string(Template)
-		t := template.Must(template.New("tmpl").Funcs(funcMap).Parse(src))
+		t := setupTemplate()
 		buf := &bytes.Buffer{}
 		err = t.Execute(buf, x)
 		if err != nil {
