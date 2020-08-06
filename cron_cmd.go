@@ -193,7 +193,7 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	//
 	// Create the helper
 	//
-	list := feedlist.New()
+	list := feedlist.New("")
 
 	//
 	// If we receive errors we'll store them here,

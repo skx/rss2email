@@ -47,7 +47,7 @@ func (p *listCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	//
 	// Create the helper
 	//
-	list := feedlist.New()
+	list := feedlist.New("")
 
 	//
 	// For each entry in the list ..

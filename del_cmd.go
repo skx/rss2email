@@ -47,7 +47,7 @@ func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	//
 	// Create the helper
 	//
-	list := feedlist.New()
+	list := feedlist.New("")
 
 	//
 	// Count the entries

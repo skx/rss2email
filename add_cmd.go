@@ -46,7 +46,7 @@ func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	//
 	// Get the feed-list
 	//
-	list := feedlist.New()
+	list := feedlist.New("")
 
 	//
 	// For each argument add it to the list
