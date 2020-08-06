@@ -49,7 +49,9 @@ func New(filename string) *FeedList {
 		// Now build up our file-path
 		filename = path.Join(home, ".rss2email", "feeds")
 	}
-    m.filename = filename
+
+	// Save our updated filename
+	m.filename = filename
 
 	// Open our input-file
 	file, err := os.Open(filename)
@@ -116,14 +118,13 @@ func (f *FeedList) Save() error {
 		return fmt.Errorf("error writing to %s - %s", f.filename, err.Error())
 	}
 
+	// Write out each entry
 	w := bufio.NewWriter(fh)
-
-	// For each entry
 	for _, i := range f.entries {
-
 		w.WriteString(i + "\n")
 	}
 
+	// Close
 	w.Flush()
 	fh.Close()
 
