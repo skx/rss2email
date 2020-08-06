@@ -18,6 +18,7 @@ import (
 	"os/user"
 	"path"
 	"text/template"
+	"time"
 
 	"github.com/mmcdole/gofeed"
 )
@@ -75,6 +76,7 @@ func setupTemplate() *template.Template {
 	//
 	funcMap := template.FuncMap{
 		"quoteprintable": toQuotedPrintable,
+		"now":            time.Now,
 	}
 
 	tmpl = template.Must(template.New("tmpl").Funcs(funcMap).Parse(string(content)))
