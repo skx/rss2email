@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 
 	"github.com/google/subcommands"
 	"github.com/skx/rss2email/feedlist"
@@ -55,7 +56,11 @@ func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 		list.Add(entry)
 	}
 
-	list.Save()
+	err := list.Save()
+	if err != nil {
+		fmt.Printf("failed to update feed list: %s\n", err.Error())
+		return subcommands.ExitFailure
+	}
 
 	//
 	// All done.
