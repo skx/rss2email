@@ -51,8 +51,8 @@ func setupTemplate() *template.Template {
 	// If that fails then get the current user, and use
 	// their home if possible.
 	if home == "" {
-		usr, err := user.Current()
-		if err == nil {
+		usr, errr := user.Current()
+		if errr == nil {
 			home = usr.HomeDir
 		}
 	}
