@@ -9,6 +9,7 @@ import (
 	"flag"
 
 	"github.com/google/subcommands"
+	"github.com/skx/rss2email/feedlist"
 )
 
 //
@@ -42,7 +43,10 @@ func (p *addCmd) SetFlags(f *flag.FlagSet) {
 //
 func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	list := NewFeed()
+	//
+	// Get the feed-list
+	//
+	list := feedlist.New()
 
 	//
 	// For each argument add it to the list

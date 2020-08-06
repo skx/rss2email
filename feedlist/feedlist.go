@@ -1,8 +1,6 @@
-//
-// This file contains functions relating to our feeds.
-//
-
-package main
+// Package feedlist is a trivial wrapper for maintaining a list
+// of RSS feeds in a file.
+package feedlist
 
 import (
 	"bufio"
@@ -19,10 +17,10 @@ type FeedList struct {
 	entries []string
 }
 
-// NewFeed returns a new instance of the feedlist.
+// New returns a new instance of the feedlist.
 // The existing feed-list will be read, if present, to populate the list of
 // feeds.
-func NewFeed() *FeedList {
+func New() *FeedList {
 	m := new(FeedList)
 
 	// Default to using $HOME for our storage

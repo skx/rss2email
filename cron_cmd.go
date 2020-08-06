@@ -16,6 +16,7 @@ import (
 	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
 	"github.com/mmcdole/gofeed"
+	"github.com/skx/rss2email/feedlist"
 	"github.com/skx/rss2email/withstate"
 )
 
@@ -192,7 +193,7 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	//
 	// Create the helper
 	//
-	list := NewFeed()
+	list := feedlist.New()
 
 	//
 	// If we receive errors we'll store them here,
