@@ -1,4 +1,24 @@
-Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
+{{/* This is the default template which is used by default to generate emails.
+
+     As you might imagine it is a Golang text/template file.
+
+     Several fields and functions are available:
+
+      {{.FeedTitle}}  - The human-readable title of the source feed.
+      {{.Feed}}       - The URL of the feed from which the item came.
+      {{.From}}       - The email address which sends the email.
+      {{.Link}}       - The link to the new entry.
+      {{.Subject}}    - The subject of the new entry.
+      {{.To}}         - The recipient of the email.
+
+     Functions:
+
+      {{quoteprintable .Link}}   -> Quote the specified field.
+      {{now}}                    -> Show the current date/time. e.g. {{now.UTC}}
+
+     This comment will be stripped from the generated email.
+
+  */}}Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
 From: {{.From}}
 To: {{.To}}
 Subject: [rss2email] {{.Subject}}
