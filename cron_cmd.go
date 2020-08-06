@@ -134,10 +134,19 @@ type cronCmd struct {
 // Glue
 //
 func (*cronCmd) Name() string     { return "cron" }
-func (*cronCmd) Synopsis() string { return "Process each of the feeds." }
+func (*cronCmd) Synopsis() string { return "Send emails for each new entries in configured feeds." }
 func (*cronCmd) Usage() string {
-	return `cron :
-  Read the list of feeds and send email for each new item found in them.
+	return `This sub-command polls all configured feeds, fetching any entries which are
+new and sending an email for each item that is new.
+
+State is maintained beneath ~/.rss2email/seen, and the feed list itself is
+read from ~/.rss2email/feeds.
+
+Example:
+
+    $ rss2email cron user1@example.com user2@example.com
+
+Flags:
 `
 }
 

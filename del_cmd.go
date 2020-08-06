@@ -7,6 +7,7 @@ package main
 import (
 	"context"
 	"flag"
+	"fmt"
 
 	"github.com/google/subcommands"
 )
@@ -23,8 +24,11 @@ type delCmd struct {
 func (*delCmd) Name() string     { return "delete" }
 func (*delCmd) Synopsis() string { return "Remove a feed from our list." }
 func (*delCmd) Usage() string {
-	return `delete :
-  This command updates our configured feed-list to remove the specified entry.
+	return `Remove the specified URLs from the feed list.
+
+Example:
+
+    $ rss2email delete https://blog.steve.fi/index.rss
 `
 }
 
@@ -61,6 +65,8 @@ func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	//
 	if len(list.Entries()) != before {
 		list.Save()
+	} else {
+		fmt.Printf("Feed list unchanged.\nUse 'rss2email list' to check your current feed configuration.\n")
 	}
 
 	//

@@ -24,8 +24,11 @@ type listCmd struct {
 func (*listCmd) Name() string     { return "list" }
 func (*listCmd) Synopsis() string { return "List configured feeds." }
 func (*listCmd) Usage() string {
-	return `list :
-  This reads and outputs the list of feeds which are configured.
+	return `Output the list of feeds which are being polled.
+
+Example:
+
+    $ rss2email list
 `
 }
 
