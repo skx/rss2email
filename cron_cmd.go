@@ -76,7 +76,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 	for _, xp := range feed.Items {
 
 		// Wrap it so we can use our helper methods
-		i := withstate.FeedItem{xp}
+        i := withstate.FeedItem{Item:xp}
 
 		// If we've not already notified about this one.
 		if i.IsNew() {
