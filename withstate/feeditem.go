@@ -23,8 +23,6 @@ type FeedItem struct {
 	// Wrapped structure
 	*gofeed.Item
 
-	// Local state here.
-	// TODO: Allow the prefix to be specified.
 }
 
 // IsNew reports whether this particular feed-item new.
@@ -54,18 +52,27 @@ func (item *FeedItem) RecordSeen() {
 	_ = ioutil.WriteFile(file, d1, 0644)
 }
 
-// path returns an appropriate marker-file, which is used to record
-// the seen vs. unseen state of a particular entry.
-func (item *FeedItem) path() string {
+// prefix returns the directory beneath which we store state
+func (item *FeedItem) prefix() string {
 
 	// Default to using $HOME
 	home := os.Getenv("HOME")
 
-	// Get the current user, and use their home if possible.
-	usr, err := user.Current()
-	if err == nil {
-		home = usr.HomeDir
+	if home == "" {
+		// Get the current user, and use their home if possible.
+		usr, err := user.Current()
+		if err == nil {
+			home = usr.HomeDir
+		}
 	}
+
+	// Return with a subdirectory
+	return path.Join(home, ".rss2email", "seen")
+}
+
+// path returns an appropriate marker-file, which is used to record
+// the seen vs. unseen state of a particular entry.
+func (item *FeedItem) path() string {
 
 	// Hash the item GUID
 	hasher := sha1.New()
@@ -76,7 +83,7 @@ func (item *FeedItem) path() string {
 	hexSha1 := hex.EncodeToString(hashBytes)
 
 	// Finally join the path
-	out := path.Join(home, ".rss2email", "seen", hexSha1)
+	out := path.Join(item.prefix(), hexSha1)
 	return out
 
 }
