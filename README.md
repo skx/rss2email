@@ -13,6 +13,7 @@ Table of Contents
 * [Configuration](#configuration)
   * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
+* [Customization](#customization)
 * [Github Setup](#github-setup)
 
 
@@ -113,6 +114,21 @@ Because this application is so minimal there are a number of assumptions baked i
 * We assume that `/usr/sbin/sendmail` exists and will send email successfully.
 * We assume the recipient and sender email addresses can be the same.
   * i.e. If you mail output to `bob@example.com` that will be used as the sender address.
+
+
+# Customization
+
+By default the emails are sent using a template file which is embedded in the application.  You can override the template by creating the file `~/.rss2email/email.tmpl`, if that is present then it will be used instead of the default.
+
+If you're a developer who wishes to submit changes to the embedded version you should carry out the three-step process to make your change live:
+
+* Edit `data/email.tmpl`
+* Run [implant](https://github.com/skx/implant) to regenerate the embedded version of that file in `static.go`
+* Rebuild the application to update the embedded copy `go build .`
+
+You can view the default template via:
+
+    $ rss2email list -template
 
 
 # Github Setup

@@ -13,7 +13,10 @@ import (
 	"html"
 	"io/ioutil"
 	"mime/quotedprintable"
+	"os"
 	"os/exec"
+	"os/user"
+	"path"
 	"text/template"
 )
 
@@ -26,47 +29,44 @@ var (
 // notification.
 func setupTemplate() *template.Template {
 
-	// Already setup?  Return it.
+	// Already setup?  Return the template
 	if tmpl != nil {
 		return tmpl
 	}
 
-	// Otherwise create it now from a hardwired string.
-	src := `Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
-From: {{.From}}
-To: {{.To}}
-Subject: [rss2email] {{.Subject}}
-X-RSS-Link: {{.Link}}
-X-RSS-Feed: {{.Feed}}
-Mime-Version: 1.0
+	// Load the default template from the embedded resource.
+	content, err := getResource("data/email.tmpl")
+	if err != nil {
+		fmt.Printf("failed to load embedded resource: %s\n", err.Error())
+		os.Exit(1)
+	}
 
---21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
-Content-Type: multipart/related; boundary=76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497
+	//
+	// Is there an on-disk template instead?  If so use it.
+	//
+	home := os.Getenv("HOME")
 
---76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497
-Content-Type: multipart/alternative; boundary=4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
+	// If that fails then get the current user, and use
+	// their home if possible.
+	if home == "" {
+		usr, err := user.Current()
+		if err == nil {
+			home = usr.HomeDir
+		}
+	}
 
---4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
-Content-Type: text/plain; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
+	// The path to the overridden template
+	override := path.Join(home, ".rss2email", "email.tmpl")
 
-{{quoteprintable .Link}}
-
-{{.Text}}
-
-{{quoteprintable .Link}}
---4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
-Content-Type: text/html; charset=UTF-8
-Content-Transfer-Encoding: quoted-printable
-
-<p><a href=3D"{{quoteprintable .Link}}">{{quoteprintable .Subject}}</a></p>
-{{.HTML}}
-<p><a href=3D"{{quoteprintable .Link}}">{{quoteprintable .Subject}}</a></p>
---4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2--
-
---76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497--
---21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1--
-`
+	// If the file exists, use it.
+	_, err = os.Stat(override)
+	if !os.IsNotExist(err) {
+		content, err = ioutil.ReadFile(override)
+		if err != nil {
+			fmt.Printf("failed to read %s: %s\n", override, err.Error())
+			os.Exit(1)
+		}
+	}
 
 	//
 	// Function map allows exporting functions to the template
@@ -75,7 +75,7 @@ Content-Transfer-Encoding: quoted-printable
 		"quoteprintable": toQuotedPrintable,
 	}
 
-	tmpl = template.Must(template.New("tmpl").Funcs(funcMap).Parse(src))
+	tmpl = template.Must(template.New("tmpl").Funcs(funcMap).Parse(string(content)))
 
 	return tmpl
 }
