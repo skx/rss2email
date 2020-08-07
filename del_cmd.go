@@ -44,34 +44,26 @@ func (p *delCmd) SetFlags(f *flag.FlagSet) {
 //
 func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	//
-	// Create the helper
-	//
+	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
-	//
-	// Count the entries
-	//
+	// Count the entries, so we can determine whether we
+	// removed any entries.
 	before := len(list.Entries())
 
-	//
 	// For each argument remove it from the list, if present.
-	//
 	for _, entry := range f.Args() {
 		list.Delete(entry)
 	}
 
-	//
 	// If we made a change then save it.
-	//
 	if len(list.Entries()) != before {
 		list.Save()
 	} else {
-		fmt.Printf("Feed list unchanged.\nUse 'rss2email list' to check your current feed configuration.\n")
+		fmt.Printf("Feed list unchanged.\n")
+		fmt.Printf("Use 'rss2email list' to check your current feed list.\n")
 	}
 
-	//
 	// All done.
-	//
 	return subcommands.ExitSuccess
 }

@@ -13,6 +13,7 @@ Table of Contents
 * [Configuration](#configuration)
   * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
+* [Customization](#customization)
 * [Github Setup](#github-setup)
 
 
@@ -84,11 +85,18 @@ Once you've added your feeds you should then add the binary to your
 You should add something similar to this to your `crontab`:
 
      # Announce feed-changes via email
-     */15 * * * * $HOME/go/bin/rss2email cron user@example.com
+     */15 * * * * $HOME/go/bin/rss2email cron recipient@example.com
 
 When new items appear in the feeds they will then be sent to you via email.
 Each email will be multi-part, containing both `text/plain` and `text/html`
-versions of the new post(s).
+versions of the new post(s).  There is a default template which should contain
+the things you care about:
+
+* A link to the item posted.
+* The subject/title of the new feed item.
+* The HTML and Text content of the new feed item.
+
+If you wish you may customize the template which is used to generate the notification email, see [customization](#customization) for details.
 
 
 ## Initial Run
@@ -113,6 +121,26 @@ Because this application is so minimal there are a number of assumptions baked i
 * We assume that `/usr/sbin/sendmail` exists and will send email successfully.
 * We assume the recipient and sender email addresses can be the same.
   * i.e. If you mail output to `bob@example.com` that will be used as the sender address.
+
+
+# Customization
+
+By default the emails are sent using a template file which is embedded in the application.  You can override the template by creating the file `~/.rss2email/email.tmpl`, if that is present then it will be used instead of the default.
+
+If you're a developer who wishes to submit changes to the embedded version you should carry out the three-step process to make your change.
+
+* First of all edit `data/email.tmpl`, this is the source of the template.
+* Next run the [implant](https://github.com/skx/implant) tool.
+  * This is responsible for reading the file, and embedding it into the file `static.go`, which is then included in the binary when the project is compiled.
+* Rebuild the application to update the embedded copy `go build .`
+  * This will ensure that the changes you made to `data/email.tmpl` are actually contained within your binary, and will be used the next time you launch it.
+
+You can view the default template via the following command:
+
+    $ rss2email list -template
+
+The default template contains a brief header documenting the available fields, and functions, which you can use.  As the template uses the standard Golang [text/template](https://golang.org/pkg/text/template/) facilities you can be pretty creative with it!
+
 
 
 # Github Setup

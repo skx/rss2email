@@ -1,5 +1,5 @@
 //
-// Add a new feed to our list
+// Add a new feed to the users' list of configured feeds.
 //
 
 package main
@@ -44,26 +44,21 @@ func (p *addCmd) SetFlags(f *flag.FlagSet) {
 //
 func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	//
-	// Get the feed-list
-	//
+	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
-	//
 	// For each argument add it to the list
-	//
 	for _, entry := range f.Args() {
 		list.Add(entry)
 	}
 
+	// Save the list.
 	err := list.Save()
 	if err != nil {
-		fmt.Printf("failed to update feed list: %s\n", err.Error())
+		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
 		return subcommands.ExitFailure
 	}
 
-	//
 	// All done.
-	//
 	return subcommands.ExitSuccess
 }
