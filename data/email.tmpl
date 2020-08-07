@@ -11,10 +11,13 @@
       {{.Subject}}    - The subject of the new entry.
       {{.To}}         - The recipient of the email.
 
+     There is also access to the {{.RSSFeed}} and {{.RSSItem}} available, in
+     case you need access to other fields which are not exported expliclty.
+     Using that approach you can access {{.RSSItem.GUID}}, for example.
+
      Functions:
 
       {{quoteprintable .Link}}   -> Quote the specified field.
-      {{now}}                    -> Show the current date/time. e.g. {{now.UTC}}
 
      This comment will be stripped from the generated email.
 
@@ -24,6 +27,7 @@ To: {{.To}}
 Subject: [rss2email] {{.Subject}}
 X-RSS-Link: {{.Link}}
 X-RSS-Feed: {{.Feed}}
+X-RSS-GUID: {{.RSSItem.GUID}}
 Mime-Version: 1.0
 
 --21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1

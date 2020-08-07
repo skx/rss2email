@@ -18,9 +18,9 @@ import (
 	"os/user"
 	"path"
 	"text/template"
-	"time"
 
 	"github.com/mmcdole/gofeed"
+	"github.com/skx/rss2email/withstate"
 )
 
 var (
@@ -76,10 +76,9 @@ func setupTemplate() *template.Template {
 	//
 	funcMap := template.FuncMap{
 		"quoteprintable": toQuotedPrintable,
-		"now":            time.Now,
 	}
 
-	tmpl = template.Must(template.New("tmpl").Funcs(funcMap).Parse(string(content)))
+	tmpl = template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
 
 	return tmpl
 }
@@ -110,7 +109,7 @@ func toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(feed *gofeed.Feed, fromAddr string, addresses []string, subject string, link string, textstr string, htmlstr string) error {
+func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -140,6 +139,11 @@ func SendMail(feed *gofeed.Feed, fromAddr string, addresses []string, subject st
 			HTML      string
 			Subject   string
 			Link      string
+
+			// In case people need access to fields
+			// we've not wrapped/exported explicitly
+			RSSFeed *gofeed.Feed
+			RSSItem withstate.FeedItem
 		}
 
 		//
@@ -149,14 +153,11 @@ func SendMail(feed *gofeed.Feed, fromAddr string, addresses []string, subject st
 		x.Feed = feed.Link
 		x.FeedTitle = feed.Title
 		x.From = addr
-		x.Link = link
-		x.Subject = subject
+		x.Link = item.Link
+		x.Subject = item.Title
 		x.To = addr
-
-		// Sender-address might be overridden.
-		if fromAddr != "" {
-			x.From = fromAddr
-		}
+		x.RSSFeed = feed
+		x.RSSItem = item
 
 		// The real meat of the mail is the text & HTML
 		// parts.  They need to be encoded, unconditionally.
@@ -178,6 +179,9 @@ func SendMail(feed *gofeed.Feed, fromAddr string, addresses []string, subject st
 		if err != nil {
 			return err
 		}
+
+		fmt.Printf("%s\n", buf.String())
+		return nil
 
 		//
 		// Prepare to run sendmail, with a pipe we can write our

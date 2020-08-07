@@ -49,10 +49,13 @@ func (p *cronCmd) FetchFeed(url string) (string, error) {
 
 // ProcessURL takes an URL as input, fetches the contents, and then
 // processes each feed item found within it.
+//
+// Feed items which are new/unread will generate an email.
 func (p *cronCmd) ProcessURL(input string) error {
 
+	// Show what we're doing.
 	if p.verbose {
-		fmt.Printf("Fetching %s\n", input)
+		fmt.Printf("Fetching: %s\n", input)
 	}
 
 	// Fetch the URL
@@ -76,42 +79,47 @@ func (p *cronCmd) ProcessURL(input string) error {
 	for _, xp := range feed.Items {
 
 		// Wrap it so we can use our helper methods
-		i := withstate.FeedItem{Item: xp}
+		item := withstate.FeedItem{Item: xp}
 
 		// If we've not already notified about this one.
-		if i.IsNew() {
+		if item.IsNew() {
 
+			// Show the new item.
 			if p.verbose {
-				fmt.Printf("New item: %s\n", i.GUID)
-				fmt.Printf("\tTitle: %s\n", i.Title)
+				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
 			}
-
-			// Mark the item as having been seen.
-			i.RecordSeen()
 
 			// If we're supposed to send email then do that
 			if p.send {
 
 				// The body should be stored in the
 				// "Content" field.
-				content := i.Content
+				content := item.Content
 
 				// If the Content field is empty then
 				// use the Description instead, if it
 				// is non-empty itself.
-				if (content == "") && i.Description != "" {
-					content = i.Description
+				if (content == "") && item.Description != "" {
+					content = item.Description
 				}
 
 				// Convert the content to text.
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(feed, p.fromAddr, p.emails, i.Title, i.Link, text, content)
+				err := SendMail(feed, item, p.emails, text, content)
 				if err != nil {
 					return err
 				}
 			}
+
+			// Mark the item as having been seen, after the
+			// email was sent.
+			//
+			// This does run the risk that sending mail
+			// fails, due to error, and that keeps happening
+			// forever...
+			item.RecordSeen()
 		}
 	}
 
@@ -129,27 +137,32 @@ type cronCmd struct {
 
 	// Should we send emails?
 	send bool
-
-	// The address all emails should be sent from.  If omitted,
-	// the From: address is the same as the To: address.
-	fromAddr string
 }
 
 //
 // Glue
 //
 func (*cronCmd) Name() string     { return "cron" }
-func (*cronCmd) Synopsis() string { return "Send emails for each new entries in configured feeds." }
+func (*cronCmd) Synopsis() string { return "Send emails for each new entry in our feed lists." }
 func (*cronCmd) Usage() string {
 	return `This sub-command polls all configured feeds, fetching any entries which are
 new and sending an email for each item that is new.
 
-State is maintained beneath ~/.rss2email/seen/, and the feed list itself is
-read from ~/.rss2email/feeds.
+State is maintained beneath '~/.rss2email/seen/', and the feed list itself is
+read from '~/.rss2email/feeds'.
 
 Example:
 
     $ rss2email cron user1@example.com user2@example.com
+
+Customization:
+
+An embedded template is used to generate the emails which are sent, this
+may be overridden via the creation of a local template-file located at
+'~/.rss2email/email.tmpl'.  The default template can be exported and
+modified like so:
+
+    $ rss2email list -template > ~/.rss2email/email.tmpl
 
 Flags:
 `
@@ -161,8 +174,6 @@ Flags:
 func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
 	f.BoolVar(&p.send, "send", true, "Should we send emails, or just pretend to?")
-	f.StringVar(&p.fromAddr, "from", "", "Specify the sending email address to use.")
-
 }
 
 //
@@ -170,29 +181,23 @@ func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 //
 func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
 
-	//
 	// No argument?  That's a bug
-	//
 	if len(f.Args()) == 0 {
 		fmt.Printf("Usage: rss2email cron email1@example.com .. emailN@example.com\n")
 		return subcommands.ExitFailure
 	}
 
-	//
 	// Save each argument away, checking it is fully-qualified.
-	//
 	for _, email := range f.Args() {
 		if strings.Contains(email, "@") {
 			p.emails = append(p.emails, email)
 		} else {
-			fmt.Printf("Usage: rss2email cron email1 .. emailN\n")
+			fmt.Printf("Usage: rss2email cron [flags] email1 .. emailN\n")
 			return subcommands.ExitFailure
 		}
 	}
 
-	//
-	// Create the helper
-	//
+	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
 	//

@@ -27,8 +27,7 @@ type versionCmd struct {
 func (*versionCmd) Name() string     { return "version" }
 func (*versionCmd) Synopsis() string { return "Show our version." }
 func (*versionCmd) Usage() string {
-	return `version :
-  Report upon our version, and exit.
+	return `Report upon our version, and exit.
 `
 }
 
