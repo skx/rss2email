@@ -180,9 +180,6 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 			return err
 		}
 
-		fmt.Printf("%s\n", buf.String())
-		return nil
-
 		//
 		// Prepare to run sendmail, with a pipe we can write our
 		// message to.
