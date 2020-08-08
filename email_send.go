@@ -184,7 +184,7 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 		// Prepare to run sendmail, with a pipe we can write our
 		// message to.
 		//
-		sendmail := exec.Command("/usr/sbin/sendmail", "-f", addr, addr)
+		sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", addr, addr)
 		stdin, err := sendmail.StdinPipe()
 		if err != nil {
 			fmt.Printf("Error sending email: %s\n", err.Error())
