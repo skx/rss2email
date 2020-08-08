@@ -24,7 +24,7 @@ type FeedItem struct {
 	*gofeed.Item
 }
 
-// IsNew reports whether this particular feed-item new.
+// IsNew reports whether this particular feed-item is new.
 func (item *FeedItem) IsNew() bool {
 
 	file := item.path()
@@ -34,7 +34,7 @@ func (item *FeedItem) IsNew() bool {
 	return false
 }
 
-// RecordSeen updates this item, to record the entry has haven been seen.
+// RecordSeen updates this item, to record the fact that it has been seen.
 func (item *FeedItem) RecordSeen() {
 
 	// Get the file-path
