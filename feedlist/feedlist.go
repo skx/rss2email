@@ -83,10 +83,24 @@ func (f *FeedList) Entries() []string {
 	return (f.entries)
 }
 
-// Add adds a new entry to the feed-list.
+// Add adds new entries to the feed-list, avoiding duplicates.
 // You must call `Save` if you wish this addition to be persisted.
-func (f *FeedList) Add(uri string) {
-	f.entries = append(f.entries, uri)
+func (f *FeedList) Add(uris ...string) {
+
+	// Maintain a map of seen entries to avoid duplicates
+	seen := make(map[string]bool)
+
+	for _, entry := range f.entries {
+		seen[entry] = true
+	}
+
+	for _, uri := range uris {
+		if !seen[uri] {
+			f.entries = append(f.entries, uri)
+		}
+
+		seen[uri] = true
+	}
 }
 
 // Delete removes an entry from our list of feeds.

@@ -84,14 +84,16 @@ func (p *importCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 			fmt.Printf("failed to parse %s: %s\n", file, err.Error())
 			continue
 		}
-		for _, outline := range o.Outlines {
+		entries := make([]string, len(o.Outlines))
+		for i, outline := range o.Outlines {
 
 			if outline.XMLURL != "" {
 				fmt.Printf("Adding %s\n", outline.XMLURL)
-				list.Add(outline.XMLURL)
+				entries[i] = outline.XMLURL
 				added++
 			}
 		}
+		list.Add(entries...)
 	}
 
 	// Did we make a change?  Then add them.
