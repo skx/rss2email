@@ -145,11 +145,12 @@ type cronCmd struct {
 func (*cronCmd) Name() string     { return "cron" }
 func (*cronCmd) Synopsis() string { return "Send emails for each new entry in our feed lists." }
 func (*cronCmd) Usage() string {
-	return `This sub-command polls all configured feeds, fetching any entries which are
-new and sending an email for each item that is new.
+	return `This sub-command polls all configured feeds, sending an email for
+each item which is new.
 
-State is maintained beneath '~/.rss2email/seen/', and the feed list itself is
-read from '~/.rss2email/feeds'.
+State is maintained beneath '~/.rss2email/seen/', and the feed list
+itself is read from '~/.rss2email/feeds'.
+
 
 Example:
 
@@ -164,7 +165,9 @@ modified like so:
 
     $ rss2email list -template > ~/.rss2email/email.tmpl
 
+
 Flags:
+
 `
 }
 

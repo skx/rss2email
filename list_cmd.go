@@ -34,10 +34,15 @@ func (*listCmd) Usage() string {
 By default this subcommand lists the configured feeds which will be
 polled, however it also allows you to dump the default email-template.
 
+
 Example:
 
     $ rss2email list
     $ rss2email list -template
+
+
+Flags:
+
 `
 }
 

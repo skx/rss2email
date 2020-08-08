@@ -27,6 +27,7 @@ func (*delCmd) Synopsis() string { return "Remove a feed from our list." }
 func (*delCmd) Usage() string {
 	return `Remove the specified URLs from the feed list.
 
+
 Example:
 
     $ rss2email delete https://blog.steve.fi/index.rss

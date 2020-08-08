@@ -27,6 +27,7 @@ func (*addCmd) Synopsis() string { return "Add a new feed to our feed-list." }
 func (*addCmd) Usage() string {
 	return `Add one or more specified URLs to our feed-list.
 
+
 Example:
 
     $ rss2email add https://blog.steve.fi/index.rss
