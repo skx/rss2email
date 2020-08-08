@@ -17,8 +17,10 @@ type FeedList struct {
 	// filename is the name of the state-file we use
 	filename string
 
-	// entries contains an array of feed URLS.
-	entries []string
+	// entries contains our feed URLs.
+	//
+	// We use a map to ensure that feed-items are unique
+	entries map[string]bool
 }
 
 // New returns a new instance of the feedlist.
@@ -29,6 +31,9 @@ func New(filename string) *FeedList {
 
 	// Create the object
 	m := new(FeedList)
+
+	// Create our map
+	m.entries = make(map[string]bool)
 
 	// If there was no path specified then create something
 	// sensible.
@@ -70,7 +75,7 @@ func New(filename string) *FeedList {
 			// Skip lines that begin with a comment.
 			//
 			if (tmp != "") && (!strings.HasPrefix(tmp, "#")) {
-				m.entries = append(m.entries, tmp)
+				m.entries[tmp] = true
 			}
 		}
 	}
@@ -80,28 +85,28 @@ func New(filename string) *FeedList {
 
 // Entries returns the configured feeds.
 func (f *FeedList) Entries() []string {
-	return (f.entries)
+
+	results := make([]string, len(f.entries))
+
+	i := 0
+	for k := range f.entries {
+		results[i] = k
+		i++
+	}
+
+	return (results)
 }
 
 // Add adds a new entry to the feed-list.
 // You must call `Save` if you wish this addition to be persisted.
 func (f *FeedList) Add(uri string) {
-	f.entries = append(f.entries, uri)
+	f.entries[uri] = true
 }
 
 // Delete removes an entry from our list of feeds.
 // You must call `Save` if you wish this removal to be persisted.
 func (f *FeedList) Delete(uri string) {
-
-	var tmp []string
-
-	for _, i := range f.entries {
-		if i != uri {
-			tmp = append(tmp, i)
-		}
-	}
-
-	f.entries = tmp
+	delete(f.entries, uri)
 }
 
 // Save syncs our entries to disc.
@@ -120,7 +125,7 @@ func (f *FeedList) Save() error {
 
 	// Write out each entry
 	w := bufio.NewWriter(fh)
-	for _, i := range f.entries {
+	for i := range f.entries {
 		w.WriteString(i + "\n")
 	}
 
