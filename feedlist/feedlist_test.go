@@ -238,23 +238,23 @@ func TestOrdering(t *testing.T) {
 		t.Fatalf("failed to save feed list: %s", err)
 	}
 
+	// Delete a couple of entries
+	updated.Delete("first")
+	updated.Delete("second")
+	err = updated.Save()
+	if err != nil {
+		t.Fatalf("failed to save feed list: %s", err)
+	}
+
 	//
 	// Now reload one final time to confirm we still
-	// have `first`, `second`, then the entries of the
-	// list - in-order.
+	// have the entries of the list - in-order.
 	//
 	final := New(file.Name())
 	found = final.Entries()
 
-	if found[0] != "first" {
-		t.Errorf("unexpected entry found: %s", found[0])
-	}
-	if found[1] != "second" {
-		t.Errorf("unexpected entry found: %s", found[0])
-	}
-
 	for i, txt := range entries {
-		if found[i+2] != txt {
+		if found[i] != txt {
 			t.Errorf("unexpected entry found at index %d, expected: %s but got %s", i, txt, found[i+2])
 		}
 	}
