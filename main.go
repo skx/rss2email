@@ -19,10 +19,11 @@ func main() {
 	subcommands.Register(subcommands.HelpCommand(), "")
 	subcommands.Register(subcommands.FlagsCommand(), "")
 	subcommands.Register(subcommands.CommandsCommand(), "")
-	subcommands.Register(&listCmd{}, "")
 	subcommands.Register(&addCmd{}, "")
-	subcommands.Register(&delCmd{}, "")
 	subcommands.Register(&cronCmd{}, "")
+	subcommands.Register(&delCmd{}, "")
+	subcommands.Register(&importCmd{}, "")
+	subcommands.Register(&listCmd{}, "")
 	subcommands.Register(&versionCmd{}, "")
 
 	flag.Parse()
