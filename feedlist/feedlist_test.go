@@ -192,3 +192,70 @@ func TestDuplication(t *testing.T) {
 		t.Errorf("unexpected entry found: %s", found[0])
 	}
 }
+
+// TestOrdering ensures that new additions go on the end of our list.
+func TestOrdering(t *testing.T) {
+
+	// Create a temporary file
+	file, err := ioutil.TempFile(os.TempDir(), "testsave")
+	if err != nil {
+		t.Fatalf("failed to make temporary file: %s", err.Error())
+	}
+	defer os.Remove(file.Name())
+
+	// Create a new feed with two entries.
+	list := New(file.Name())
+	list.Add("first")
+	list.Add("second")
+
+	// Save it to disk
+	err = list.Save()
+	if err != nil {
+		t.Fatalf("failed to save feed list: %s", err)
+	}
+
+	// Load it back, and ensure the order is as expected.
+	updated := New(file.Name())
+	found := updated.Entries()
+
+	if len(found) != 2 {
+		t.Errorf("expected two entries, found %d", len(found))
+	}
+	if found[0] != "first" {
+		t.Errorf("unexpected entry found: %s", found[0])
+	}
+	if found[1] != "second" {
+		t.Errorf("unexpected entry found: %s", found[0])
+	}
+
+	// Now add a bunch more.
+	entries := []string{"moi", "kissa", "voi ei", "steve", "kemp"}
+	for _, txt := range entries {
+		updated.Add(txt)
+	}
+	err = updated.Save()
+	if err != nil {
+		t.Fatalf("failed to save feed list: %s", err)
+	}
+
+	//
+	// Now reload one final time to confirm we still
+	// have `first`, `second`, then the entries of the
+	// list - in-order.
+	//
+	final := New(file.Name())
+	found = final.Entries()
+
+	if found[0] != "first" {
+		t.Errorf("unexpected entry found: %s", found[0])
+	}
+	if found[1] != "second" {
+		t.Errorf("unexpected entry found: %s", found[0])
+	}
+
+	for i, txt := range entries {
+		if found[i+2] != txt {
+			t.Errorf("unexpected entry found at index %d, expected: %s but got %s", i, txt, found[i+2])
+		}
+	}
+}
