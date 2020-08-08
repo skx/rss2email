@@ -22,7 +22,6 @@ type FeedItem struct {
 
 	// Wrapped structure
 	*gofeed.Item
-
 }
 
 // IsNew reports whether this particular feed-item new.
