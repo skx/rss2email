@@ -63,18 +63,21 @@ If you prefer you can fetch a binary from [our release page](https://github.com/
 
 # Configuration
 
-Once you have a binary you'll need to configure the feeds to monitor. To
-add a new feed use the `add` sub-command:
+Once you have a binary you'll need to configure the feeds to monitor. To add a new feed use the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
      $ rss2email add https://example.net/index.rss
      $ rss2email add https://example.com/foo.rss
 
-You can view the currently configured feeds via the `list` subcommand:
+If you have a list of feeds stored in an OPML file you can import them in a single-step via the `import` sub-command:
+
+     $ rss2email import feeds.opml
+
+The list of feeds can be displayed via the `list` subcommand:
 
      $ rss2email list
 
-Or delete a feed by specifying the item to remove:
+Deleting a feed is done by specifying the item to remove:
 
      $ rss2email delete https://example.com/foo.rss
 
