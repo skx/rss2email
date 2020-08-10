@@ -8,44 +8,14 @@ import (
 	"context"
 	"flag"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"strings"
 
 	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
-	"github.com/mmcdole/gofeed"
 	"github.com/skx/rss2email/feedlist"
 	"github.com/skx/rss2email/withstate"
 )
-
-// FetchFeed fetches a feed from the remote URL.
-//
-// We must use this instead of the URL handler that the feed-parser supports
-// because reddit, and some other sites, will just return a HTTP error-code
-// if we're using a standard "spider" User-Agent.
-//
-func (p *cronCmd) FetchFeed(url string) (string, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("User-Agent", "rss2email (https://github.com/skx/rss2email)")
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	output, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
 
 // ProcessURL takes an URL as input, fetches the contents, and then
 // processes each feed item found within it.
@@ -58,15 +28,8 @@ func (p *cronCmd) ProcessURL(input string) error {
 		fmt.Printf("Fetching: %s\n", input)
 	}
 
-	// Fetch the URL
-	txt, err := p.FetchFeed(input)
-	if err != nil {
-		return fmt.Errorf("error processing %s - %s", input, err.Error())
-	}
-
-	// Parse it
-	fp := gofeed.NewParser()
-	feed, err := fp.ParseString(txt)
+	// Fetch the feed for the input URL
+	feed, err := feedlist.Feed(input)
 	if err != nil {
 		return fmt.Errorf("error parsing %s contents: %s", input, err.Error())
 	}
