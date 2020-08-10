@@ -7,6 +7,13 @@ import (
 	"testing"
 )
 
+// We now validate feeds when adding, so we need real feed urls
+// Let's hope the bbc feed urls rarely change
+var testFeed1 = "http://feeds.bbci.co.uk/news/rss.xml"
+var testFeed2 = "http://feeds.bbci.co.uk/news/rss.xml?edition=uk"
+var testFeed3 = "http://feeds.bbci.co.uk/news/rss.xml?edition=us"
+var testFeed4 = "http://feeds.bbci.co.uk/news/rss.xml?edition=int"
+
 // TestDummy ensures we can find a default directory
 func TestDummy(t *testing.T) {
 
@@ -40,7 +47,7 @@ func TestSave(t *testing.T) {
 
 	// Create a new feed
 	list := New(file.Name())
-	list.Add("https://example.com/foo.atom")
+	list.Add(testFeed1)
 
 	// Save it to disk
 	err = list.Save()
@@ -56,7 +63,7 @@ func TestSave(t *testing.T) {
 	if len(found) != 1 {
 		t.Errorf("expected one entry, found %d", len(found))
 	}
-	if found[0] != "https://example.com/foo.atom" {
+	if found[0] != testFeed1 {
 		t.Errorf("unexpected entry found: %s", found[0])
 	}
 }
@@ -72,8 +79,8 @@ func TestDelete(t *testing.T) {
 
 	// Create a new feed with two entries
 	list := New(file.Name())
-	list.Add("https://example.com/foo.atom")
-	list.Add("https://example.com/foo.xml")
+	list.Add(testFeed1)
+	list.Add(testFeed2)
 
 	// Save it to disk
 	err = list.Save()
@@ -91,7 +98,7 @@ func TestDelete(t *testing.T) {
 	}
 
 	// Now delete the atom entry & save
-	updated.Delete("https://example.com/foo.atom")
+	updated.Delete(testFeed1)
 	err = updated.Save()
 	if err != nil {
 		t.Fatalf("failed to save feed list: %s", err)
@@ -104,7 +111,7 @@ func TestDelete(t *testing.T) {
 		t.Errorf("expected one entry, found %d", len(found))
 	}
 
-	if final.Entries()[0] != "https://example.com/foo.xml" {
+	if final.Entries()[0] != testFeed2 {
 		t.Errorf("after deletion we have an unexpected entry")
 	}
 }
@@ -144,7 +151,7 @@ func TestWriteFailure(t *testing.T) {
 	// which will fail.  Detect that error
 	//
 	list := New("/proc/foo/bar")
-	list.Add("https://example.com/foo.atom")
+	list.Add(testFeed1)
 
 	// Save it to disk
 	err = list.Save()
@@ -167,12 +174,12 @@ func TestDuplication(t *testing.T) {
 	list := New(file.Name())
 
 	// Add the same item multiple times
-	list.Add("https://example.com/foo.atom")
-	list.Add("https://example.com/foo.atom")
-	list.Add("https://example.com/foo.atom")
-	list.Add("https://example.com/foo.atom")
-	list.Add("https://example.com/foo.atom")
-	list.Add("https://example.com/foo.atom")
+	list.Add(testFeed1)
+	list.Add(testFeed1)
+	list.Add(testFeed1)
+	list.Add(testFeed1)
+	list.Add(testFeed1)
+	list.Add(testFeed1)
 
 	// Save it to disk
 	err = list.Save()
@@ -188,7 +195,7 @@ func TestDuplication(t *testing.T) {
 	if len(found) != 1 {
 		t.Errorf("expected one entry, found %d", len(found))
 	}
-	if found[0] != "https://example.com/foo.atom" {
+	if found[0] != testFeed1 {
 		t.Errorf("unexpected entry found: %s", found[0])
 	}
 }
@@ -205,8 +212,8 @@ func TestOrdering(t *testing.T) {
 
 	// Create a new feed with two entries.
 	list := New(file.Name())
-	list.Add("first")
-	list.Add("second")
+	list.Add(testFeed1)
+	list.Add(testFeed2)
 
 	// Save it to disk
 	err = list.Save()
@@ -221,15 +228,15 @@ func TestOrdering(t *testing.T) {
 	if len(found) != 2 {
 		t.Errorf("expected two entries, found %d", len(found))
 	}
-	if found[0] != "first" {
+	if found[0] != testFeed1 {
 		t.Errorf("unexpected entry found: %s", found[0])
 	}
-	if found[1] != "second" {
+	if found[1] != testFeed2 {
 		t.Errorf("unexpected entry found: %s", found[0])
 	}
 
-	// Now add a bunch more.
-	entries := []string{"moi", "kissa", "voi ei", "steve", "kemp"}
+	// Now add some more.
+	entries := []string{testFeed3, testFeed4}
 	for _, txt := range entries {
 		updated.Add(txt)
 	}
@@ -239,8 +246,8 @@ func TestOrdering(t *testing.T) {
 	}
 
 	// Delete a couple of entries
-	updated.Delete("first")
-	updated.Delete("second")
+	updated.Delete(testFeed1)
+	updated.Delete(testFeed2)
 	err = updated.Save()
 	if err != nil {
 		t.Fatalf("failed to save feed list: %s", err)

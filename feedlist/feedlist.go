@@ -156,7 +156,7 @@ func (f *FeedList) Entries() []string {
 
 // Add adds new entries to the feed-list, avoiding duplicates.
 // You must call `Save` if you wish this addition to be persisted.
-func (f *FeedList) Add(uris ...string) {
+func (f *FeedList) Add(uris ...string) []error {
 
 	// Maintain a map of seen entries to avoid duplicates
 	seen := make(map[string]bool)
@@ -165,18 +165,22 @@ func (f *FeedList) Add(uris ...string) {
 		seen[eEntry.url] = true
 	}
 
+	errors := make([]error, 0)
 	for _, uri := range uris {
 		if !seen[uri] {
 			feed, err := Feed(uri)
 			comments := []string{""}
 
+			if err != nil {
+				errors = append(errors, fmt.Errorf("%s: not added, %s", uri, err.Error()))
+				continue
+			}
+
 			// By default, comments is a blank line followed by a
 			// the commented feed title.
-			if err == nil {
-				title := feed.Title
-				if title != "" {
-					comments = append(comments, "# "+title)
-				}
+			title := feed.Title
+			if title != "" {
+				comments = append(comments, "# "+title)
 			}
 
 			eEntry := expandedEntry{url: uri, comments: comments}
@@ -185,6 +189,8 @@ func (f *FeedList) Add(uris ...string) {
 
 		seen[uri] = true
 	}
+
+	return errors
 }
 
 // Delete removes an entry from our list of feeds.
