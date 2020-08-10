@@ -74,12 +74,7 @@ func (p *listCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
-	// For each entry in the list ..
-	for _, uri := range list.Entries() {
-
-		// Print it
-		fmt.Printf("%s\n", uri)
-	}
+	list.WriteAllEntriesIncludingComments(os.Stdout)
 
 	return subcommands.ExitSuccess
 }
