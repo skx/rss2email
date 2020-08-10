@@ -50,7 +50,10 @@ func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 
 	// For each argument add it to the list
 	for _, entry := range f.Args() {
-		list.Add(entry)
+		errors := list.Add(entry)
+		for _, err := range errors {
+			fmt.Printf("%s\n", (err.Error()))
+		}
 	}
 
 	// Save the list.

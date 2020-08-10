@@ -93,7 +93,10 @@ func (p *importCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 				added++
 			}
 		}
-		list.Add(entries...)
+		errors := list.Add(entries...)
+		for _, err := range errors {
+			fmt.Printf("%s\n", (err.Error()))
+		}
 	}
 
 	// Did we make a change?  Then add them.
