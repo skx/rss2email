@@ -5,30 +5,90 @@ package feedlist
 import (
 	"bufio"
 	"fmt"
+	"io"
+	"io/ioutil"
+	"net/http"
 	"os"
 	"os/user"
 	"path"
 	"strings"
+
+	"github.com/mmcdole/gofeed"
 )
 
-// FeedList is the list of our feeds.
-type FeedList struct {
+// fetchFeed fetches a feed from the remote URL.
+//
+// We must use this instead of the URL handler that the feed-parser supports
+// because reddit, and some other sites, will just return a HTTP error-code
+// if we're using a standard "spider" User-Agent.
+//
+func fetchFeed(url string) (string, error) {
+	client := &http.Client{}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+
+	req.Header.Set("User-Agent", "rss2email (https://github.com/skx/rss2email)")
+	resp, err := client.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+
+	output, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return "", err
+	}
+	return string(output), nil
+}
+
+// Feed takes an URL as input, and returns a *gofeed.Feed.
+func Feed(url string) (*gofeed.Feed, error) {
+
+	// Fetch the URL
+	txt, err := fetchFeed(url)
+	if err != nil {
+		return nil, fmt.Errorf("error processing %s - %s", url, err.Error())
+	}
+
+	// Parse it
+	fp := gofeed.NewParser()
+	feed, err := fp.ParseString(txt)
+	if err != nil {
+		return nil, fmt.Errorf("error parsing %s contents: %s", url, err.Error())
+	}
+
+	return feed, nil
+}
+
+// expandedEntry is a url with its comment from the feeds file.
+type expandedEntry struct {
+	// url is the feed's url
+	url string
+
+	// comments contains the blank lines and comments preceding the url
+	comments []string
+}
+
+// feedList is the list of our feeds.
+type feedList struct {
 
 	// filename is the name of the state-file we use
 	filename string
 
-	// entries contains an array of feed URLS.
-	entries []string
+	// expandedEntries contains an array of feed URLS.
+	expandedEntries []expandedEntry
 }
 
 // New returns a new instance of the feedlist.
 //
-// The existing feed-list will be read, if present, to populate the list of
-// feeds.
-func New(filename string) *FeedList {
+// The existing feedlist file will be read, if present, to populate the
+// list of feeds.
+func New(filename string) *feedList {
 
 	// Create the object
-	m := new(FeedList)
+	m := new(feedList)
 
 	// If there was no path specified then create something
 	// sensible.
@@ -61,17 +121,24 @@ func New(filename string) *FeedList {
 		//
 		// Process it line by line.
 		//
+		comments := make([]string, 0)
 		scanner := bufio.NewScanner(file)
 		for scanner.Scan() {
 			tmp := scanner.Text()
 			tmp = strings.TrimSpace(tmp)
 
 			//
-			// Skip lines that begin with a comment.
+			// Save non-url lines as comments
 			//
-			if (tmp != "") && (!strings.HasPrefix(tmp, "#")) {
-				m.entries = append(m.entries, tmp)
+			if tmp == "" || strings.HasPrefix(tmp, "#") {
+				comments = append(comments, tmp)
+				continue
 			}
+
+			eEntry := expandedEntry{url: tmp, comments: comments}
+			comments = make([]string, 0)
+
+			m.expandedEntries = append(m.expandedEntries, eEntry)
 		}
 	}
 
@@ -79,24 +146,41 @@ func New(filename string) *FeedList {
 }
 
 // Entries returns the configured feeds.
-func (f *FeedList) Entries() []string {
-	return (f.entries)
+func (f *feedList) Entries() []string {
+	urls := make([]string, len(f.expandedEntries))
+	for i, eEntry := range f.expandedEntries {
+		urls[i] = eEntry.url
+	}
+	return (urls)
 }
 
 // Add adds new entries to the feed-list, avoiding duplicates.
 // You must call `Save` if you wish this addition to be persisted.
-func (f *FeedList) Add(uris ...string) {
+func (f *feedList) Add(uris ...string) {
 
 	// Maintain a map of seen entries to avoid duplicates
 	seen := make(map[string]bool)
 
-	for _, entry := range f.entries {
-		seen[entry] = true
+	for _, eEntry := range f.expandedEntries {
+		seen[eEntry.url] = true
 	}
 
 	for _, uri := range uris {
 		if !seen[uri] {
-			f.entries = append(f.entries, uri)
+			feed, err := Feed(uri)
+			comments := []string{""}
+
+			// By default, comments is a blank line followed by a
+			// the commented feed title.
+			if err == nil {
+				title := feed.Title
+				if title != "" {
+					comments = append(comments, "# "+title)
+				}
+			}
+
+			eEntry := expandedEntry{url: uri, comments: comments}
+			f.expandedEntries = append(f.expandedEntries, eEntry)
 		}
 
 		seen[uri] = true
@@ -105,21 +189,21 @@ func (f *FeedList) Add(uris ...string) {
 
 // Delete removes an entry from our list of feeds.
 // You must call `Save` if you wish this removal to be persisted.
-func (f *FeedList) Delete(uri string) {
+func (f *feedList) Delete(url string) {
 
-	var tmp []string
+	var tmp []expandedEntry
 
-	for _, i := range f.entries {
-		if i != uri {
-			tmp = append(tmp, i)
+	for _, eEntry := range f.expandedEntries {
+		if eEntry.url != url {
+			tmp = append(tmp, eEntry)
 		}
 	}
 
-	f.entries = tmp
+	f.expandedEntries = tmp
 }
 
 // Save syncs our entries to disc.
-func (f *FeedList) Save() error {
+func (f *feedList) Save() error {
 
 	// Of course we need to make sure the directory exists before
 	// we can write beneath it.
@@ -132,15 +216,23 @@ func (f *FeedList) Save() error {
 		return fmt.Errorf("error writing to %s - %s", f.filename, err.Error())
 	}
 
-	// Write out each entry
-	w := bufio.NewWriter(fh)
-	for _, i := range f.entries {
-		w.WriteString(i + "\n")
-	}
+	f.WriteAllEntriesIncludingComments(fh)
 
-	// Close
-	w.Flush()
 	fh.Close()
 
 	return nil
+}
+
+func (f *feedList) WriteAllEntriesIncludingComments(writer io.Writer) {
+	// For each entry in the list ..
+	for _, eEntry := range f.expandedEntries {
+
+		// Print the uri comments
+		for _, s := range eEntry.comments {
+			fmt.Fprintf(writer, "%s\n", s)
+		}
+
+		// Print the uri
+		fmt.Fprintf(writer, "%s\n", eEntry.url)
+	}
 }
