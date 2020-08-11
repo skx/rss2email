@@ -31,7 +31,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 	// Fetch the feed for the input URL
 	feed, err := feedlist.Feed(input)
 	if err != nil {
-		return fmt.Errorf("error parsing %s contents: %s", input, err.Error())
+		return err
 	}
 
 	if p.verbose {
