@@ -135,7 +135,7 @@ Flags:
 }
 
 //
-// Flag setup: NOP
+// Flag setup
 //
 func (p *cronCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
