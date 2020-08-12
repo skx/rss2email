@@ -137,6 +137,8 @@ func New(filename string) *FeedList {
 	if err == nil {
 		defer file.Close()
 
+		seenFeed := make(map[string]bool)
+
 		//
 		// Process it line by line.
 		//
@@ -157,7 +159,10 @@ func New(filename string) *FeedList {
 			eEntry := expandedEntry{url: tmp, comments: comments}
 			comments = make([]string, 0)
 
-			m.expandedEntries = append(m.expandedEntries, eEntry)
+			if !seenFeed[eEntry.url] {
+				m.expandedEntries = append(m.expandedEntries, eEntry)
+				seenFeed[eEntry.url] = true
+			}
 		}
 	}
 
