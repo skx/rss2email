@@ -21,6 +21,9 @@ type listCmd struct {
 
 	// Should we list the template-contents, rather than the feed list?
 	template bool
+
+	// Should we show extra information about a feed?
+	verbose bool
 }
 
 //
@@ -38,6 +41,7 @@ polled, however it also allows you to dump the default email-template.
 Example:
 
     $ rss2email list
+    $ rss2email list -verbose
     $ rss2email list -template
 
 
@@ -51,6 +55,7 @@ Flags:
 //
 func (p *listCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.template, "template", false, "Show the contents of the default template?")
+	f.BoolVar(&p.verbose, "verbose", false, "Show extra information about each feed?")
 }
 
 //
@@ -74,7 +79,7 @@ func (p *listCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
-	list.WriteAllEntriesIncludingComments(os.Stdout)
+	list.WriteAllEntriesIncludingComments(os.Stdout, p.verbose)
 
 	return subcommands.ExitSuccess
 }
