@@ -47,7 +47,7 @@ Flags:
 }
 
 //
-// Flag setup: NOP
+// Flag setup
 //
 func (p *listCmd) SetFlags(f *flag.FlagSet) {
 	f.BoolVar(&p.template, "template", false, "Show the contents of the default template?")

@@ -12,6 +12,7 @@ import (
 	"os/user"
 	"path"
 	"strings"
+	"time"
 
 	"github.com/mmcdole/gofeed"
 )
@@ -43,8 +44,7 @@ func fetchFeed(url string) (string, error) {
 	return string(output), nil
 }
 
-// Feed takes an URL as input, and returns a *gofeed.Feed.
-func Feed(url string) (*gofeed.Feed, error) {
+func fetchFeedAndParse(url string) (*gofeed.Feed, error) {
 
 	// Fetch the URL
 	txt, err := fetchFeed(url)
@@ -60,6 +60,25 @@ func Feed(url string) (*gofeed.Feed, error) {
 	}
 
 	return feed, nil
+}
+
+// Feed takes an URL as input, and returns a *gofeed.Feed.
+func Feed(url string) (*gofeed.Feed, error) {
+	var feed *gofeed.Feed
+	var err error
+
+	// Try up to 5 times
+	for i := 0; i < 5; i++ {
+		feed, err = fetchFeedAndParse(url)
+		if err == nil {
+			return feed, nil
+		}
+
+		// Rate limit to avoid hammering the server
+		time.Sleep(1 * time.Second)
+	}
+
+	return nil, err
 }
 
 // expandedEntry is a url with its comment from the feeds file.
