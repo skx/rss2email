@@ -12,6 +12,7 @@ import (
 	"os"
 	"os/user"
 	"path"
+	"time"
 
 	"github.com/mmcdole/gofeed"
 )
@@ -39,6 +40,12 @@ func (item *FeedItem) RecordSeen() {
 
 	// Get the file-path
 	file := item.path()
+
+	if _, err := os.Stat(file); os.IsExist(err) {
+		t := time.Now()
+		_ = os.Chtimes(file, t, t)
+		return
+	}
 
 	// Ensure the parent directory exists
 	dir, _ := path.Split(file)

@@ -75,15 +75,15 @@ func (p *cronCmd) ProcessURL(input string) error {
 					return err
 				}
 			}
-
-			// Mark the item as having been seen, after the
-			// email was sent.
-			//
-			// This does run the risk that sending mail
-			// fails, due to error, and that keeps happening
-			// forever...
-			item.RecordSeen()
 		}
+
+		// Mark the item as having been seen, after the
+		// email was sent.
+		//
+		// This does run the risk that sending mail
+		// fails, due to error, and that keeps happening
+		// forever...
+		item.RecordSeen()
 	}
 
 	return nil
