@@ -8,6 +8,7 @@ package withstate
 import (
 	"crypto/sha1"
 	"encoding/hex"
+	"fmt"
 	"io/ioutil"
 	"os"
 	"os/user"
@@ -58,8 +59,8 @@ func (item *FeedItem) RecordSeen() {
 	_ = ioutil.WriteFile(file, d1, 0644)
 }
 
-// prefix returns the directory beneath which we store state
-func (item *FeedItem) prefix() string {
+// stateDirectory returns the directory beneath which we store state
+func stateDirectory() string {
 
 	// Default to using $HOME
 	home := os.Getenv("HOME")
@@ -89,7 +90,72 @@ func (item *FeedItem) path() string {
 	hexSha1 := hex.EncodeToString(hashBytes)
 
 	// Finally join the path
-	out := path.Join(item.prefix(), hexSha1)
+	out := path.Join(stateDirectory(), hexSha1)
 	return out
 
+}
+
+// isSha1File returns true if a regular file has a name that looks
+// like a sha1.  This is an incomplete check, but may prevent a
+// non-state file from being removed.
+func isSha1File(fi os.FileInfo) bool {
+
+	name := fi.Name()
+
+	if len(name) != 40 {
+		return false
+	}
+
+	for _, r := range name {
+		if r >= '0' && r <= '9' {
+			continue
+		}
+		if r >= 'a' && r <= 'f' {
+			continue
+		}
+		return false
+	}
+
+	return fi.Mode().IsRegular()
+}
+
+// PruneStateFiles removes no-longer-needed state files
+// It returns the number of files pruned and a slice of errors encountered.
+func PruneStateFiles() (int, []error) {
+
+	stateDirPath := stateDirectory()
+
+	stateDir, err := os.Open(stateDirectory())
+	if err != nil {
+		err = fmt.Errorf("failed to open state-file directory: %s", err.Error())
+		return 0, []error{err}
+	}
+
+	fileInfos, err := stateDir.Readdir(0)
+	if err != nil {
+		err = fmt.Errorf("failed to list state files: %s", err.Error())
+		return 0, []error{err}
+	}
+
+	errors := make([]error, 0)
+	prunedCount := 0
+
+	// Prune state files older than 25 hours
+	for _, fi := range fileInfos {
+		if time.Since(fi.ModTime()) > 25*time.Hour {
+			if !isSha1File(fi) {
+				continue
+			}
+
+			err := os.Remove(path.Join(stateDirPath, fi.Name()))
+			if err == nil {
+				prunedCount++
+			} else {
+				err = fmt.Errorf("failed to remove state file: %s", err.Error())
+				errors = append(errors, err)
+			}
+		}
+	}
+
+	return prunedCount, errors
 }

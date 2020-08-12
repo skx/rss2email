@@ -186,6 +186,15 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 	}
 
+	prunedCount, pruneErrors := withstate.PruneStateFiles()
+	for _, err := range pruneErrors {
+		errors = append(errors, err.Error())
+	}
+
+	if p.verbose && prunedCount > 0 {
+		fmt.Printf("Pruned %d entry state files\n", prunedCount)
+	}
+
 	//
 	// If we found errors then handle that.
 	//
