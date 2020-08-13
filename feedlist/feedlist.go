@@ -62,20 +62,25 @@ func fetchFeedAndParse(url string) (*gofeed.Feed, error) {
 	return feed, nil
 }
 
+const (
+	fetchMaxTries   = 5
+	fetchRetryDelay = 200 * time.Millisecond
+)
+
 // Feed takes an URL as input, and returns a *gofeed.Feed.
 func Feed(url string) (*gofeed.Feed, error) {
 	var feed *gofeed.Feed
 	var err error
 
-	// Try up to 5 times
-	for i := 0; i < 5; i++ {
+	// Try up to fetchMaxTries times
+	for i := 0; i < fetchMaxTries; i++ {
+		// Rate limit to avoid hammering the server
+		time.Sleep(time.Duration(i) * fetchRetryDelay)
+
 		feed, err = fetchFeedAndParse(url)
 		if err == nil {
 			return feed, nil
 		}
-
-		// Rate limit to avoid hammering the server
-		time.Sleep(1 * time.Second)
 	}
 
 	return nil, err
