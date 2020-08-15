@@ -22,6 +22,7 @@ func main() {
 	subcommands.Register(&addCmd{}, "")
 	subcommands.Register(&cronCmd{}, "")
 	subcommands.Register(&delCmd{}, "")
+	subcommands.Register(&exportCmd{}, "")
 	subcommands.Register(&importCmd{}, "")
 	subcommands.Register(&listCmd{}, "")
 	subcommands.Register(&versionCmd{}, "")
