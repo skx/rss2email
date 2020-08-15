@@ -140,9 +140,9 @@ func PruneStateFiles() (int, []error) {
 	errors := make([]error, 0)
 	prunedCount := 0
 
-	// Prune state files older than 25 hours
+	// Prune state files older than 4 days.
 	for _, fi := range fileInfos {
-		if time.Since(fi.ModTime()) > 25*time.Hour {
+		if time.Since(fi.ModTime()) > (4*24)*time.Hour {
 			if !isSha1File(fi) {
 				continue
 			}
