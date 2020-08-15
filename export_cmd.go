@@ -5,38 +5,35 @@
 package main
 
 import (
-	"context"
-	"flag"
+	"fmt"
 	"os"
 	"text/template"
 
-	"github.com/google/subcommands"
 	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/subcommands"
 )
 
+// Structure for our options and state.
 type exportCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
 }
 
-//
-// Glue
-//
-func (*exportCmd) Name() string     { return "export" }
-func (*exportCmd) Synopsis() string { return "Export the feed list as an OPML file." }
-func (*exportCmd) Usage() string {
-	return `This command exports the list of configured feeds as an OPML file.
+// Info is part of the subcommand-API
+func (e *exportCmd) Info() (string, string) {
+	return "export", `Export the feed list as an OPML file.
+
+This command exports the list of configured feeds as an OPML file.
+
+Example:
+
+    $ rss2email export
 `
 }
 
-//
-// Flag setup
-//
-func (p *exportCmd) SetFlags(f *flag.FlagSet) {
-}
-
-//
-// Entry-point.
-//
-func (p *exportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+// Execute is invoked if the user specifies `add` as the subcommand.
+func (e *exportCmd) Execute(args []string) int {
 
 	// Individual feed URL
 	type Feed struct {
@@ -70,7 +67,11 @@ func (p *exportCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 `
 	// Compile the template and write to STDOUT
 	t := template.Must(template.New("tmpl").Parse(tmpl))
-	t.Execute(os.Stdout, data)
+	err := t.Execute(os.Stdout, data)
+	if err != nil {
+		fmt.Printf("error rendering template: %s\n", err.Error())
+		return 1
+	}
 
-	return subcommands.ExitSuccess
+	return 0
 }

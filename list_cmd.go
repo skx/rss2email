@@ -5,18 +5,14 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
 
-	"github.com/google/subcommands"
 	"github.com/skx/rss2email/feedlist"
 )
 
-//
-// The options set by our command-line flags.
-//
+// Structure for our options and state.
 type listCmd struct {
 
 	// Should we list the template-contents, rather than the feed list?
@@ -26,13 +22,9 @@ type listCmd struct {
 	verbose bool
 }
 
-//
-// Glue
-//
-func (*listCmd) Name() string     { return "list" }
-func (*listCmd) Synopsis() string { return "List configured feeds." }
-func (*listCmd) Usage() string {
-	return `Output the list of feeds which are being polled.
+// Info is part of the subcommand-API
+func (a *listCmd) Info() (string, string) {
+	return "list", `Output the list of feeds which are being polled.
 
 By default this subcommand lists the configured feeds which will be
 polled, however it also allows you to dump the default email-template.
@@ -50,18 +42,16 @@ Flags:
 `
 }
 
-//
-// Flag setup
-//
-func (p *listCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&p.template, "template", false, "Show the contents of the default template?")
-	f.BoolVar(&p.verbose, "verbose", false, "Show extra information about each feed?")
+// Arguments handles our flag-setup.
+func (l *listCmd) Arguments(f *flag.FlagSet) {
+	f.BoolVar(&l.template, "template", false, "Show the contents of the default template?")
+	f.BoolVar(&l.verbose, "verbose", false, "Show extra information about each feed?")
 }
 
 //
 // Entry-point.
 //
-func (p *listCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *listCmd) Execute(args []string) int {
 
 	if p.template {
 
@@ -73,7 +63,7 @@ func (p *listCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 
 		fmt.Printf("%s\n", string(content))
-		return subcommands.ExitSuccess
+		return 0
 	}
 
 	// Get the feed-list, from the default location.
@@ -81,5 +71,5 @@ func (p *listCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 
 	list.WriteAllEntriesIncludingComments(os.Stdout, p.verbose)
 
-	return subcommands.ExitSuccess
+	return 0
 }

@@ -5,30 +5,44 @@
 package main
 
 import (
-	"context"
-	"flag"
+	"fmt"
 	"os"
 
-	"github.com/google/subcommands"
+	"github.com/skx/subcommands"
 )
 
 //
-// Setup our sub-commands and use them.
+// Recovery is good
+//
+func recoverPanic() {
+	if r := recover(); r != nil {
+		fmt.Printf("recovered from panic while running %v\n%s\n", os.Args, r)
+	}
+}
+
+//
+// Register the subcommands, and run the one the user chose.
 //
 func main() {
-	subcommands.Register(subcommands.HelpCommand(), "")
-	subcommands.Register(subcommands.FlagsCommand(), "")
-	subcommands.Register(subcommands.CommandsCommand(), "")
-	subcommands.Register(&addCmd{}, "")
-	subcommands.Register(&cronCmd{}, "")
-	subcommands.Register(&delCmd{}, "")
-	subcommands.Register(&exportCmd{}, "")
-	subcommands.Register(&importCmd{}, "")
-	subcommands.Register(&listCmd{}, "")
-	subcommands.Register(&versionCmd{}, "")
 
-	flag.Parse()
-	ctx := context.Background()
-	os.Exit(int(subcommands.Execute(ctx)))
+	//
+	// Catch errors
+	//
+	defer recoverPanic()
 
+	//
+	// Register each of our subcommands.
+	//
+	subcommands.Register(&addCmd{})
+	subcommands.Register(&cronCmd{})
+	subcommands.Register(&delCmd{})
+	subcommands.Register(&exportCmd{})
+	subcommands.Register(&importCmd{})
+	subcommands.Register(&listCmd{})
+	subcommands.Register(&versionCmd{})
+
+	//
+	// Execute the one the user chose.
+	//
+	os.Exit(subcommands.Execute())
 }

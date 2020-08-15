@@ -5,28 +5,24 @@
 package main
 
 import (
-	"context"
-	"flag"
 	"fmt"
 
-	"github.com/google/subcommands"
 	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/subcommands"
 )
 
-//
-// The options set by our command-line flags.
-//
+// Structure for our options and state.
 type delCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
 }
 
-//
-// Glue
-//
-func (*delCmd) Name() string     { return "delete" }
-func (*delCmd) Synopsis() string { return "Remove a feed from our list." }
-func (*delCmd) Usage() string {
-	return `Remove the specified URLs from the feed list.
+// Info is part of the subcommand-API
+func (d *delCmd) Info() (string, string) {
+	return "delete", `Remove a feed from our feed-list.
 
+Remove one or more specified URLs to our feed-list.
 
 Example:
 
@@ -35,15 +31,9 @@ Example:
 }
 
 //
-// Flag setup: NOP
-//
-func (p *delCmd) SetFlags(f *flag.FlagSet) {
-}
-
-//
 // Entry-point.
 //
-func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (d *delCmd) Execute(args []string) int {
 
 	// Get the feed-list, from the default location.
 	list := feedlist.New("")
@@ -53,7 +43,7 @@ func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	before := len(list.Entries())
 
 	// For each argument remove it from the list, if present.
-	for _, entry := range f.Args() {
+	for _, entry := range args {
 		list.Delete(entry)
 	}
 
@@ -66,5 +56,5 @@ func (p *delCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	}
 
 	// All done.
-	return subcommands.ExitSuccess
+	return 0
 }

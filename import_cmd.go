@@ -5,14 +5,12 @@
 package main
 
 import (
-	"context"
 	"encoding/xml"
-	"flag"
 	"fmt"
 	"io/ioutil"
 
-	"github.com/google/subcommands"
 	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/subcommands"
 )
 
 type opml struct {
@@ -31,19 +29,16 @@ type outline struct {
 	Favicon string `xml:"rssfr-favicon,attr"`
 }
 
-//
-// The options set by our command-line flags.
-//
+// Structure for our options and state.
 type importCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
 }
 
-//
-// Glue
-//
-func (*importCmd) Name() string     { return "import" }
-func (*importCmd) Synopsis() string { return "Import an OPML feed-list." }
-func (*importCmd) Usage() string {
-	return `Import a list of feeds via an OPML file.
+// Info is part of the subcommand-API
+func (i *importCmd) Info() (string, string) {
+	return "import", `Import a list of feeds via an OPML file.
 
 Example:
 
@@ -51,16 +46,8 @@ Example:
 `
 }
 
-//
-// Flag setup: NOP
-//
-func (p *importCmd) SetFlags(f *flag.FlagSet) {
-}
-
-//
-// Entry-point.
-//
-func (p *importCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+// Execute is invoked if the user specifies `import` as the subcommand.
+func (i *importCmd) Execute(args []string) int {
 
 	// Get the feed-list, from the default location.
 	list := feedlist.New("")
@@ -68,7 +55,7 @@ func (p *importCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	added := 0
 
 	// For each file on the command-line
-	for _, file := range f.Args() {
+	for _, file := range args {
 
 		// Read content
 		data, err := ioutil.ReadFile(file)
@@ -108,5 +95,5 @@ func (p *importCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}
 	}
 
 	// All done.
-	return subcommands.ExitSuccess
+	return 0
 }

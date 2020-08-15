@@ -5,37 +5,30 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"runtime"
-
-	"github.com/google/subcommands"
 )
 
 var (
 	version = "unreleased"
 )
 
+// Structure for our options and state.
 type versionCmd struct {
+	// verbose controls whether our version information includes
+	// the go-version.
 	verbose bool
 }
 
-//
-// Glue
-//
-func (*versionCmd) Name() string     { return "version" }
-func (*versionCmd) Synopsis() string { return "Show our version." }
-func (*versionCmd) Usage() string {
-	return `Report upon our version, and exit.
-`
+// Info is part of the subcommand-API.
+func (v *versionCmd) Info() (string, string) {
+	return "version", `Report upon our version, and exit.`
 }
 
-//
-// Flag setup
-//
-func (p *versionCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&p.verbose, "verbose", false, "Show go version the binary was generated with.")
+// Arguments handles our flag-setup.
+func (v *versionCmd) Arguments(f *flag.FlagSet) {
+	f.BoolVar(&v.verbose, "verbose", false, "Show go version the binary was generated with.")
 }
 
 //
@@ -51,8 +44,9 @@ func showVersion(verbose bool) {
 //
 // Entry-point.
 //
-func (p *versionCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (p *versionCmd) Execute(args []string) int {
 
 	showVersion(p.verbose)
-	return subcommands.ExitSuccess
+
+	return 0
 }

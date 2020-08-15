@@ -5,28 +5,24 @@
 package main
 
 import (
-	"context"
-	"flag"
 	"fmt"
 
-	"github.com/google/subcommands"
 	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/subcommands"
 )
 
-//
-// The options set by our command-line flags.
-//
+// Structure for our options and state.
 type addCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
 }
 
-//
-// Glue
-//
-func (*addCmd) Name() string     { return "add" }
-func (*addCmd) Synopsis() string { return "Add a new feed to our feed-list." }
-func (*addCmd) Usage() string {
-	return `Add one or more specified URLs to our feed-list.
+// Info is part of the subcommand-API
+func (a *addCmd) Info() (string, string) {
+	return "add", `Add a new feed to our feed-list.
 
+Add one or more specified URLs to our feed-list.
 
 Example:
 
@@ -34,23 +30,19 @@ Example:
 `
 }
 
-//
-// Flag setup: NOP
-//
-func (p *addCmd) SetFlags(f *flag.FlagSet) {
-}
-
-//
-// Entry-point.
-//
-func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+// Execute is invoked if the user specifies `add` as the subcommand.
+func (a *addCmd) Execute(args []string) int {
 
 	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
 	// For each argument add it to the list
-	for _, entry := range f.Args() {
+	for _, entry := range args {
+
+		// Add the entry
 		errors := list.Add(entry)
+
+		// Errors?
 		for _, err := range errors {
 			fmt.Printf("%s\n", (err.Error()))
 		}
@@ -60,9 +52,9 @@ func (p *addCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) s
 	err := list.Save()
 	if err != nil {
 		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
-		return subcommands.ExitFailure
+		return 1
 	}
 
-	// All done.
-	return subcommands.ExitSuccess
+	// All done, with no errors.
+	return 0
 }
