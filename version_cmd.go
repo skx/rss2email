@@ -44,9 +44,9 @@ func showVersion(verbose bool) {
 //
 // Entry-point.
 //
-func (p *versionCmd) Execute(args []string) int {
+func (v *versionCmd) Execute(args []string) int {
 
-	showVersion(p.verbose)
+	showVersion(v.verbose)
 
 	return 0
 }

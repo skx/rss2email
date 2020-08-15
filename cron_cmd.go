@@ -19,10 +19,10 @@ import (
 // processes each feed item found within it.
 //
 // Feed items which are new/unread will generate an email.
-func (p *cronCmd) ProcessURL(input string) error {
+func (c *cronCmd) ProcessURL(input string) error {
 
 	// Show what we're doing.
-	if p.verbose {
+	if c.verbose {
 		fmt.Printf("Fetching: %s\n", input)
 	}
 
@@ -32,7 +32,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 		return err
 	}
 
-	if p.verbose {
+	if c.verbose {
 		fmt.Printf("\tFound %d entries\n", len(feed.Items))
 	}
 
@@ -46,12 +46,12 @@ func (p *cronCmd) ProcessURL(input string) error {
 		if item.IsNew() {
 
 			// Show the new item.
-			if p.verbose {
+			if c.verbose {
 				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
 			}
 
 			// If we're supposed to send email then do that
-			if p.send {
+			if c.send {
 
 				// The body should be stored in the
 				// "Content" field.
@@ -68,7 +68,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(feed, item, p.emails, text, content)
+				err := SendMail(feed, item, c.emails, text, content)
 				if err != nil {
 					return err
 				}

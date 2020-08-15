@@ -23,7 +23,7 @@ type listCmd struct {
 }
 
 // Info is part of the subcommand-API
-func (a *listCmd) Info() (string, string) {
+func (l *listCmd) Info() (string, string) {
 	return "list", `Output the list of feeds which are being polled.
 
 By default this subcommand lists the configured feeds which will be
@@ -51,9 +51,9 @@ func (l *listCmd) Arguments(f *flag.FlagSet) {
 //
 // Entry-point.
 //
-func (p *listCmd) Execute(args []string) int {
+func (l *listCmd) Execute(args []string) int {
 
-	if p.template {
+	if l.template {
 
 		// Load the default template from the embedded resource.
 		content, err := getResource("data/email.tmpl")
@@ -69,7 +69,7 @@ func (p *listCmd) Execute(args []string) int {
 	// Get the feed-list, from the default location.
 	list := feedlist.New("")
 
-	list.WriteAllEntriesIncludingComments(os.Stdout, p.verbose)
+	list.WriteAllEntriesIncludingComments(os.Stdout, l.verbose)
 
 	return 0
 }
