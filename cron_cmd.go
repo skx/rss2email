@@ -111,8 +111,11 @@ func (*cronCmd) Usage() string {
 	return `This sub-command polls all configured feeds, sending an email for
 each item which is new.
 
-State is maintained beneath '~/.rss2email/seen/', and the feed list
-itself is read from '~/.rss2email/feeds'.
+We record details of all the feed-items which have been seen beneath
+ '~/.rss2email/seen/', and these entries will be expired automatically
+when the corresponding entries have fallen out of the source feed.
+
+The list of feeds is read from '~/.rss2email/feeds'.
 
 
 Example:

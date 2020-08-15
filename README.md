@@ -10,7 +10,7 @@ Table of Contents
 * [Installation](#installation)
   * [Build without Go Modules (Go before 1.11)](#build-without-go-modules-go-before-111)
   * [Build with Go Modules (Go 1.11 or higher)](#build-with-go-modules-go-111-or-higher)
-* [Configuration](#configuration)
+* [Configuration & Usage](#configuration--usage)
   * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
 * [Customization](#customization)
@@ -19,13 +19,13 @@ Table of Contents
 
 # RSS2Email
 
-This project is a naive port of the [r2e](https://github.com/wking/rss2email) project to golang.
+This project is a naive port of the python-based [r2e](https://github.com/wking/rss2email) I used for many years to golang.
 
 
 ## Rationale
 
 I prefer to keep my server(s) pretty minimal, and replacing `r2e` allowed
-me to remove a bunch of Python packages I otherwise have no need for:
+me to remove a bunch of Python packages I otherwise had no need for:
 
       steve@ssh ~ $ sudo dpkg --purge rss2email
       Removing rss2email (1:3.9-2.1) ...
@@ -61,9 +61,9 @@ If you prefer you can fetch a binary from [our release page](https://github.com/
     go install
 
 
-# Configuration
+# Configuration & Usage
 
-Once you have a binary you'll need to configure the feeds to monitor. To add a new feed use the `add` sub-command:
+Once you have installed the application you'll need to configure the feeds to monitor. To add a new feed use the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
      $ rss2email add https://example.net/index.rss
@@ -77,7 +77,9 @@ The list of feeds can be displayed via the `list` subcommand:
 
      $ rss2email list
 
-Deleting a feed is done by specifying the item to remove:
+> **NOTE**: You can add `-verbose` to list the number of entries present in each feed, and get an idea of the age of entries.
+
+Removing a feed from the list is done by specifying the item to remove:
 
      $ rss2email delete https://example.com/foo.rss
 
@@ -87,7 +89,7 @@ Once you've added your feeds you should then add the binary to your
 `crontab`, to ensure it runs regularly to actually send you the emails.
 You should add something similar to this to your `crontab`:
 
-     # Announce feed-changes via email
+     # Announce feed-changes via email four times an hour
      */15 * * * * $HOME/go/bin/rss2email cron recipient@example.com
 
 When new items appear in the feeds they will then be sent to you via email.
@@ -101,6 +103,8 @@ the things you care about:
 
 If you wish you may customize the template which is used to generate the notification email, see [customization](#customization) for details.
 
+We record the state of feed-entries beneath `~/.rss2email/seen`, and these entries are automatically pruned over time.
+
 
 ## Initial Run
 
@@ -108,13 +112,13 @@ When you add a new feed all the items will initially be unseen/new, and
 this means you'll receive a flood of emails if you were to run:
 
      $ rss2email add https://blog.steve.fi/index.rss
-     $ rss2email cron
+     $ rss2email cron user@domain.com
 
 To avoid this you can use the `-send=false` flag, which will merely
 record each item as having been seen, rather than sending you emails:
 
      $ rss2email add https://blog.steve.fi/index.rss
-     $ rss2email cron -send=false
+     $ rss2email cron -send=false user@domain.com
 
 
 # Assumptions
@@ -124,6 +128,8 @@ Because this application is so minimal there are a number of assumptions baked i
 * We assume that `/usr/sbin/sendmail` exists and will send email successfully.
 * We assume the recipient and sender email addresses can be the same.
   * i.e. If you mail output to `bob@example.com` that will be used as the sender address.
+  * You can change the default sender via the [customization](#customization) process described next if you prefer though.
+
 
 
 # Customization
