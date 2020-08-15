@@ -5,13 +5,11 @@
 package main
 
 import (
-	"context"
 	"flag"
 	"fmt"
 	"os"
 	"strings"
 
-	"github.com/google/subcommands"
 	"github.com/k3a/html2text"
 	"github.com/skx/rss2email/feedlist"
 	"github.com/skx/rss2email/withstate"
@@ -21,10 +19,10 @@ import (
 // processes each feed item found within it.
 //
 // Feed items which are new/unread will generate an email.
-func (p *cronCmd) ProcessURL(input string) error {
+func (c *cronCmd) ProcessURL(input string) error {
 
 	// Show what we're doing.
-	if p.verbose {
+	if c.verbose {
 		fmt.Printf("Fetching: %s\n", input)
 	}
 
@@ -34,7 +32,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 		return err
 	}
 
-	if p.verbose {
+	if c.verbose {
 		fmt.Printf("\tFound %d entries\n", len(feed.Items))
 	}
 
@@ -48,12 +46,12 @@ func (p *cronCmd) ProcessURL(input string) error {
 		if item.IsNew() {
 
 			// Show the new item.
-			if p.verbose {
+			if c.verbose {
 				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
 			}
 
 			// If we're supposed to send email then do that
-			if p.send {
+			if c.send {
 
 				// The body should be stored in the
 				// "Content" field.
@@ -70,7 +68,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(feed, item, p.emails, text, content)
+				err := SendMail(feed, item, c.emails, text, content)
 				if err != nil {
 					return err
 				}
@@ -89,7 +87,7 @@ func (p *cronCmd) ProcessURL(input string) error {
 	return nil
 }
 
-// The options set by our command-line flags.
+// Structure for our options and state.
 type cronCmd struct {
 	// Should we be verbose in operation?
 	verbose bool
@@ -102,13 +100,11 @@ type cronCmd struct {
 	send bool
 }
 
-//
-// Glue
-//
-func (*cronCmd) Name() string     { return "cron" }
-func (*cronCmd) Synopsis() string { return "Send emails for each new entry in our feed lists." }
-func (*cronCmd) Usage() string {
-	return `This sub-command polls all configured feeds, sending an email for
+// Info is part of the subcommand-API.
+func (c *cronCmd) Info() (string, string) {
+	return "cron", `Send emails for each new entry in our feed lists.
+
+This sub-command polls all configured feeds, sending an email for
 each item which is new.
 
 We record details of all the feed-items which have been seen beneath
@@ -137,32 +133,30 @@ Flags:
 `
 }
 
-//
-// Flag setup
-//
-func (p *cronCmd) SetFlags(f *flag.FlagSet) {
-	f.BoolVar(&p.verbose, "verbose", false, "Should we be extra verbose?")
-	f.BoolVar(&p.send, "send", true, "Should we send emails, or just pretend to?")
+// Arguments handles our flag-setup.
+func (c *cronCmd) Arguments(f *flag.FlagSet) {
+	f.BoolVar(&c.verbose, "verbose", false, "Should we be extra verbose?")
+	f.BoolVar(&c.send, "send", true, "Should we send emails, or just pretend to?")
 }
 
 //
-// Entry-point.
+// Entry-point
 //
-func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) subcommands.ExitStatus {
+func (c *cronCmd) Execute(args []string) int {
 
 	// No argument?  That's a bug
-	if len(f.Args()) == 0 {
+	if len(args) == 0 {
 		fmt.Printf("Usage: rss2email cron email1@example.com .. emailN@example.com\n")
-		return subcommands.ExitFailure
+		return 1
 	}
 
 	// Save each argument away, checking it is fully-qualified.
-	for _, email := range f.Args() {
+	for _, email := range args {
 		if strings.Contains(email, "@") {
-			p.emails = append(p.emails, email)
+			c.emails = append(c.emails, email)
 		} else {
 			fmt.Printf("Usage: rss2email cron [flags] email1 .. emailN\n")
-			return subcommands.ExitFailure
+			return 1
 		}
 	}
 
@@ -183,7 +177,7 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		//
 		// Handle it.
 		//
-		err := p.ProcessURL(uri)
+		err := c.ProcessURL(uri)
 		if err != nil {
 			errors = append(errors, fmt.Sprintf("error processing %s - %s\n", uri, err))
 		}
@@ -194,7 +188,7 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		errors = append(errors, err.Error())
 	}
 
-	if p.verbose && prunedCount > 0 {
+	if c.verbose && prunedCount > 0 {
 		fmt.Printf("Pruned %d entry state files\n", prunedCount)
 	}
 
@@ -209,11 +203,11 @@ func (p *cronCmd) Execute(_ context.Context, f *flag.FlagSet, _ ...interface{}) 
 		}
 
 		// Use a suitable exit-code.
-		return subcommands.ExitFailure
+		return 1
 	}
 
 	//
 	// All good.
 	//
-	return subcommands.ExitSuccess
+	return 0
 }
