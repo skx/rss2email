@@ -10,6 +10,7 @@ Table of Contents
 * [Installation](#installation)
   * [Build without Go Modules (Go before 1.11)](#build-without-go-modules-go-before-111)
   * [Build with Go Modules (Go 1.11 or higher)](#build-with-go-modules-go-111-or-higher)
+  * [bash completion](#bash-completion)
 * [Configuration & Usage](#configuration--usage)
   * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
@@ -50,15 +51,26 @@ There are two ways to install this project from source, which depend on the vers
 
 If you prefer you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
+
 ## Build without Go Modules (Go before 1.11)
 
     go get -u github.com/skx/rss2email
+
 
 ## Build with Go Modules (Go 1.11 or higher)
 
     git clone https://github.com/skx/rss2email ;# make sure to clone outside of GOPATH
     cd rss2email
     go install
+
+
+## bash completion
+
+The binary has integrated support for TAB-completion, for bash.  To enable this update your [dotfiles](https://github.com/skx/dotfiles/) to include the following:
+
+```
+source <(./rss2email bash-completion)
+```
 
 
 # Configuration & Usage
