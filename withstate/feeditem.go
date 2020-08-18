@@ -7,7 +7,6 @@ package withstate
 
 import (
 	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -46,7 +45,7 @@ func (item *FeedItem) RecordSeen() {
 	// Get the file-path
 	file := item.path()
 
-	if _, err := os.Stat(file); os.IsExist(err) {
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
 		t := time.Now()
 		_ = os.Chtimes(file, t, t)
 		return
@@ -92,13 +91,13 @@ func stateDirectory() string {
 // the seen vs. unseen state of a particular entry.
 func (item *FeedItem) path() string {
 
-	// Hash the item GUID
-	hasher := sha1.New()
-	hasher.Write([]byte(item.GUID))
-	hashBytes := hasher.Sum(nil)
+	guid := item.GUID
+	if guid == "" {
+		guid = item.Link
+	}
 
-	// Hexadecimal conversion
-	hexSha1 := hex.EncodeToString(hashBytes)
+	// Hash the item GUID and convert to hexadecimal
+	hexSha1 := fmt.Sprintf("%x", sha1.Sum([]byte(guid)))
 
 	// Finally join the path
 	out := path.Join(stateDirectory(), hexSha1)
