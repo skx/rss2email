@@ -41,7 +41,7 @@ func (item *FeedItem) RecordSeen() {
 	// Get the file-path
 	file := item.path()
 
-	if _, err := os.Stat(file); os.IsExist(err) {
+	if _, err := os.Stat(file); !os.IsNotExist(err) {
 		t := time.Now()
 		_ = os.Chtimes(file, t, t)
 		return
