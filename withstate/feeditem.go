@@ -7,7 +7,6 @@ package withstate
 
 import (
 	"crypto/sha1"
-	"encoding/hex"
 	"fmt"
 	"io/ioutil"
 	"os"
@@ -86,13 +85,8 @@ func (item *FeedItem) path() string {
 		guid = item.Link
 	}
 
-	// Hash the item GUID
-	hasher := sha1.New()
-	hasher.Write([]byte(guid))
-	hashBytes := hasher.Sum(nil)
-
-	// Hexadecimal conversion
-	hexSha1 := hex.EncodeToString(hashBytes)
+	// Hash the item GUID and convert to hexadecimal
+	hexSha1 := fmt.Sprintf("%x", sha1.Sum([]byte(guid)))
 
 	// Finally join the path
 	out := path.Join(stateDirectory(), hexSha1)
