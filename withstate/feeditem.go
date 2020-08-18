@@ -81,9 +81,14 @@ func stateDirectory() string {
 // the seen vs. unseen state of a particular entry.
 func (item *FeedItem) path() string {
 
+	guid := item.GUID
+	if guid == "" {
+		guid = item.Link
+	}
+
 	// Hash the item GUID
 	hasher := sha1.New()
-	hasher.Write([]byte(item.GUID))
+	hasher.Write([]byte(guid))
 	hashBytes := hasher.Sum(nil)
 
 	// Hexadecimal conversion
