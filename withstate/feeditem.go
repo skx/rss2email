@@ -17,6 +17,10 @@ import (
 	"github.com/mmcdole/gofeed"
 )
 
+// statePrefix holds the prefix directory, and is used to
+// allow changes during testing
+var statePrefix string
+
 // FeedItem is a structure wrapping a gofeed.Item, to allow us to record
 // state.
 type FeedItem struct {
@@ -61,6 +65,12 @@ func (item *FeedItem) RecordSeen() {
 // stateDirectory returns the directory beneath which we store state
 func stateDirectory() string {
 
+	// If we've found it already, or we've mocked it, then
+	// return the appropriate value
+	if statePrefix != "" {
+		return statePrefix
+	}
+
 	// Default to using $HOME
 	home := os.Getenv("HOME")
 
@@ -72,8 +82,9 @@ func stateDirectory() string {
 		}
 	}
 
-	// Return with a subdirectory
-	return path.Join(home, ".rss2email", "seen")
+	// Store the path for the future, and return it.
+	statePrefix = path.Join(home, ".rss2email", "seen")
+	return statePrefix
 }
 
 // path returns an appropriate marker-file, which is used to record
