@@ -20,9 +20,10 @@ Table of Contents
 * [Github Setup](#github-setup)
 
 
+
 # RSS2Email
 
-This project began life as a naive port of the python-based [r2e](https://github.com/wking/rss2email) I used for many years to golang.
+This project began life as a naive port of the python-based [r2e](https://github.com/wking/rss2email) utility to golang.
 
 Over time we've now gained a few more features:
 
@@ -30,6 +31,8 @@ Over time we've now gained a few more features:
   * See [email customization](#email-customization) for details.
 * The ability to send email via STMP, or via `/usr/sbin/sendmail`.
   * See [SMTP-setup](#smtp-setup) for details.
+
+
 
 ## Rationale
 
@@ -48,8 +51,7 @@ me to remove a bunch of Python packages I otherwise had no need for:
        python3-html5lib python3-lxml python3-six python3-webencodings
       0 upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
 
-This project, being built in go, is self-contained and easy to deploy without the need for additional external libraries.
-
+This project is self-contained binary, and easy to deploy without the need for additional external libraries.
 
 
 
@@ -83,9 +85,7 @@ source <(./rss2email bash-completion)
 
 # Feed Configuration
 
-Once you have installed the application you'll need to configure the feeds to monitor - these are stored in `~/.rss2email/feeds` and you can create/edit that file by hand if you wish.
-
-We do have some built-in commands for manipulating the feed-list though, for example you can add a new feed use the `add` sub-command:
+Once you have installed the application you'll need to configure the feeds to monitor.  The list of URLs to monitor are stored in `~/.rss2email/feeds` and you can create/edit that file by hand if you wish.  However we do have several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
 
@@ -97,16 +97,16 @@ The list of feeds can be displayed via the `list` subcommand:
 
      $ rss2email list
 
-> **NOTE**: You can add `-verbose` to list the number of entries present in each feed, and get an idea of the age of entries.
+> **NOTE**: You can add `-verbose` to list the number of entries present in each feed, and get an idea of the age of entries.  This will be a little slow as URLs are fetched to process them.
 
-Removing a feed from the list is done by specifying the item to remove:
+Finally you can remove an entry from the feed-list via the `delete` sub-command:
 
      $ rss2email delete https://example.com/foo.rss
 
 
 # Usage
 
-Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing `~/.rss2email/feeds` you are now ready to actually launch the application.
+Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing `~/.rss2email/feeds` directly, you are now ready to actually launch the application.
 
 To run the application, announcing all new feed-items by email to `user@host.com` you'd run this:
 
@@ -126,14 +126,15 @@ the things you care about:
 * The subject/title of the new feed item.
 * The HTML and Text content of the new feed item.
 
-If you wish you may customize the template which is used to generate the notification email, see [customization](#customization) for details.  It is also possible to run in a [daemon mode](#daemon-mode).
+If you wish you may customize the template which is used to generate the notification email, see [email-customization](#email-customization) for details.  It is also possible to run in a [daemon mode](#daemon-mode) which will leave the process running forever, rather than terminating after walking the feeds once.
 
-We record the state of feed-entries beneath `~/.rss2email/seen`, and these entries are automatically pruned over time.
+The state of feed-entries is recorded beneath `~/.rss2email/seen`, which is how we keep track of which items are new/unseen.  These entries are automatically pruned over time, to avoid filling your disk forever.
+
 
 
 # Daemon Mode
 
-Typically you'd invoke `rss2email` with the `cron` sub-command, this would:
+Typically you'd invoke `rss2email` with the `cron` sub-command as we documented above.  This works in the naive way you'd expect:
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
@@ -178,17 +179,17 @@ Because this application is so minimal there are a number of assumptions baked i
 
 # SMTP Setup
 
-By default outgoing emails are passed to `/usr/sbin/sendmail`.  If that is unavailable, or unsuitable, you can instead configure things such that SMTP is used directly.
+By default the outgoing emails we generate are piped to `/usr/sbin/sendmail` to be delivered.  If that is unavailable, or unsuitable, you can instead configure things such that SMTP is used directly.
 
-To configure SMTP you need to setup the following environmental-variables (environmental variables were selected as they're natural to use within Docker and systemd-service files.
+To configure SMTP you need to setup the following environmental-variables (environmental variables were selected as they're natural to use within Docker and systemd-service files).
 
 
-| Name          | Usage           |
-|---------------|-----------------|
-| SMTP_HOST     | smtp.gmail.com  |
-| SMTP_PORT     | 587             |
-| SMTP_USERNAME | bob@example.com |
-| SMTP_PASSWORD | secret!value    |
+| Name              | Usage           |
+|-------------------|-----------------|
+| **SMTP_HOST**     | smtp.gmail.com  |
+| **SMTP_PORT**     | 587             |
+| **SMTP_USERNAME** | bob@example.com |
+| **SMTP_PASSWORD** | secret!value    |
 
 If those values are present then SMTP will be used, otherwise the email will be sent via the local MTA.
 
