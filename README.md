@@ -13,8 +13,8 @@ Table of Contents
   * [bash completion](#bash-completion)
 * [Feed Configuration](#feed-configuration)
 * [Usage](#usage)
-* [Daemon Mode)(#daemon-mode)
-  * [Initial Run](#initial-run)
+* [Daemon Mode](#daemon-mode)
+* [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
 * [Email Customization](#email-customization)
 * [Github Setup](#github-setup)
@@ -150,7 +150,7 @@ In short the process runs forever, in the foreground.  This is expected to be dr
 
 
 
-## Initial Run
+# Initial Run
 
 When you add a new feed all the items contained within that feed will initially be unseen/new, and this means you'll receive a flood of emails if you were to run:
 
