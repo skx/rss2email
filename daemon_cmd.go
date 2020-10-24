@@ -69,7 +69,7 @@ func (d *daemonCmd) Execute(args []string) int {
 		}
 	}
 
-	for true {
+	for {
 
 		// Create the helper
 		p := processor.New()
