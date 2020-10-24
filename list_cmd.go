@@ -10,6 +10,7 @@ import (
 	"os"
 
 	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/template"
 )
 
 // Structure for our options and state.
@@ -56,7 +57,7 @@ func (l *listCmd) Execute(args []string) int {
 	if l.template {
 
 		// Load the default template from the embedded resource.
-		content, err := getResource("data/email.tmpl")
+		content, err := template.EmailTemplate()
 		if err != nil {
 			fmt.Printf("failed to load embedded resource: %s\n", err.Error())
 			os.Exit(1)
