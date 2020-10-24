@@ -88,7 +88,7 @@ func (d *daemonCmd) Execute(args []string) int {
 		}
 
 		if d.verbose {
-			fmt.Printf("sleeping for 15 minutes")
+			fmt.Printf("sleeping for 15 minutes\n")
 		}
 		time.Sleep(60 * 15 * time.Second)
 	}
