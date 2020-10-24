@@ -54,7 +54,7 @@ func (l *listCmd) Execute(args []string) int {
 
 	if l.template {
 
-		fmt.Fprintln(os.Stderr, "'rss2email list -template' was replaced by 'rss2email list-default-template'\n")
+		fmt.Fprintln(os.Stderr, "'rss2email list -template' was replaced by 'rss2email list-default-template'")
 		return 1
 	}
 
