@@ -147,7 +147,10 @@ The `daemon` process does exactly the same thing, however it does __not__ termin
 * Sleep for 15 minutes.
 * Begin the process once more.
 
-In short the process runs forever, in the foreground.  This is expected to be driven by `docker` or a systemd-service.  Creating the appropriate configuration is currently left as an exercise to the user.
+In short the process runs forever, in the foreground.  This is expected to be driven by `docker` or a systemd-service.  Creating the appropriate configuration is left as an exercise, but you might examine the following two files for inspiration:
+
+* [Dockerfile](Dockerfile)
+* [docker-compose.yml](docker-compose.yml)
 
 
 
