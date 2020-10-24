@@ -184,12 +184,12 @@ By default the outgoing emails we generate are piped to `/usr/sbin/sendmail` to 
 To configure SMTP you need to setup the following environmental-variables (environmental variables were selected as they're natural to use within Docker and systemd-service files).
 
 
-| Name              | Usage           |
-|-------------------|-----------------|
-| **SMTP_HOST**     | smtp.gmail.com  |
-| **SMTP_PORT**     | 587             |
-| **SMTP_USERNAME** | bob@example.com |
-| **SMTP_PASSWORD** | secret!value    |
+| Name              | Example Value     |
+|-------------------|-------------------|
+| **SMTP_HOST**     | `smtp.gmail.com`  |
+| **SMTP_PORT**     | `587`             |
+| **SMTP_USERNAME** | `bob@example.com` |
+| **SMTP_PASSWORD** | `secret!value`    |
 
 If those values are present then SMTP will be used, otherwise the email will be sent via the local MTA.
 
