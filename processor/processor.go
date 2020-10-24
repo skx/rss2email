@@ -1,3 +1,6 @@
+// Package processor contains the code which will actually poll
+// the list of URLs the user is watching, and send emails for those
+// entries which are new.
 package processor
 
 import (
@@ -46,11 +49,13 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		}
 	}
 
+	// Prune old state files
 	prunedCount, pruneErrors := withstate.PruneStateFiles()
-	for _, err := range pruneErrors {
-		errors = append(errors, err)
-	}
 
+	// If we got any errors propagate them
+	errors = append(errors, pruneErrors...)
+
+	// Show what we did, if we should
 	if p.verbose && prunedCount > 0 {
 		fmt.Printf("Pruned %d entry state files\n", prunedCount)
 	}
