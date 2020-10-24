@@ -4,7 +4,7 @@
 // have both a text and a HTML part to it.
 //
 
-package main
+package processor
 
 import (
 	"bytes"
@@ -20,6 +20,7 @@ import (
 	"text/template"
 
 	"github.com/mmcdole/gofeed"
+	emailtemplate "github.com/skx/rss2email/template"
 	"github.com/skx/rss2email/withstate"
 )
 
@@ -38,7 +39,7 @@ func setupTemplate() *template.Template {
 	}
 
 	// Load the default template from the embedded resource.
-	content, err := getResource("data/email.tmpl")
+	content, err := emailtemplate.EmailTemplate()
 	if err != nil {
 		fmt.Printf("failed to load embedded resource: %s\n", err.Error())
 		os.Exit(1)

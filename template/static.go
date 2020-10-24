@@ -3,7 +3,8 @@
 //
 // Local edits will be lost.
 //
-package main
+
+package template
 
 import (
 	"bytes"

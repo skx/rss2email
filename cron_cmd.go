@@ -10,91 +10,13 @@ import (
 	"os"
 	"strings"
 
-	"github.com/k3a/html2text"
-	"github.com/skx/rss2email/feedlist"
-	"github.com/skx/rss2email/withstate"
+	"github.com/skx/rss2email/processor"
 )
-
-// ProcessURL takes an URL as input, fetches the contents, and then
-// processes each feed item found within it.
-//
-// Feed items which are new/unread will generate an email.
-func (c *cronCmd) ProcessURL(input string) error {
-
-	// Show what we're doing.
-	if c.verbose {
-		fmt.Printf("Fetching: %s\n", input)
-	}
-
-	// Fetch the feed for the input URL
-	feed, err := feedlist.Feed(input)
-	if err != nil {
-		return err
-	}
-
-	if c.verbose {
-		fmt.Printf("\tFound %d entries\n", len(feed.Items))
-	}
-
-	// For each entry in the feed ..
-	for _, xp := range feed.Items {
-
-		// Wrap it so we can use our helper methods
-		item := withstate.FeedItem{Item: xp}
-
-		// If we've not already notified about this one.
-		if item.IsNew() {
-
-			// Show the new item.
-			if c.verbose {
-				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
-			}
-
-			// If we're supposed to send email then do that
-			if c.send {
-
-				// The body should be stored in the
-				// "Content" field.
-				content := item.Content
-
-				// If the Content field is empty then
-				// use the Description instead, if it
-				// is non-empty itself.
-				if (content == "") && item.Description != "" {
-					content = item.Description
-				}
-
-				// Convert the content to text.
-				text := html2text.HTML2Text(content)
-
-				// Send the mail
-				err := SendMail(feed, item, c.emails, text, content)
-				if err != nil {
-					return err
-				}
-			}
-		}
-
-		// Mark the item as having been seen, after the
-		// email was sent.
-		//
-		// This does run the risk that sending mail
-		// fails, due to error, and that keeps happening
-		// forever...
-		item.RecordSeen()
-	}
-
-	return nil
-}
 
 // Structure for our options and state.
 type cronCmd struct {
 	// Should we be verbose in operation?
 	verbose bool
-
-	// Emails has the list of emails to which we should send our
-	// notices
-	emails []string
 
 	// Should we send emails?
 	send bool
@@ -150,64 +72,37 @@ func (c *cronCmd) Execute(args []string) int {
 		return 1
 	}
 
+	// The list of addresses to which we should send our notices.
+	recipients := []string{}
+
 	// Save each argument away, checking it is fully-qualified.
 	for _, email := range args {
 		if strings.Contains(email, "@") {
-			c.emails = append(c.emails, email)
+			recipients = append(recipients, email)
 		} else {
 			fmt.Printf("Usage: rss2email cron [flags] email1 .. emailN\n")
 			return 1
 		}
 	}
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Create the helper
+	p := processor.New()
 
-	//
-	// If we receive errors we'll store them here,
-	// so we can keep processing subsequent URIs.
-	//
-	var errors []string
+	// Setup the state
+	p.SetVerbose(c.verbose)
+	p.SetSendEmail(c.send)
 
-	//
-	// For each entry in the list ..
-	//
-	for _, uri := range list.Entries() {
+	errors := p.ProcessFeeds(recipients)
 
-		//
-		// Handle it.
-		//
-		err := c.ProcessURL(uri)
-		if err != nil {
-			errors = append(errors, fmt.Sprintf("error processing %s - %s\n", uri, err))
-		}
-	}
-
-	prunedCount, pruneErrors := withstate.PruneStateFiles()
-	for _, err := range pruneErrors {
-		errors = append(errors, err.Error())
-	}
-
-	if c.verbose && prunedCount > 0 {
-		fmt.Printf("Pruned %d entry state files\n", prunedCount)
-	}
-
-	//
-	// If we found errors then handle that.
-	//
+	// If we found errors then show them.
 	if len(errors) > 0 {
-
-		// Show each error to STDERR
 		for _, err := range errors {
-			fmt.Fprintln(os.Stderr, err)
+			fmt.Fprintln(os.Stderr, err.Error())
 		}
 
-		// Use a suitable exit-code.
 		return 1
 	}
 
-	//
 	// All good.
-	//
 	return 0
 }

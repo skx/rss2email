@@ -153,6 +153,7 @@ If you're a developer who wishes to submit changes to the embedded version you s
 * First of all edit `data/email.tmpl`, this is the source of the template.
 * Next run the [implant](https://github.com/skx/implant) tool.
   * This is responsible for reading the file, and embedding it into the file `static.go`, which is then included in the binary when the project is compiled.
+  * You'll run `implant -package template -output ./template/static.go`
 * Rebuild the application to update the embedded copy `go build .`
   * This will ensure that the changes you made to `data/email.tmpl` are actually contained within your binary, and will be used the next time you launch it.
 
