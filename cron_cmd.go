@@ -53,9 +53,6 @@ modified like so:
 
     $ rss2email list -template > ~/.rss2email/email.tmpl
 
-
-Flags:
-
 `
 }
 

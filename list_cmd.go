@@ -32,10 +32,6 @@ Example:
 
     $ rss2email list
     $ rss2email list -verbose
-
-
-Flags:
-
 `
 }
 
