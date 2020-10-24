@@ -13,10 +13,12 @@ import (
 	"html"
 	"io/ioutil"
 	"mime/quotedprintable"
+	"net/smtp"
 	"os"
 	"os/exec"
 	"os/user"
 	"path"
+	"strconv"
 	"text/template"
 
 	"github.com/mmcdole/gofeed"
@@ -182,8 +184,17 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 		}
 
 		//
-		// Prepare to run sendmail, with a pipe we can write our
-		// message to.
+		// Are we sending via SMTP?
+		//
+		if isSMTP() {
+
+			// Send it.
+			return sendSMTP(addr, buf.Bytes())
+		}
+
+		//
+		// OK we're not using SMTP, so we prepare to run via sendmail,
+		// with a pipe we can write the message into
 		//
 		sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", addr, addr)
 		stdin, err := sendmail.StdinPipe()
@@ -228,4 +239,54 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 		}
 	}
 	return nil
+}
+
+// isSMTP determines whether we should use SMTP to send the email.
+//
+// We just check to see that the obvious mandatory parameters are set in the
+// environment.  If they're wrong we'll get an error at delivery time, as
+// expected.
+func isSMTP() bool {
+
+	// Mandatory environmental variables
+	vars := []string{"SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD"}
+
+	for _, name := range vars {
+		if os.Getenv(name) == "" {
+			return false
+		}
+	}
+
+	return true
+}
+
+// sendSMTP sends the content of the email to the destination address
+// via SMTP.
+func sendSMTP(to string, content []byte) error {
+
+	// basics
+	host := os.Getenv("SMTP_HOST")
+	port := os.Getenv("SMTP_PORT")
+
+	p := 587
+	if port != "" {
+		n, err := strconv.Atoi(port)
+		if err != nil {
+			return err
+		}
+		p = n
+	}
+
+	// auth
+	user := os.Getenv("SMTP_USERNAME")
+	pass := os.Getenv("SMTP_PASSWORD")
+
+	// Authenticate
+	auth := smtp.PlainAuth("", user, pass, host)
+
+	addr := fmt.Sprintf("%s:%d", host, p)
+
+	err := smtp.SendMail(addr, auth, to, []string{to}, content)
+
+	return err
 }

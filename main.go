@@ -35,6 +35,7 @@ func main() {
 	//
 	subcommands.Register(&addCmd{})
 	subcommands.Register(&cronCmd{})
+	subcommands.Register(&daemonCmd{})
 	subcommands.Register(&delCmd{})
 	subcommands.Register(&exportCmd{})
 	subcommands.Register(&importCmd{})

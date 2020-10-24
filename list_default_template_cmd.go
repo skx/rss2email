@@ -23,7 +23,12 @@ func (l *listDefaultTemplateCmd) Info() (string, string) {
 This command outputs the default template which is used to generate the
 emails which are sent.
 
-If you create a new template located at ~/.rss2email/
+If you create a new template located at ~/.rss2email/email.tmpl this will
+be used in preference to the default file.  So this sub-command can be used
+to give you a starting point for your edits:
+
+   $ rss2email list-default-template > ~/.rss2email/email.tmpl
+
 
 Example:
 

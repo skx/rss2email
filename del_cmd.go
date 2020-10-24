@@ -22,7 +22,7 @@ type delCmd struct {
 func (d *delCmd) Info() (string, string) {
 	return "delete", `Remove a feed from our feed-list.
 
-Remove one or more specified URLs to our feed-list.
+Remove one or more specified URLs from our feed-list.
 
 Example:
 
