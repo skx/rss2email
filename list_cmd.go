@@ -26,9 +26,7 @@ type listCmd struct {
 func (l *listCmd) Info() (string, string) {
 	return "list", `Output the list of feeds which are being polled.
 
-By default this subcommand lists the configured feeds which will be
-polled, however it also allows you to dump the default email-template.
-
+This subcommand lists the configured feeds which will be polled.
 
 Example:
 

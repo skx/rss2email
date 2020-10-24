@@ -35,6 +35,10 @@ when the corresponding entries have fallen out of the source feed.
 
 The list of feeds is read from '~/.rss2email/feeds'.
 
+By default we pipe outgoing messages to /usr/sbin/sendmail for delivery,
+however if you configure the appropriate environmental variables SMTP
+can be used for direct emailing.
+
 
 Example:
 
