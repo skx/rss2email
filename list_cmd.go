@@ -10,7 +10,6 @@ import (
 	"os"
 
 	"github.com/skx/rss2email/feedlist"
-	"github.com/skx/rss2email/template"
 )
 
 // Structure for our options and state.
@@ -35,7 +34,6 @@ Example:
 
     $ rss2email list
     $ rss2email list -verbose
-    $ rss2email list -template
 
 
 Flags:
@@ -56,15 +54,8 @@ func (l *listCmd) Execute(args []string) int {
 
 	if l.template {
 
-		// Load the default template from the embedded resource.
-		content, err := template.EmailTemplate()
-		if err != nil {
-			fmt.Printf("failed to load embedded resource: %s\n", err.Error())
-			os.Exit(1)
-		}
-
-		fmt.Printf("%s\n", string(content))
-		return 0
+		fmt.Fprintln(os.Stderr, "'rss2email list -template' was replaced by 'rss2email list-default-template'\n")
+		return 1
 	}
 
 	// Get the feed-list, from the default location.

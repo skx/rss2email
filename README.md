@@ -148,6 +148,16 @@ Because this application is so minimal there are a number of assumptions baked i
 
 By default the emails are sent using a template file which is embedded in the application.  You can override the template by creating the file `~/.rss2email/email.tmpl`, if that is present then it will be used instead of the default.
 
+You can copy the default-template to the right location by running the following, before proceeding to edit it as you wish:
+
+    $ rss2email list-default-template > ~/.rss2email/email.tmpl
+
+You can view the default template via the following command:
+
+    $ rss2email list-default-template
+
+The default template contains a brief header documenting the available fields, and functions, which you can use.  As the template uses the standard Golang [text/template](https://golang.org/pkg/text/template/) facilities you can be pretty creative with it!
+
 If you're a developer who wishes to submit changes to the embedded version you should carry out the three-step process to make your change.
 
 * First of all edit `data/email.tmpl`, this is the source of the template.
@@ -156,12 +166,6 @@ If you're a developer who wishes to submit changes to the embedded version you s
   * You'll run `implant -package template -output ./template/static.go`
 * Rebuild the application to update the embedded copy `go build .`
   * This will ensure that the changes you made to `data/email.tmpl` are actually contained within your binary, and will be used the next time you launch it.
-
-You can view the default template via the following command:
-
-    $ rss2email list -template
-
-The default template contains a brief header documenting the available fields, and functions, which you can use.  As the template uses the standard Golang [text/template](https://golang.org/pkg/text/template/) facilities you can be pretty creative with it!
 
 
 
