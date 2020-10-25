@@ -284,8 +284,10 @@ func sendSMTP(to string, content []byte) error {
 	// Authenticate
 	auth := smtp.PlainAuth("", user, pass, host)
 
+	// Get the mailserver
 	addr := fmt.Sprintf("%s:%d", host, p)
 
+	// Send the mail
 	err := smtp.SendMail(addr, auth, to, []string{to}, content)
 
 	return err
