@@ -144,7 +144,9 @@ The `daemon` process does exactly the same thing, however it does __not__ termin
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
-* Sleep for 15 minutes.
+* Sleep for 15 minutes by default.
+  * Set the `SLEEP` environmental variable if you wish to change this.
+  * e.g. "`export SLEEP=5`" will cause a five minute delay between restarts.
 * Begin the process once more.
 
 In short the process runs forever, in the foreground.  This is expected to be driven by `docker` or a systemd-service.  Creating the appropriate configuration is left as an exercise, but you might examine the following two files for inspiration:

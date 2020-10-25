@@ -8,6 +8,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -87,10 +88,22 @@ func (d *daemonCmd) Execute(args []string) int {
 			}
 		}
 
-		if d.verbose {
-			fmt.Printf("sleeping for 15 minutes\n")
+		// Default time to sleep - in minutes
+		n := 15
+
+		// Get the user's sleep period
+		sleep := os.Getenv("SLEEP")
+		if sleep != "" {
+			v, err := strconv.Atoi(sleep)
+			if err == nil {
+				n = v
+			}
 		}
-		time.Sleep(60 * 15 * time.Second)
+
+		if d.verbose {
+			fmt.Printf("sleeping for %d minutes.\n", n)
+		}
+		time.Sleep(60 * time.Duration(n) * time.Second)
 	}
 
 	// All good.
