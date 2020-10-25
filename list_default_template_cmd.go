@@ -18,14 +18,17 @@ type listDefaultTemplateCmd struct {
 
 // Info is part of the subcommand-API
 func (l *listDefaultTemplateCmd) Info() (string, string) {
-	return "list-default-template", `Output the default email-template.
+	return "list-default-template", `Display the default email-template.
 
-This command outputs the default template which is used to generate the
-emails which are sent.
+An embedded template is used to format the emails which are sent by this
+application, when new feed items are discovered.  If you wish to change
+the way the emails are formed, or formatted, you can replace this template
+with a local copy.
 
-If you create a new template located at ~/.rss2email/email.tmpl this will
-be used in preference to the default file.  So this sub-command can be used
-to give you a starting point for your edits:
+To replace the template which is used simple create a new file located at
+'~/.rss2email/email.tmpl', with your content.
+
+This sub-command can be used to give you a starting point for your edits:
 
    $ rss2email list-default-template > ~/.rss2email/email.tmpl
 
@@ -33,8 +36,6 @@ to give you a starting point for your edits:
 Example:
 
     $ rss2email list-default-template
-
-
 `
 }
 

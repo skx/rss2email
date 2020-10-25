@@ -27,32 +27,37 @@ func (c *cronCmd) Info() (string, string) {
 	return "cron", `Send emails for each new entry in our feed lists.
 
 This sub-command polls all configured feeds, sending an email for
-each item which is new.
+new item in those feeds.
+
+The list of feeds is read from '~/.rss2email/feeds'.
 
 We record details of all the feed-items which have been seen beneath
  '~/.rss2email/seen/', and these entries will be expired automatically
 when the corresponding entries have fallen out of the source feed.
 
-The list of feeds is read from '~/.rss2email/feeds'.
-
-By default we pipe outgoing messages to /usr/sbin/sendmail for delivery,
-however if you configure the appropriate environmental variables SMTP
-can be used for direct emailing.
-
-
 Example:
 
     $ rss2email cron user1@example.com user2@example.com
 
-Customization:
 
-An embedded template is used to generate the emails which are sent, this
-may be overridden via the creation of a local template-file located at
-'~/.rss2email/email.tmpl'.  The default template can be exported and
-modified like so:
+Email Sending:
 
-    $ rss2email list -template > ~/.rss2email/email.tmpl
+By default we pipe outgoing messages through '/usr/sbin/sendmail' for delivery,
+however it is possible to use SMTP for sending emails directly.  If you
+wish to use SMTP you need to configure the following environmental variables:
 
+    SMTP_HOST       (e.g. "smtp.gmail.com")
+    SMTP_PORT       (e.g. "587")
+    SMTP_USERNAME   (e.g. "user@domain.com")
+    SMTP_PASSWORD   (e.g. "secret!word#here")
+
+
+Email Template:
+
+An embedded template is used to generate the emails which are sent, you
+may create a local override for this, for more details see :
+
+    $ rss2email help list-default-template
 `
 }
 
