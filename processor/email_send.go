@@ -26,19 +26,9 @@ import (
 	"github.com/skx/rss2email/withstate"
 )
 
-var (
-	// The compiled template we use to generate our email
-	tmpl *template.Template
-)
-
 // setupTemplate loads the template we use for generating the email
 // notification.
 func setupTemplate() *template.Template {
-
-	// Already setup?  Return the template
-	if tmpl != nil {
-		return tmpl
-	}
 
 	// Load the default template from the embedded resource.
 	content, err := emailtemplate.EmailTemplate()
@@ -81,7 +71,7 @@ func setupTemplate() *template.Template {
 		"quoteprintable": toQuotedPrintable,
 	}
 
-	tmpl = template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
+	tmpl := template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
 
 	return tmpl
 }
