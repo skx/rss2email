@@ -5,7 +5,14 @@
 // the template-listing command.
 package template
 
+import (
+	_ "embed"
+)
+
+//go:embed template.txt
+var message string
+
 // EmailTemplate returns the embedded email template.
 func EmailTemplate() ([]byte, error) {
-	return getResource("data/email.tmpl")
+	return []byte(message), nil
 }
