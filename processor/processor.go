@@ -8,6 +8,7 @@ import (
 
 	"github.com/k3a/html2text"
 	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/processor/emailer"
 	"github.com/skx/rss2email/withstate"
 )
 
@@ -116,7 +117,8 @@ func (p *Processor) processURL(input string, recipients []string) error {
 				text := html2text.HTML2Text(content)
 
 				// Send the mail
-				err := SendMail(feed, item, recipients, text, content)
+				helper := emailer.New(feed, item)
+				err := helper.Sendmail(recipients, text, content)
 				if err != nil {
 					return err
 				}

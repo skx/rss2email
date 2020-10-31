@@ -1,10 +1,15 @@
-// This file contains the code which is used to send email.
+// Package emailer is responsible for sending out a feed
+// item via email.
 //
-// Emails are sent via a simple text/template, and each email will
-// have both a text and a HTML part to it.
+// There are two ways emails are sent:
 //
-
-package processor
+//  1.  Via spawning /usr/sbin/sendmail.
+//
+//  2.  Via SMTP.
+//
+// The choice is made based upon the presence of environmental
+// variables.
+package emailer
 
 import (
 	"bytes"
@@ -26,15 +31,30 @@ import (
 	"github.com/skx/rss2email/withstate"
 )
 
-// setupTemplate loads the template we use for generating the email
-// notification.
-func setupTemplate() *template.Template {
+// Emailer stores our state
+type Emailer struct {
+
+	// Feed is the source feed from which this item came
+	feed *gofeed.Feed
+	// Item is the feed item itself
+	item withstate.FeedItem
+}
+
+// New creates a new Emailer object.
+//
+// The arguments are the source feed, and the feed item to which
+// we'll notify.
+func New(feed *gofeed.Feed, item withstate.FeedItem) *Emailer {
+	return &Emailer{feed: feed, item: item}
+}
+
+// loadTemplate loads the template used for sending the email notification.
+func (e *Emailer) loadTemplate() (*template.Template, error) {
 
 	// Load the default template from the embedded resource.
 	content, err := emailtemplate.EmailTemplate()
 	if err != nil {
-		fmt.Printf("failed to load embedded resource: %s\n", err.Error())
-		os.Exit(1)
+		return nil, fmt.Errorf("failed to load embedded resource: %s", err.Error())
 	}
 
 	//
@@ -59,8 +79,7 @@ func setupTemplate() *template.Template {
 	if !os.IsNotExist(err) {
 		content, err = ioutil.ReadFile(override)
 		if err != nil {
-			fmt.Printf("failed to read %s: %s\n", override, err.Error())
-			os.Exit(1)
+			return nil, fmt.Errorf("failed to read %s: %s", override, err.Error())
 		}
 	}
 
@@ -68,12 +87,12 @@ func setupTemplate() *template.Template {
 	// Function map allows exporting functions to the template
 	//
 	funcMap := template.FuncMap{
-		"quoteprintable": toQuotedPrintable,
+		"quoteprintable": e.toQuotedPrintable,
 	}
 
 	tmpl := template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
 
-	return tmpl
+	return tmpl, nil
 }
 
 // toQuotedPrintable will convert the given input-string to a
@@ -82,7 +101,7 @@ func setupTemplate() *template.Template {
 //
 // NOTE: We use this function both directly, and from within our
 // template.
-func toQuotedPrintable(s string) (string, error) {
+func (e *Emailer) toQuotedPrintable(s string) (string, error) {
 	var ac bytes.Buffer
 	w := quotedprintable.NewWriter(&ac)
 	_, err := w.Write([]byte(s))
@@ -96,13 +115,11 @@ func toQuotedPrintable(s string) (string, error) {
 	return ac.String(), nil
 }
 
-// SendMail is a simple function that emails the given address.
-//
-// This is done via `/usr/sbin/sendmail` rather than via the use of SMTP.
+// Sendmail is a simple function that emails the given address.
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, textstr string, htmlstr string) error {
+func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -110,7 +127,6 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 	//
 	if len(addresses) < 1 {
 		e := errors.New("empty recipient address, did you not setup a recipient?")
-		fmt.Printf("%s\n", e.Error())
 		return e
 	}
 
@@ -143,30 +159,38 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 		// Populate it appropriately.
 		//
 		var x TemplateParms
-		x.Feed = feed.Link
-		x.FeedTitle = feed.Title
+		x.Feed = e.feed.Link
+		x.FeedTitle = e.feed.Title
 		x.From = addr
-		x.Link = item.Link
-		x.Subject = item.Title
+		x.Link = e.item.Link
+		x.Subject = e.item.Title
 		x.To = addr
-		x.RSSFeed = feed
-		x.RSSItem = item
+		x.RSSFeed = e.feed
+		x.RSSItem = e.item
 
 		// The real meat of the mail is the text & HTML
 		// parts.  They need to be encoded, unconditionally.
-		x.Text, err = toQuotedPrintable(textstr)
+		x.Text, err = e.toQuotedPrintable(textstr)
 		if err != nil {
 			return err
 		}
-		x.HTML, err = toQuotedPrintable(html.UnescapeString(htmlstr))
+		x.HTML, err = e.toQuotedPrintable(html.UnescapeString(htmlstr))
 		if err != nil {
 			return err
 		}
 
 		//
-		// Render our template into a buffer.
+		// Load the template we're going to render.
 		//
-		t := setupTemplate()
+		var t *template.Template
+		t, err = e.loadTemplate()
+		if err != nil {
+			return err
+		}
+
+		//
+		// Render the template into the buffer.
+		//
 		buf := &bytes.Buffer{}
 		err = t.Execute(buf, x)
 		if err != nil {
@@ -176,56 +200,18 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 		//
 		// Are we sending via SMTP?
 		//
-		if isSMTP() {
+		if e.isSMTP() {
 
-			// Send it.
-			return sendSMTP(addr, buf.Bytes())
-		}
+			err := e.sendSMTP(addr, buf.Bytes())
+			if err != nil {
+				return err
+			}
+		} else {
 
-		//
-		// OK we're not using SMTP, so we prepare to run via sendmail,
-		// with a pipe we can write the message into
-		//
-		sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", addr, addr)
-		stdin, err := sendmail.StdinPipe()
-		if err != nil {
-			fmt.Printf("Error sending email: %s\n", err.Error())
-			return err
-		}
-
-		//
-		// Get the output pipe.
-		//
-		stdout, err := sendmail.StdoutPipe()
-		if err != nil {
-			fmt.Printf("Error sending email: %s\n", err.Error())
-			return err
-		}
-
-		//
-		// Run the command, and pipe in the rendered template-result
-		//
-		sendmail.Start()
-		_, err = stdin.Write(buf.Bytes())
-		if err != nil {
-			fmt.Printf("Failed to write to sendmail pipe: %s\n", err.Error())
-			return err
-		}
-		stdin.Close()
-
-		//
-		// Read the output of Sendmail.
-		//
-		_, err = ioutil.ReadAll(stdout)
-		if err != nil {
-			fmt.Printf("Error reading mail output: %s\n", err.Error())
-			return nil
-		}
-
-		err = sendmail.Wait()
-
-		if err != nil {
-			fmt.Printf("Waiting for process to terminate failed: %s\n", err.Error())
+			err := e.sendSendmail(addr, buf.Bytes())
+			if err != nil {
+				return err
+			}
 		}
 	}
 	return nil
@@ -236,7 +222,7 @@ func SendMail(feed *gofeed.Feed, item withstate.FeedItem, addresses []string, te
 // We just check to see that the obvious mandatory parameters are set in the
 // environment.  If they're wrong we'll get an error at delivery time, as
 // expected.
-func isSMTP() bool {
+func (e *Emailer) isSMTP() bool {
 
 	// Mandatory environmental variables
 	vars := []string{"SMTP_HOST", "SMTP_USERNAME", "SMTP_PASSWORD"}
@@ -252,7 +238,7 @@ func isSMTP() bool {
 
 // sendSMTP sends the content of the email to the destination address
 // via SMTP.
-func sendSMTP(to string, content []byte) error {
+func (e *Emailer) sendSMTP(to string, content []byte) error {
 
 	// basics
 	host := os.Getenv("SMTP_HOST")
@@ -279,6 +265,58 @@ func sendSMTP(to string, content []byte) error {
 
 	// Send the mail
 	err := smtp.SendMail(addr, auth, to, []string{to}, content)
+
+	return err
+}
+
+// sendSendmail sends the content of the email to the destination address
+// via /usr/sbin/sendmail
+func (e *Emailer) sendSendmail(addr string, content []byte) error {
+
+	// Get the command to run.
+	sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", addr, addr)
+	stdin, err := sendmail.StdinPipe()
+	if err != nil {
+		fmt.Printf("Error sending email: %s\n", err.Error())
+		return err
+	}
+
+	//
+	// Get the output pipe.
+	//
+	stdout, err := sendmail.StdoutPipe()
+	if err != nil {
+		fmt.Printf("Error sending email: %s\n", err.Error())
+		return err
+	}
+
+	//
+	// Run the command, and pipe in the rendered template-result
+	//
+	sendmail.Start()
+	_, err = stdin.Write(content)
+	if err != nil {
+		fmt.Printf("Failed to write to sendmail pipe: %s\n", err.Error())
+		return err
+	}
+	stdin.Close()
+
+	//
+	// Read the output of Sendmail.
+	//
+	_, err = ioutil.ReadAll(stdout)
+	if err != nil {
+		fmt.Printf("Error reading mail output: %s\n", err.Error())
+		return nil
+	}
+
+	//
+	// Wait for the command to complete.
+	//
+	err = sendmail.Wait()
+	if err != nil {
+		fmt.Printf("Waiting for process to terminate failed: %s\n", err.Error())
+	}
 
 	return err
 }

@@ -106,6 +106,4 @@ func (d *daemonCmd) Execute(args []string) int {
 		time.Sleep(60 * time.Duration(n) * time.Second)
 	}
 
-	// All good.
-	return 0
 }
