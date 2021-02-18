@@ -8,8 +8,7 @@ Table of Contents
 * [RSS2Email](#rss2email)
   * [Rationale](#rationale)
 * [Installation](#installation)
-  * [Build without Go Modules (Go before 1.11)](#build-without-go-modules-go-before-111)
-  * [Build with Go Modules (Go 1.11 or higher)](#build-with-go-modules-go-111-or-higher)
+  * [Build with Go Modules](#build-with-go-modules)
   * [bash completion](#bash-completion)
 * [Feed Configuration](#feed-configuration)
 * [Usage](#usage)
@@ -57,21 +56,17 @@ This project is self-contained binary, and easy to deploy without the need for a
 
 # Installation
 
-There are two ways to install this project from source, which depend on the version of the [go](https://golang.org/) version you're using.
-
-If you prefer you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
+If you wish you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
 
-## Build without Go Modules (Go before 1.11)
+## Build with Go Modules
 
-    go get -u github.com/skx/rss2email
-
-
-## Build with Go Modules (Go 1.11 or higher)
-
-    git clone https://github.com/skx/rss2email ;# make sure to clone outside of GOPATH
+    # make sure to clone outside of GOPATH
+    git clone https://github.com/skx/rss2email
     cd rss2email
     go install
+
+**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our template within the binary.
 
 
 ## bash completion
@@ -214,14 +209,10 @@ You can view the default template via the following command:
 
 The default template contains a brief header documenting the available fields, and functions, which you can use.  As the template uses the standard Golang [text/template](https://golang.org/pkg/text/template/) facilities you can be pretty creative with it!
 
-If you're a developer who wishes to submit changes to the embedded version you should carry out the three-step process to make your change.
+If you're a developer who wishes to submit changes to the embedded version you should carry out the following two-step process to make your change.
 
-* First of all edit `data/email.tmpl`, this is the source of the template.
-* Next run the [implant](https://github.com/skx/implant) tool.
-  * This is responsible for reading the file, and embedding it into the file `static.go`, which is then included in the binary when the project is compiled.
-  * You'll run `implant -package template -output ./template/static.go`
-* Rebuild the application to update the embedded copy `go build .`
-  * This will ensure that the changes you made to `data/email.tmpl` are actually contained within your binary, and will be used the next time you launch it.
+* Edit `template/template.txt`, which is the source of the template.
+* Rebuild the application to update the embedded copy.
 
 
 
