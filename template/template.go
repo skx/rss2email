@@ -6,7 +6,7 @@
 package template
 
 import (
-	_ "embed"
+	_ "embed" // embedded-resource magic
 )
 
 //go:embed template.txt
