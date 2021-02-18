@@ -56,9 +56,7 @@ This project is self-contained binary, and easy to deploy without the need for a
 
 # Installation
 
-There are two ways to install this project from source, which depend on the version of the [go](https://golang.org/) version you're using.
-
-If you prefer you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
+If you wish you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
 
 
 ## Build with Go Modules
@@ -68,7 +66,7 @@ If you prefer you can fetch a binary from [our release page](https://github.com/
     cd rss2email
     go install
 
-**NOTE**: You'll need version 1.16 or higher to build, because we use the new `go embed` support to embed our template within the binary.
+**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our template within the binary.
 
 
 ## bash completion
