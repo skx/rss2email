@@ -10,7 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/user"
-	"path"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -131,7 +131,7 @@ func New(filename string) *FeedList {
 		}
 
 		// Now build up our file-path
-		filename = path.Join(home, ".rss2email", "feeds")
+		filename = filepath.Join(home, ".rss2email", "feeds")
 	}
 
 	// Save our updated filename
@@ -242,7 +242,7 @@ func (f *FeedList) Save() error {
 
 	// Of course we need to make sure the directory exists before
 	// we can write beneath it.
-	dir, _ := path.Split(f.filename)
+	dir, _ := filepath.Split(f.filename)
 	os.MkdirAll(dir, os.ModePerm)
 
 	// Open the file
