@@ -22,7 +22,7 @@ import (
 	"os"
 	"os/exec"
 	"os/user"
-	"path"
+	"path/filepath"
 	"strconv"
 	"text/template"
 
@@ -72,7 +72,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	}
 
 	// The path to the overridden template
-	override := path.Join(home, ".rss2email", "email.tmpl")
+	override := filepath.Join(home, ".rss2email", "email.tmpl")
 
 	// If the file exists, use it.
 	_, err = os.Stat(override)

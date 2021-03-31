@@ -11,7 +11,7 @@ import (
 	"io/ioutil"
 	"os"
 	"os/user"
-	"path"
+	"path/filepath"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -52,7 +52,7 @@ func (item *FeedItem) RecordSeen() {
 	}
 
 	// Ensure the parent directory exists
-	dir, _ := path.Split(file)
+	dir, _ := filepath.Split(file)
 	os.MkdirAll(dir, os.ModePerm)
 
 	// We'll write out the link to the item in the file
@@ -83,7 +83,7 @@ func stateDirectory() string {
 	}
 
 	// Store the path for the future, and return it.
-	statePrefix = path.Join(home, ".rss2email", "seen")
+	statePrefix = filepath.Join(home, ".rss2email", "seen")
 	return statePrefix
 }
 
@@ -100,7 +100,7 @@ func (item *FeedItem) path() string {
 	hexSha1 := fmt.Sprintf("%x", sha1.Sum([]byte(guid)))
 
 	// Finally join the path
-	out := path.Join(stateDirectory(), hexSha1)
+	out := filepath.Join(stateDirectory(), hexSha1)
 	return out
 
 }
@@ -135,7 +135,12 @@ func PruneStateFiles() (int, []error) {
 
 	stateDirPath := stateDirectory()
 
-	stateDir, err := os.Open(stateDirectory())
+	err := os.MkdirAll(stateDirPath, 0766)
+	if err != nil {
+		return 0, []error{err}
+	}
+
+	stateDir, err := os.Open(stateDirPath)
 	if err != nil {
 		err = fmt.Errorf("failed to open state-file directory: %s", err.Error())
 		return 0, []error{err}
@@ -157,7 +162,7 @@ func PruneStateFiles() (int, []error) {
 				continue
 			}
 
-			err := os.Remove(path.Join(stateDirPath, fi.Name()))
+			err := os.Remove(filepath.Join(stateDirPath, fi.Name()))
 			if err == nil {
 				prunedCount++
 			} else {
