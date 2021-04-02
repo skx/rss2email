@@ -101,16 +101,9 @@ func (p *Processor) processURL(input string, recipients []string) error {
 
 			// If we're supposed to send email then do that
 			if p.send {
-
-				// The body should be stored in the
-				// "Content" field.
-				content := item.Content
-
-				// If the Content field is empty then
-				// use the Description instead, if it
-				// is non-empty itself.
-				if (content == "") && item.Description != "" {
-					content = item.Description
+				content, err := item.HTMLContent()
+				if err != nil {
+					content = item.RawContent()
 				}
 
 				// Convert the content to text.
@@ -118,7 +111,7 @@ func (p *Processor) processURL(input string, recipients []string) error {
 
 				// Send the mail
 				helper := emailer.New(feed, item)
-				err := helper.Sendmail(recipients, text, content)
+				err = helper.Sendmail(recipients, text, content)
 				if err != nil {
 					return err
 				}
