@@ -64,7 +64,7 @@ func (item *FeedItem) RecordSeen() {
 	_ = ioutil.WriteFile(file, d1, 0644)
 }
 
-// Get item content or fallback to Description
+// RawContent provides content or fallback to description
 func (item *FeedItem) RawContent() string {
 	// The body should be stored in the
 	// "Content" field.
@@ -80,7 +80,7 @@ func (item *FeedItem) RawContent() string {
 	return content
 }
 
-// Get processed HTML
+// HTMLContent provides processed HTML
 func (item *FeedItem) HTMLContent() (string, error) {
 	rawContent := item.RawContent()
 
