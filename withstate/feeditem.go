@@ -9,11 +9,14 @@ import (
 	"crypto/sha1"
 	"fmt"
 	"io/ioutil"
+	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
+	"strings"
 	"time"
 
+	"github.com/PuerkitoBio/goquery"
 	"github.com/mmcdole/gofeed"
 )
 
@@ -52,14 +55,98 @@ func (item *FeedItem) RecordSeen() {
 	}
 
 	// Ensure the parent directory exists
-	dir, _ := filepath.Split(file)
-	os.MkdirAll(dir, os.ModePerm)
+	os.MkdirAll(filepath.Dir(file), os.ModePerm)
 
 	// We'll write out the link to the item in the file
 	d1 := []byte(item.Link)
 
 	// Write it out
 	_ = ioutil.WriteFile(file, d1, 0644)
+}
+
+// Get item content or fallback to Description
+func (item *FeedItem) RawContent() string {
+	// The body should be stored in the
+	// "Content" field.
+	content := item.Item.Content
+
+	// If the Content field is empty then
+	// use the Description instead, if it
+	// is non-empty itself.
+	if (content == "") && item.Item.Description != "" {
+		content = item.Item.Description
+	}
+
+	return content
+}
+
+// Get processed HTML
+func (item *FeedItem) HTMLContent() (string, error) {
+	rawContent := item.RawContent()
+
+	doc, err := goquery.NewDocumentFromReader(strings.NewReader(rawContent))
+	if err != nil {
+		return rawContent, err
+	}
+	doc.Find("img, link").Each(func(i int, e *goquery.Selection) {
+		var attr string
+		switch e.Get(0).Data {
+		case "link":
+			attr = "href"
+		case "img":
+			attr = "src"
+			e.RemoveAttr("loading")
+			e.RemoveAttr("srcset")
+		}
+
+		ref, _ := e.Attr(attr)
+		switch {
+		case ref == "":
+			return
+		case strings.HasPrefix(ref, "data:"):
+			return
+		case strings.HasPrefix(ref, "http://"):
+			return
+		case strings.HasPrefix(ref, "https://"):
+			return
+		default:
+			e.SetAttr(attr, item.patchReference(ref))
+		}
+	})
+	doc.Find("iframe").Each(func(i int, iframe *goquery.Selection) {
+		src, _ := iframe.Attr("src")
+		if src == "" {
+			iframe.Remove()
+		} else {
+			iframe.ReplaceWithHtml(fmt.Sprintf(`<a href="%s">%s</a>`, src, src))
+		}
+	})
+	doc.Find("script").Each(func(i int, script *goquery.Selection) {
+		script.Remove()
+	})
+
+	return doc.Html()
+}
+
+func (item *FeedItem) patchReference(ref string) string {
+	resURL, err := url.Parse(ref)
+	if err != nil {
+		return ref
+	}
+
+	itemURL, err := url.Parse(item.Item.Link)
+	if err != nil {
+		return ref
+	}
+
+	if resURL.Host == "" {
+		resURL.Host = itemURL.Host
+	}
+	if resURL.Scheme == "" {
+		resURL.Scheme = itemURL.Scheme
+	}
+
+	return resURL.String()
 }
 
 // stateDirectory returns the directory beneath which we store state
@@ -135,7 +222,7 @@ func PruneStateFiles() (int, []error) {
 
 	stateDirPath := stateDirectory()
 
-	err := os.MkdirAll(stateDirPath, 0766)
+	err := os.MkdirAll(stateDirPath, os.ModePerm)
 	if err != nil {
 		return 0, []error{err}
 	}
