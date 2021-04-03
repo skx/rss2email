@@ -6,8 +6,6 @@ import (
 	"bufio"
 	"fmt"
 	"io"
-	"io/ioutil"
-	"net/http"
 	"os"
 	"os/user"
 	"path/filepath"
@@ -15,75 +13,13 @@ import (
 	"time"
 
 	"github.com/mmcdole/gofeed"
-)
-
-// fetchFeed fetches a feed from the remote URL.
-//
-// We must use this instead of the URL handler that the feed-parser supports
-// because reddit, and some other sites, will just return a HTTP error-code
-// if we're using a standard "spider" User-Agent.
-//
-func fetchFeed(url string) (string, error) {
-	client := &http.Client{}
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", err
-	}
-
-	req.Header.Set("User-Agent", "rss2email (https://github.com/skx/rss2email)")
-	resp, err := client.Do(req)
-	if err != nil {
-		return "", err
-	}
-	defer resp.Body.Close()
-
-	output, err := ioutil.ReadAll(resp.Body)
-	if err != nil {
-		return "", err
-	}
-	return string(output), nil
-}
-
-func fetchFeedAndParse(url string) (*gofeed.Feed, error) {
-
-	// Fetch the URL
-	txt, err := fetchFeed(url)
-	if err != nil {
-		return nil, fmt.Errorf("error processing %s - %s", url, err.Error())
-	}
-
-	// Parse it
-	fp := gofeed.NewParser()
-	feed, err := fp.ParseString(txt)
-	if err != nil {
-		return nil, fmt.Errorf("error parsing %s contents: %s", url, err.Error())
-	}
-
-	return feed, nil
-}
-
-const (
-	fetchMaxTries   = 5
-	fetchRetryDelay = 200 * time.Millisecond
+	"github.com/skx/rss2email/httpfetch"
 )
 
 // Feed takes an URL as input, and returns a *gofeed.Feed.
 func Feed(url string) (*gofeed.Feed, error) {
-	var feed *gofeed.Feed
-	var err error
-
-	// Try up to fetchMaxTries times
-	for i := 0; i < fetchMaxTries; i++ {
-		// Rate limit to avoid hammering the server
-		time.Sleep(time.Duration(i) * fetchRetryDelay)
-
-		feed, err = fetchFeedAndParse(url)
-		if err == nil {
-			return feed, nil
-		}
-	}
-
-	return nil, err
+	helper := httpfetch.New(url)
+	return helper.Fetch()
 }
 
 // expandedEntry is a url with its comment from the feeds file.
