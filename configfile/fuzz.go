@@ -30,7 +30,7 @@ func Fuzz(data []byte) int {
 	if err != nil {
 
 		// This is a known error, we expect to get
-		if !strings.Contains(err.Error(), "Option outside a URL") {
+		if !strings.Contains(err.Error(), "option outside a URL") {
 			panic(err)
 		}
 	}

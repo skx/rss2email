@@ -126,7 +126,7 @@ func (c *ConfigFile) Parse() ([]Feed, error) {
 
 			// options go AFTER the URL to which they refer
 			if tmp.URL == "" {
-				return c.entries, fmt.Errorf("Error: Option outside a URL: %s", scanner.Text())
+				return c.entries, fmt.Errorf("error: option outside a URL: %s", scanner.Text())
 			}
 
 			// Remove the prefix and split by ":"

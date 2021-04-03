@@ -126,7 +126,7 @@ http://example.com/
 		t.Fatalf("Options missing!")
 	}
 	if out[0].Options["retry"] != "7" {
-		t.Fatalf("Options missing!")
+		t.Fatalf("options missing!")
 	}
 
 	os.Remove(c.path)
@@ -194,7 +194,10 @@ http://example.com/
  - retry: 7
 #Comment2`)
 
-	out, err := c.Parse()
+	var out []Feed
+	var err error
+
+	_, err = c.Parse()
 	if err != nil {
 		t.Fatalf("Error parsing file: %v", err)
 	}
@@ -240,7 +243,10 @@ http://example.com/
 #Comment2
 https://bob.com/index.rss`)
 
-	out, err := c.Parse()
+	var out []Feed
+	var err error
+
+	_, err = c.Parse()
 	if err != nil {
 		t.Fatalf("Error parsing file: %v", err)
 	}
