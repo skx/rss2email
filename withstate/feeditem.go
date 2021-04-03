@@ -88,10 +88,10 @@ func (item *FeedItem) HTMLContent() (string, error) {
 	if err != nil {
 		return rawContent, err
 	}
-	doc.Find("img, link").Each(func(i int, e *goquery.Selection) {
+	doc.Find("a, img").Each(func(i int, e *goquery.Selection) {
 		var attr string
 		switch e.Get(0).Data {
-		case "link":
+		case "a":
 			attr = "href"
 		case "img":
 			attr = "src"
