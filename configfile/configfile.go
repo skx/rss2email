@@ -85,10 +85,8 @@ func (c *ConfigFile) Path() string {
 func (c *ConfigFile) Exists() bool {
 
 	_, err := os.Stat(c.Path())
-	if os.IsNotExist(err) {
-		return false
-	}
-	return true
+
+	return !os.IsNotExist(err)
 }
 
 // Parse returns the entries from the config-file
