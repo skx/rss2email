@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"io/ioutil"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -57,8 +57,17 @@ Example:
 // Execute is invoked if the user specifies `import` as the subcommand.
 func (i *importCmd) Execute(args []string) int {
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
+
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	_, err := conf.Parse()
+	if err != nil {
+		fmt.Printf("Error parsing file: %s\n", err.Error())
+		return 1
+	}
 
 	added := 0
 
@@ -88,15 +97,13 @@ func (i *importCmd) Execute(args []string) int {
 				added++
 			}
 		}
-		errors := list.Add(entries...)
-		for _, err := range errors {
-			fmt.Printf("%s\n", (err.Error()))
-		}
+
+		conf.Add(entries...)
 	}
 
 	// Did we make a change?  Then add them.
 	if added > 0 {
-		err := list.Save()
+		err := conf.Save()
 		if err != nil {
 			fmt.Printf("failed to update feed list: %s\n", err.Error())
 		}
