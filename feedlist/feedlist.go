@@ -1,5 +1,8 @@
 // Package feedlist is a trivial wrapper for maintaining a list
 // of RSS feeds in a file.
+//
+// NOTE: This is the legacy configuration-file reader. It will be removed
+// in future releases.
 package feedlist
 
 import (
