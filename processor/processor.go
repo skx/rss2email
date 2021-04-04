@@ -7,6 +7,7 @@ import (
 	"fmt"
 
 	"github.com/k3a/html2text"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/rss2email/feedlist"
 	"github.com/skx/rss2email/processor/emailer"
 	"github.com/skx/rss2email/withstate"
@@ -37,16 +38,26 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	//
 	var errors []error
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
+
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	// Now do the parsing
+	entries, err := conf.Parse()
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error with config-file %s - %s", conf.Path(), err))
+		return errors
+	}
 
 	// For each entry in the list ..
-	for _, uri := range list.Entries() {
+	for _, entry := range entries {
 
 		// Handle it.
-		err := p.processURL(uri, recipients)
+		err := p.processURL(entry.URL, recipients)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("error processing %s - %s", uri, err))
+			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
 		}
 	}
 
