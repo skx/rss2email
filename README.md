@@ -43,7 +43,7 @@ If you wish you can fetch a binary from [our release page](https://github.com/sk
     cd rss2email
     go install
 
-**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our template within the binary.
+**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our email-template within the binary.
 
 
 ## bash completion
@@ -57,7 +57,11 @@ source <(./rss2email bash-completion)
 
 # Feed Configuration
 
-Once you have installed the application you'll need to configure the feeds to monitor.  The list of URLs to monitor are stored in `~/.rss2email/feeds` and you can create/edit that file by hand if you wish.  However we do have several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
+Once you have installed the application you'll need to configure the feeds to monitor.   As of the 2.x release of `rss2email` the configuration file is:
+
+* `~/.rss2email/feeds.txt`
+
+You can create/edit that file by hand if you wish, however there are several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
 
@@ -69,16 +73,25 @@ The list of feeds can be displayed via the `list` subcommand:
 
      $ rss2email list
 
-> **NOTE**: You can add `-verbose` to list the number of entries present in each feed, and get an idea of the age of entries.  This will be a little slow as URLs are fetched to process them.
-
 Finally you can remove an entry from the feed-list via the `delete` sub-command:
 
      $ rss2email delete https://example.com/foo.rss
 
+The configuration file in its simplest form is nothing more than a list of URLs, one per line.  However there is also support for adding per-feed options:
+
+       https://foo.example.com/
+        - key:value
+       https://foo.example.com/
+        - key2:value2
+
+This is documented and explained in the integrated help:
+
+    $ rss2email help config
+
 
 # Usage
 
-Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing `~/.rss2email/feeds` directly, you are now ready to actually launch the application.
+Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing the configuration file `~/.rss2email/feeds.txt` directly, you are now ready to actually launch the application.
 
 To run the application, announcing all new feed-items by email to `user@host.com` you'd run this:
 
@@ -110,7 +123,7 @@ Typically you'd invoke `rss2email` with the `cron` sub-command as we documented 
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
-* Terminate
+* Terminate.
 
 The `daemon` process does exactly the same thing, however it does __not__ terminate.  Instead the process becomes:
 
