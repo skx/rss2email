@@ -5,9 +5,9 @@
 package main
 
 import (
-	"os"
+	"fmt"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -42,10 +42,23 @@ Example:
 //
 func (l *listCmd) Execute(args []string) int {
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
 
-	list.WriteAllEntriesIncludingComments(os.Stdout)
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	// Now do the parsing
+	entries, err := conf.Parse()
+	if err != nil {
+		fmt.Printf("Error with config-file: %s\n", err.Error())
+		return 1
+	}
+
+	// Show the feeds
+	for _, entry := range entries {
+		fmt.Printf("%s\n", entry.URL)
+	}
 
 	return 0
 }

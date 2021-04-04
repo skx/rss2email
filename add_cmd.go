@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -38,23 +38,27 @@ Example:
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (a *addCmd) Execute(args []string) int {
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
+
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	_, err := conf.Parse()
+	if err != nil {
+		fmt.Printf("Error parsing file: %s\n", err.Error())
+		return 1
+	}
 
 	// For each argument add it to the list
 	for _, entry := range args {
 
 		// Add the entry
-		errors := list.Add(entry)
-
-		// Errors?
-		for _, err := range errors {
-			fmt.Printf("%s\n", (err.Error()))
-		}
+		conf.Add(entry)
 	}
 
 	// Save the list.
-	err := list.Save()
+	err = conf.Save()
 	if err != nil {
 		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
 		return 1

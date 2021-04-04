@@ -9,7 +9,7 @@ import (
 	"os"
 	"text/template"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -51,11 +51,22 @@ func (e *exportCmd) Execute(args []string) int {
 	}
 	data := TemplateData{}
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
 
-	for _, entry := range list.Entries() {
-		data.Entries = append(data.Entries, Feed{URL: entry})
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	// Now do the parsing
+	entries, err := conf.Parse()
+	if err != nil {
+		fmt.Printf("Error with config-file: %s\n", err.Error())
+		return 1
+	}
+
+	// Populate our template variables
+	for _, entry := range entries {
+		data.Entries = append(data.Entries, Feed{URL: entry.URL})
 	}
 
 	// Template
@@ -72,7 +83,7 @@ func (e *exportCmd) Execute(args []string) int {
 `
 	// Compile the template and write to STDOUT
 	t := template.Must(template.New("tmpl").Parse(tmpl))
-	err := t.Execute(os.Stdout, data)
+	err = t.Execute(os.Stdout, data)
 	if err != nil {
 		fmt.Printf("error rendering template: %s\n", err.Error())
 		return 1

@@ -22,6 +22,8 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
+
+	"github.com/skx/rss2email/feedlist"
 )
 
 // Feed is an entry which is read from our configuration-file.
@@ -87,6 +89,53 @@ func (c *ConfigFile) Exists() bool {
 	_, err := os.Stat(c.Path())
 
 	return !os.IsNotExist(err)
+}
+
+// Upgrade upgrades any legacy file that might be present
+func (c *ConfigFile) Upgrade() {
+
+	// If our file exists we return
+	if c.Exists() {
+		return
+	}
+
+	// Find the old file
+	list := feedlist.New("")
+
+	// Get the entries
+	old := list.Entries()
+
+	// No entries?  Nothing to do then.
+	if len(old) < 1 {
+		return
+	}
+
+	fmt.Printf(`
+
+  **************************************************************************
+
+   As of the 2.x release of rss2email the configuration file format
+   and location have changed.
+
+   You can read details of the config file, and see the expected location,
+   by running:
+
+        rss2email help config
+
+   Migration in-process now.
+
+
+  **************************************************************************
+`)
+
+	// For each entry in the list ..
+	for _, uri := range old {
+		c.Add(uri)
+	}
+	c.Save()
+
+	fmt.Printf("\n\nMigration complete %d feeds were imported\n", len(old))
+
 }
 
 // Parse returns the entries from the config-file

@@ -7,7 +7,7 @@ package main
 import (
 	"fmt"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -40,26 +40,31 @@ Example:
 //
 func (d *delCmd) Execute(args []string) int {
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
 
-	// Count the entries, so we can determine whether we
-	// removed any entries.
-	before := len(list.Entries())
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	_, err := conf.Parse()
+	if err != nil {
+		fmt.Printf("Error parsing file: %s\n", err.Error())
+		return 1
+	}
 
 	// For each argument remove it from the list, if present.
 	for _, entry := range args {
-		list.Delete(entry)
+		conf.Delete(entry)
 	}
 
-	// If we made a change then save it.
-	if len(list.Entries()) != before {
-		list.Save()
-	} else {
-		fmt.Printf("Feed list unchanged.\n")
-		fmt.Printf("Use 'rss2email list' to check your current feed list.\n")
+	// Save the list.
+	err = conf.Save()
+	if err != nil {
+		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
+		return 1
 	}
 
-	// All done.
+	// All done, with no errors.
 	return 0
+
 }
