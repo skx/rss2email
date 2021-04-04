@@ -65,7 +65,8 @@ func New() *ConfigFile {
 	return &ConfigFile{}
 }
 
-// New creates a configuration-file reader, using the given file as a source.
+// NewWithPath creates a configuration-file reader, using the given file as
+// a source.
 func NewWithPath(file string) *ConfigFile {
 	return &ConfigFile{path: file}
 }
