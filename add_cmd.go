@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/skx/rss2email/configfile"
@@ -16,6 +17,17 @@ type addCmd struct {
 
 	// We embed the NoFlags option, because we accept no command-line flags.
 	subcommands.NoFlags
+
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
+}
+
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (a *addCmd) Arguments(flags *flag.FlagSet) {
+	a.config = configfile.New()
 }
 
 // Info is part of the subcommand-API
@@ -38,13 +50,10 @@ Example:
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (a *addCmd) Execute(args []string) int {
 
-	// Get the configuration-file
-	conf := configfile.New()
+	// Upgrade our configuration-file if necessary
+	a.config.Upgrade()
 
-	// Upgrade it if necessary
-	conf.Upgrade()
-
-	_, err := conf.Parse()
+	_, err := a.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())
 		return 1
@@ -54,11 +63,11 @@ func (a *addCmd) Execute(args []string) int {
 	for _, entry := range args {
 
 		// Add the entry
-		conf.Add(entry)
+		a.config.Add(entry)
 	}
 
 	// Save the list.
-	err = conf.Save()
+	err = a.config.Save()
 	if err != nil {
 		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
 		return 1

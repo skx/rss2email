@@ -5,6 +5,7 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/skx/rss2email/configfile"
@@ -16,6 +17,17 @@ type delCmd struct {
 
 	// We embed the NoFlags option, because we accept no command-line flags.
 	subcommands.NoFlags
+
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
+}
+
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (d *delCmd) Arguments(flags *flag.FlagSet) {
+	d.config = configfile.New()
 }
 
 // Info is part of the subcommand-API
@@ -40,13 +52,10 @@ Example:
 //
 func (d *delCmd) Execute(args []string) int {
 
-	// Get the configuration-file
-	conf := configfile.New()
+	// Upgrade our configuration-file if necessary
+	d.config.Upgrade()
 
-	// Upgrade it if necessary
-	conf.Upgrade()
-
-	_, err := conf.Parse()
+	_, err := d.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())
 		return 1
@@ -54,11 +63,11 @@ func (d *delCmd) Execute(args []string) int {
 
 	// For each argument remove it from the list, if present.
 	for _, entry := range args {
-		conf.Delete(entry)
+		d.config.Delete(entry)
 	}
 
 	// Save the list.
-	err = conf.Save()
+	err = d.config.Save()
 	if err != nil {
 		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
 		return 1
