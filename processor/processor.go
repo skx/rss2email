@@ -5,6 +5,7 @@ package processor
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/k3a/html2text"
 	"github.com/skx/rss2email/configfile"
@@ -116,6 +117,30 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				content, err := item.HTMLContent()
 				if err != nil {
 					content = item.RawContent()
+				}
+
+				// Should we skip this one?
+				skip := false
+
+				// Walk over the options for this feed
+				for _, opt := range entry.Options {
+
+					// Exclude?
+					if opt.Name == "exclude" {
+
+						match, _ := regexp.MatchString(opt.Value, content)
+						if match {
+							if p.verbose {
+								fmt.Printf("\t\t\tSkipping Entry - it matched the exclude pattern '%s'\n", opt.Value)
+
+							}
+							skip = true
+						}
+					}
+				}
+
+				if skip {
+					continue
 				}
 
 				// Convert the content to text.
