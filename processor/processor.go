@@ -8,7 +8,7 @@ import (
 
 	"github.com/k3a/html2text"
 	"github.com/skx/rss2email/configfile"
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/httpfetch"
 	"github.com/skx/rss2email/processor/emailer"
 	"github.com/skx/rss2email/withstate"
 )
@@ -55,7 +55,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	for _, entry := range entries {
 
 		// Handle it.
-		err := p.processURL(entry.URL, recipients)
+		err := p.processFeed(entry, recipients)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
 		}
@@ -75,19 +75,20 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	return errors
 }
 
-// processURL takes an URL as input, fetches the contents, and then
-// processes each feed item found within it.
+// processFeed takes a configuration entry as input, fetches the appropriate
+// remote contents, and then processes each feed item found within it.
 //
 // Feed items which are new/unread will generate an email.
-func (p *Processor) processURL(input string, recipients []string) error {
+func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
 	// Show what we're doing.
 	if p.verbose {
-		fmt.Printf("Fetching: %s\n", input)
+		fmt.Printf("Fetching: %s\n", entry.URL)
 	}
 
 	// Fetch the feed for the input URL
-	feed, err := feedlist.Feed(input)
+	helper := httpfetch.New(entry.URL)
+	feed, err := helper.Fetch()
 	if err != nil {
 		return err
 	}
