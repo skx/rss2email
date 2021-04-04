@@ -33,7 +33,6 @@ https://example.net/
 
 	add := addCmd{}
 	add.Arguments(nil)
-	add.Info()
 	config := configfile.NewWithPath(tmpfile.Name())
 	add.config = config
 

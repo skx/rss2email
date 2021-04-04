@@ -32,7 +32,6 @@ https://example.net/
 
 	del := delCmd{}
 	del.Arguments(nil) // only for coverage
-	del.Info()         // only for coverage
 
 	config := configfile.NewWithPath(tmpfile.Name())
 	del.config = config

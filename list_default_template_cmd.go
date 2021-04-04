@@ -5,15 +5,18 @@
 package main
 
 import (
-	"flag"
 	"fmt"
 	"os"
 
 	"github.com/skx/rss2email/template"
+	"github.com/skx/subcommands"
 )
 
 // listDefaultTemplateCmd holds our state.
 type listDefaultTemplateCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
 }
 
 // Info is part of the subcommand-API
@@ -37,10 +40,6 @@ Example:
 
     $ rss2email list-default-template
 `
-}
-
-// Arguments handles our flag-setup.
-func (l *listDefaultTemplateCmd) Arguments(f *flag.FlagSet) {
 }
 
 //
