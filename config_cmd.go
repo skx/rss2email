@@ -91,8 +91,9 @@ Available Options
 
 Key     | Purpose
 --------+-------------------------------------------------------------------
-exclude | Exclude entries matching the given regular-expression.
-retry   | Specify the number of times a failing fetch should be retried.
+exclude | Exclude any feed-entries matching the given regular-expression.
+retry   | The maximum number of times a failing HTTP-fetch should be retried.
+delay   | The amount of time to sleep between retried HTTP-fetches.
 `
 	return name, doc
 }

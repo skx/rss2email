@@ -8,9 +8,11 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"time"
 
 	"github.com/mmcdole/gofeed"
+	"github.com/skx/rss2email/configfile"
 )
 
 const ()
@@ -35,11 +37,35 @@ type HTTPFetch struct {
 }
 
 // New creates a new object which will fetch our content
-func New(url string) *HTTPFetch {
-	return &HTTPFetch{url: url,
-		maxRetries: 5,
-		retryDelay: 200 * time.Millisecond,
+func New(entry configfile.Feed) *HTTPFetch {
+	state := &HTTPFetch{url: entry.URL,
+		maxRetries: 3,
+		retryDelay: 1000 * time.Millisecond,
 	}
+
+	// Are any of our options overridden?
+	for _, opt := range entry.Options {
+
+		// Max-retry count.
+		if opt.Name == "retry" {
+
+			num, err := strconv.Atoi(opt.Value)
+			if err == nil {
+				state.maxRetries = num
+			}
+		}
+
+		// Sleep-delay between fetch-attempts.
+		if opt.Name == "delay" {
+
+			num, err := strconv.Atoi(opt.Value)
+			if err == nil {
+				state.retryDelay = time.Duration(num) * time.Millisecond
+			}
+		}
+	}
+
+	return state
 }
 
 // Fetch performs the HTTP-fetch, and returns the feed-contents.
@@ -58,7 +84,8 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 		if err == nil {
 			break
 		}
-		time.Sleep(time.Duration(i) * h.retryDelay)
+		time.Sleep(h.retryDelay)
+
 	}
 
 	// Failed, after all the retries?
