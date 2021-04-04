@@ -71,7 +71,7 @@ func (c *ConfigFile) Path() string {
 		}
 
 		// Now build up our file-path
-		c.path = filepath.Join(home, ".rss2email", "feeds.lst")
+		c.path = filepath.Join(home, ".rss2email", "feeds.txt")
 
 	}
 	return c.path

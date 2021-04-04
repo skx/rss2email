@@ -10,7 +10,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/mmcdole/gofeed"
 	"github.com/skx/rss2email/httpfetch"
@@ -187,67 +186,17 @@ func (f *FeedList) Save() error {
 		return fmt.Errorf("error writing to %s - %s", f.filename, err.Error())
 	}
 
-	verbose := false
-	f.WriteAllEntriesIncludingComments(fh, verbose)
+	f.WriteAllEntriesIncludingComments(fh)
 
 	fh.Close()
 
 	return nil
 }
 
-const maxInt = int(^uint(0) >> 1)
-
-// feedInfo returns a string containing information about a feed
-func feedInfo(url string) string {
-	feed, err := Feed(url)
-	if err != nil {
-		return ""
-	}
-
-	entriesString := "entries"
-	if len(feed.Items) == 1 {
-		entriesString = "entry"
-	}
-	info := fmt.Sprintf("%d %s", len(feed.Items), entriesString)
-
-	oldest := -1
-	newest := maxInt
-	for _, item := range feed.Items {
-		if item.PublishedParsed == nil {
-			return info
-		}
-
-		age := int(time.Since(*item.PublishedParsed) / (24 * time.Hour))
-		if age > oldest {
-			oldest = age
-		}
-
-		if age < newest {
-			newest = age
-		}
-	}
-
-	info = fmt.Sprintf("%s, aged %d-%d days", info, newest, oldest)
-
-	return info
-}
-
 // WriteAllEntriesIncludingComments Writes the feed list, including comments.
-func (f *FeedList) WriteAllEntriesIncludingComments(writer io.Writer, verbose bool) {
+func (f *FeedList) WriteAllEntriesIncludingComments(writer io.Writer) {
 	// For each entry in the list ..
 	for _, eEntry := range f.expandedEntries {
-
-		// Print the uri comments
-		for _, s := range eEntry.comments {
-			fmt.Fprintf(writer, "%s\n", s)
-		}
-
-		if verbose {
-			info := feedInfo(eEntry.url)
-			if info != "" {
-				fmt.Fprintf(writer, "# %s\n", info)
-			}
-		}
 
 		// Print the uri
 		fmt.Fprintf(writer, "%s\n", eEntry.url)
