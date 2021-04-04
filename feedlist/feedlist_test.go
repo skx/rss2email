@@ -6,13 +6,6 @@ import (
 	"testing"
 )
 
-// We now validate feeds when adding, so we need real feed urls
-// Let's hope the bbc feed urls rarely change
-var testFeed1 = "http://feeds.bbci.co.uk/news/rss.xml"
-var testFeed2 = "http://feeds.bbci.co.uk/news/rss.xml?edition=uk"
-var testFeed3 = "http://feeds.bbci.co.uk/news/rss.xml?edition=us"
-var testFeed4 = "http://feeds.bbci.co.uk/news/rss.xml?edition=int"
-
 // TestDummy ensures we can find a default directory
 func TestDummy(t *testing.T) {
 

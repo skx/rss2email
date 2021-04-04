@@ -26,7 +26,7 @@ import (
 	"github.com/skx/rss2email/feedlist"
 )
 
-// Options contain options which are used on a per-feed basis.
+// Option contain options which are used on a per-feed basis.
 //
 // We could use a map, but that would mean that each named option could
 // only be used once - and we want to allow multiple "exclude" values

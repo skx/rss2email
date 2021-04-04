@@ -4,6 +4,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/rss2email/withstate"
 )
 
@@ -11,7 +12,7 @@ import (
 func TestNonFeed(t *testing.T) {
 
 	// Not a feed.
-	x := New("http://example.com/")
+	x := New(configfile.Feed{URL: "http://example.com/"})
 	x.content = "this is not an XML file, so not a feed"
 
 	// Parse it, which should fail.
@@ -30,7 +31,7 @@ func TestNonFeed(t *testing.T) {
 func TestOneEntry(t *testing.T) {
 
 	// The contents of our feed.
-	x := New("https://blog.steve.fi/index.rss")
+	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"})
 	x.content = `<?xml version="1.0"?>
 <rdf:RDF
  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -76,7 +77,7 @@ func TestOneEntry(t *testing.T) {
 func TestRewrite(t *testing.T) {
 
 	// The contents of our feed.
-	x := New("https://blog.steve.fi/index.rss")
+	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"})
 	x.content = `<?xml version="1.0"?>
 <rdf:RDF
  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
