@@ -4,22 +4,11 @@ package feedlist
 
 import (
 	"bufio"
-	"fmt"
-	"io"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
-
-	"github.com/mmcdole/gofeed"
-	"github.com/skx/rss2email/httpfetch"
 )
-
-// Feed takes an URL as input, and returns a *gofeed.Feed.
-func Feed(url string) (*gofeed.Feed, error) {
-	helper := httpfetch.New(url)
-	return helper.Fetch()
-}
 
 // expandedEntry is a url with its comment from the feeds file.
 type expandedEntry struct {
@@ -116,89 +105,4 @@ func (f *FeedList) Entries() []string {
 		urls[i] = eEntry.url
 	}
 	return (urls)
-}
-
-// Add adds new entries to the feed-list, avoiding duplicates.
-// You must call `Save` if you wish this addition to be persisted.
-func (f *FeedList) Add(uris ...string) []error {
-
-	// Maintain a map of seen entries to avoid duplicates
-	seen := make(map[string]bool)
-
-	for _, eEntry := range f.expandedEntries {
-		seen[eEntry.url] = true
-	}
-
-	errors := make([]error, 0)
-	for _, uri := range uris {
-		if !seen[uri] {
-			feed, err := Feed(uri)
-			comments := []string{""}
-
-			if err != nil {
-				errors = append(errors, fmt.Errorf("%s: not added, %s", uri, err.Error()))
-				continue
-			}
-
-			// By default, comments is a blank line followed by a
-			// the commented feed title.
-			title := feed.Title
-			if title != "" {
-				comments = append(comments, "# "+title)
-			}
-
-			eEntry := expandedEntry{url: uri, comments: comments}
-			f.expandedEntries = append(f.expandedEntries, eEntry)
-		}
-
-		seen[uri] = true
-	}
-
-	return errors
-}
-
-// Delete removes an entry from our list of feeds.
-// You must call `Save` if you wish this removal to be persisted.
-func (f *FeedList) Delete(url string) {
-
-	var tmp []expandedEntry
-
-	for _, eEntry := range f.expandedEntries {
-		if eEntry.url != url {
-			tmp = append(tmp, eEntry)
-		}
-	}
-
-	f.expandedEntries = tmp
-}
-
-// Save syncs our entries to disc.
-func (f *FeedList) Save() error {
-
-	// Of course we need to make sure the directory exists before
-	// we can write beneath it.
-	dir, _ := filepath.Split(f.filename)
-	os.MkdirAll(dir, os.ModePerm)
-
-	// Open the file
-	fh, err := os.Create(f.filename)
-	if err != nil {
-		return fmt.Errorf("error writing to %s - %s", f.filename, err.Error())
-	}
-
-	f.WriteAllEntriesIncludingComments(fh)
-
-	fh.Close()
-
-	return nil
-}
-
-// WriteAllEntriesIncludingComments Writes the feed list, including comments.
-func (f *FeedList) WriteAllEntriesIncludingComments(writer io.Writer) {
-	// For each entry in the list ..
-	for _, eEntry := range f.expandedEntries {
-
-		// Print the uri
-		fmt.Fprintf(writer, "%s\n", eEntry.url)
-	}
 }
