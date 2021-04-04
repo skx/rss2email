@@ -26,6 +26,19 @@ import (
 	"github.com/skx/rss2email/feedlist"
 )
 
+// Options contain options which are used on a per-feed basis.
+//
+// We could use a map, but that would mean that each named option could
+// only be used once - and we want to allow multiple "exclude" values
+// for example.
+type Option struct {
+	// Name holds the name of the configuration option.
+	Name string
+
+	// Value contains the specified value of the configuration option.
+	Value string
+}
+
 // Feed is an entry which is read from our configuration-file.
 //
 // A feed consists of an URL pointing to an Atom/RSS feed, as well as
@@ -36,7 +49,7 @@ type Feed struct {
 
 	// Options contains a collection of any optional parameters
 	// which have been read after an URL
-	Options map[string]string
+	Options []Option
 }
 
 // ConfigFile contains our state.
@@ -153,7 +166,7 @@ func (c *ConfigFile) Parse() ([]Feed, error) {
 
 	// Temporary entry
 	var tmp Feed
-	tmp.Options = make(map[string]string)
+	tmp.Options = []Option{}
 
 	// Create a scanner to process the file.
 	scanner := bufio.NewScanner(file)
@@ -186,7 +199,7 @@ func (c *ConfigFile) Parse() ([]Feed, error) {
 			if len(vals) > 1 {
 				key := strings.TrimSpace(vals[0])
 				val := strings.TrimSpace(vals[1])
-				tmp.Options[key] = val
+				tmp.Options = append(tmp.Options, Option{Name: key, Value: val})
 			}
 		} else {
 
@@ -195,7 +208,7 @@ func (c *ConfigFile) Parse() ([]Feed, error) {
 			if tmp.URL != "" {
 				// store it, and reset our map
 				c.entries = append(c.entries, tmp)
-				tmp.Options = make(map[string]string)
+				tmp.Options = []Option{}
 			}
 
 			// set the url
@@ -269,8 +282,8 @@ func (c *ConfigFile) Save() error {
 
 		fmt.Fprintf(file, "%s\n", entry.URL)
 
-		for key, val := range entry.Options {
-			fmt.Fprintf(file, " - %s:%s\n", key, val)
+		for _, opt := range entry.Options {
+			fmt.Fprintf(file, " - %s:%s\n", opt.Name, opt.Value)
 		}
 
 	}

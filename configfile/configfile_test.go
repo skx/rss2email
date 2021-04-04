@@ -121,12 +121,16 @@ http://example.com/
 		t.Fatalf("parsed wrong number of entries, got %d\n%v", len(out), out)
 	}
 
-	// Options should exist
-	if out[0].Options["foo"] != "bar" {
-		t.Fatalf("Options missing!")
+	// We should have two options
+	if len(out[0].Options) != 2 {
+		t.Fatalf("Found wrong number of options, got %d", len(out[0].Options))
 	}
-	if out[0].Options["retry"] != "7" {
-		t.Fatalf("options missing!")
+
+	for _, opt := range out[0].Options {
+		if opt.Name != "foo" &&
+			opt.Name != "retry" {
+			t.Fatalf("found bogus option %v", opt)
+		}
 	}
 
 	os.Remove(c.path)
@@ -222,12 +226,16 @@ http://example.com/
 		t.Fatalf("parsed wrong number of entries, got %d\n%v", len(out), out)
 	}
 
-	// Options should exist
-	if out[0].Options["foo"] != "bar" {
-		t.Fatalf("Options missing!")
+	// We should have two options
+	if len(out[0].Options) != 2 {
+		t.Fatalf("Found wrong number of options, got %d", len(out[0].Options))
 	}
-	if out[0].Options["retry"] != "7" {
-		t.Fatalf("Options missing!")
+
+	for _, opt := range out[0].Options {
+		if opt.Name != "foo" &&
+			opt.Name != "retry" {
+			t.Fatalf("found bogus option %v", opt)
+		}
 	}
 
 	os.Remove(c.path)
@@ -271,12 +279,16 @@ https://bob.com/index.rss`)
 		t.Fatalf("parsed wrong number of entries, got %d\n%v", len(out), out)
 	}
 
-	// Options should exist
-	if out[0].Options["foo"] != "bar" {
-		t.Fatalf("Options missing!")
+	// We should have two options
+	if len(out[0].Options) != 2 {
+		t.Fatalf("Found wrong number of options, got %d", len(out[0].Options))
 	}
-	if out[0].Options["retry"] != "7" {
-		t.Fatalf("Options missing!")
+
+	for _, opt := range out[0].Options {
+		if opt.Name != "foo" &&
+			opt.Name != "retry" {
+			t.Fatalf("found bogus option %v", opt)
+		}
 	}
 
 	os.Remove(c.path)
