@@ -15,6 +15,7 @@ Table of Contents
 * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
 * [Email Customization](#email-customization)
+* [Implementation Overview](#implementation-overview)
 * [Github Setup](#github-setup)
 
 
@@ -204,6 +205,20 @@ If you're a developer who wishes to submit changes to the embedded version you s
 * Edit `template/template.txt`, which is the source of the template.
 * Rebuild the application to update the embedded copy.
 
+
+# Implementation Overview
+
+The two main commands are `cron` and `daemon` and they work in roughly the same way:
+
+* They instantiate [processor/processor.go](processor/processor.go) to run the logic
+  * That walks over the list of feeds from [configfile/configfile.go](configfile/configfile.go).
+  * For each feed [httpfetch/httpfetch.go](httpfetch/httpfetch.go) is used to fetch the contents.
+  * The result is a collection of `*gofeed.Feed` items, one for each entry in the remote feed.
+    * These are wrapped via [withstate/feeditem.go](withstate/feeditem.go) so we can test if they're new.
+    * [processor/emailer/emailer.go](processor/emailer/emailer.go) is used to send the email if necessary.
+    * Either by SMTP or by executing `/usr/sbin/sendmail`
+
+The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go]) to add/delete/list the contents of the feed-list.
 
 
 # Github Setup
