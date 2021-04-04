@@ -26,7 +26,14 @@ type listCmd struct {
 func (l *listCmd) Info() (string, string) {
 	return "list", `Output the list of feeds which are being polled.
 
-This subcommand lists the configured feeds which will be polled.
+This subcommand lists the feeds which are specified in the
+configuration file.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
+
 
 Example:
 

@@ -22,7 +22,12 @@ type delCmd struct {
 func (d *delCmd) Info() (string, string) {
 	return "delete", `Remove a feed from our feed-list.
 
-Remove one or more specified URLs from our feed-list.
+Remove one or more specified URLs from the configuration file.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
 
 Example:
 

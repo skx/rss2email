@@ -30,6 +30,11 @@ This sub-command polls all configured feeds, sending an email for
 each item which is new.  Once the list of feeds has been processed
 the command will pause for 15 minutes, before beginning again.
 
+To see details of the configuration file, including the location, please
+run:
+
+   $ rss2email help config
+
 In terms of implementation this command follows everything documented
 in the 'cron' sub-command.  The only difference is this one never
 terminates - even if email-generation fails.

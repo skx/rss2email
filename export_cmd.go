@@ -26,6 +26,11 @@ func (e *exportCmd) Info() (string, string) {
 
 This command exports the list of configured feeds as an OPML file.
 
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
+
 Example:
 
     $ rss2email export

@@ -40,6 +40,14 @@ type importCmd struct {
 func (i *importCmd) Info() (string, string) {
 	return "import", `Import a list of feeds via an OPML file.
 
+This command imports a series of feeds from the specified OPML
+file into the configuration file this application uses.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
+
 Example:
 
     $ rss2email import file1.opml file2.opml .. fileN.opml

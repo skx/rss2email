@@ -22,7 +22,12 @@ type addCmd struct {
 func (a *addCmd) Info() (string, string) {
 	return "add", `Add a new feed to our feed-list.
 
-Add one or more specified URLs to our feed-list.
+Add one or more specified URLs to the configuration file.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
 
 Example:
 
