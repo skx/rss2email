@@ -6,7 +6,6 @@ Table of Contents
 =================
 
 * [RSS2Email](#rss2email)
-  * [Rationale](#rationale)
 * [Installation](#installation)
   * [Build with Go Modules](#build-with-go-modules)
   * [bash completion](#bash-completion)
@@ -30,28 +29,6 @@ Over time we've now gained a few more features:
   * See [email customization](#email-customization) for details.
 * The ability to send email via STMP, or via `/usr/sbin/sendmail`.
   * See [SMTP-setup](#smtp-setup) for details.
-
-
-
-## Rationale
-
-I prefer to keep my server(s) pretty minimal, and replacing `r2e` allowed
-me to remove a bunch of Python packages I otherwise had no need for:
-
-      steve@ssh ~ $ sudo dpkg --purge rss2email
-      Removing rss2email (1:3.9-2.1) ...
-
-      ssh ~ # apt-get autoremove
-      Reading package lists... Done
-      Building dependency tree
-      Reading state information... Done
-      The following packages will be REMOVED:
-       python-xdg python3-bs4 python3-chardet python3-feedparser python3-html2text
-       python3-html5lib python3-lxml python3-six python3-webencodings
-      0 upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
-
-This project is self-contained binary, and easy to deploy without the need for additional external libraries.
-
 
 
 # Installation
