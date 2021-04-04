@@ -22,8 +22,6 @@ import (
 	"os/user"
 	"path/filepath"
 	"strings"
-
-	"github.com/skx/rss2email/feedlist"
 )
 
 // Option contain options which are used on a per-feed basis.
@@ -67,28 +65,32 @@ func New() *ConfigFile {
 	return &ConfigFile{}
 }
 
+// Home returns the home-directory for the current user
+func (c *ConfigFile) Home() string {
+
+	// Default to using $HOME for our storage
+	home := os.Getenv("HOME")
+
+	// If that fails then get the current user, and use
+	// their home if possible.
+	if home == "" {
+		usr, err := user.Current()
+		if err == nil {
+			home = usr.HomeDir
+		}
+	}
+
+	return home
+}
+
 // Path returns the path to the configuration-file.
 func (c *ConfigFile) Path() string {
 
 	// If we've not calculated the path then do so now.
 	if c.path == "" {
-
-		// Default to using $HOME for our storage
-		home := os.Getenv("HOME")
-
-		// If that fails then get the current user, and use
-		// their home if possible.
-		if home == "" {
-			usr, err := user.Current()
-			if err == nil {
-				home = usr.HomeDir
-			}
-		}
-
-		// Now build up our file-path
-		c.path = filepath.Join(home, ".rss2email", "feeds.txt")
-
+		c.path = filepath.Join(c.Home(), ".rss2email", "feeds.txt")
 	}
+
 	return c.path
 }
 
@@ -112,14 +114,20 @@ func (c *ConfigFile) Upgrade() {
 		return
 	}
 
-	// Find the old file
-	list := feedlist.New("")
+	// OK create a new helper, and use that to read the
+	// older entries
+	old := New()
+	old.path = filepath.Join(c.Home(), ".rss2email", "feeds")
 
-	// Get the entries
-	old := list.Entries()
+	// Does it exist?
+	if !old.Exists() {
+		return
+	}
 
-	// No entries?  Nothing to do then.
-	if len(old) < 1 {
+	// Parse the old file
+	entries, err := old.Parse()
+	if err != nil {
+		fmt.Printf("Failed to upgrade legacy file from %s: %s\n", old.path, err.Error())
 		return
 	}
 
@@ -141,13 +149,13 @@ func (c *ConfigFile) Upgrade() {
   **************************************************************************
 `)
 
-	// For each entry in the list ..
-	for _, uri := range old {
-		c.Add(uri)
+	// For each entry
+	for _, ent := range entries {
+		c.Add(ent.URL)
 	}
 	c.Save()
 
-	fmt.Printf("\n\nMigration complete %d feeds were imported\n", len(old))
+	fmt.Printf("\n\nMigration complete %d feeds were imported\n", len(entries))
 
 }
 
