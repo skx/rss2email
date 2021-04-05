@@ -6,7 +6,6 @@ package main
 
 import (
 	"fmt"
-	"os"
 
 	"github.com/skx/rss2email/template"
 	"github.com/skx/subcommands"
@@ -48,12 +47,7 @@ Example:
 func (l *listDefaultTemplateCmd) Execute(args []string) int {
 
 	// Load the default template from the embedded resource.
-	content, err := template.EmailTemplate()
-	if err != nil {
-		fmt.Printf("failed to load embedded resource: %s\n", err.Error())
-		os.Exit(1)
-	}
-
+	content := template.EmailTemplate()
 	fmt.Fprintf(out, "%s\n", string(content))
 	return 0
 }

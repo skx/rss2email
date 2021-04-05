@@ -52,10 +52,7 @@ func New(feed *gofeed.Feed, item withstate.FeedItem) *Emailer {
 func (e *Emailer) loadTemplate() (*template.Template, error) {
 
 	// Load the default template from the embedded resource.
-	content, err := emailtemplate.EmailTemplate()
-	if err != nil {
-		return nil, fmt.Errorf("failed to load embedded resource: %s", err.Error())
-	}
+	content := emailtemplate.EmailTemplate()
 
 	//
 	// Is there an on-disk template instead?  If so use it.
@@ -75,7 +72,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	override := filepath.Join(home, ".rss2email", "email.tmpl")
 
 	// If the file exists, use it.
-	_, err = os.Stat(override)
+	_, err := os.Stat(override)
 	if !os.IsNotExist(err) {
 		content, err = ioutil.ReadFile(override)
 		if err != nil {
