@@ -6,6 +6,7 @@ package main
 
 import (
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"io/ioutil"
 
@@ -34,6 +35,9 @@ type importCmd struct {
 
 	// We embed the NoFlags option, because we accept no command-line flags.
 	subcommands.NoFlags
+
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
 }
 
 // Info is part of the subcommand-API
@@ -54,22 +58,25 @@ Example:
 `
 }
 
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (i *importCmd) Arguments(flags *flag.FlagSet) {
+	i.config = configfile.New()
+}
+
 // Execute is invoked if the user specifies `import` as the subcommand.
 func (i *importCmd) Execute(args []string) int {
 
-	// Get the configuration-file
-	conf := configfile.New()
-
 	// Upgrade it if necessary
-	conf.Upgrade()
+	i.config.Upgrade()
 
-	_, err := conf.Parse()
+	_, err := i.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())
 		return 1
 	}
-
-	added := 0
 
 	// For each file on the command-line
 	for _, file := range args {
@@ -88,25 +95,21 @@ func (i *importCmd) Execute(args []string) int {
 			fmt.Printf("failed to parse %s: %s\n", file, err.Error())
 			continue
 		}
-		entries := make([]string, len(o.Outlines))
-		for i, outline := range o.Outlines {
+
+		for _, outline := range o.Outlines {
 
 			if outline.XMLURL != "" {
 				fmt.Printf("Adding %s\n", outline.XMLURL)
-				entries[i] = outline.XMLURL
-				added++
+				i.config.Add(outline.XMLURL)
 			}
 		}
 
-		conf.Add(entries...)
 	}
 
 	// Did we make a change?  Then add them.
-	if added > 0 {
-		err := conf.Save()
-		if err != nil {
-			fmt.Printf("failed to update feed list: %s\n", err.Error())
-		}
+	err = i.config.Save()
+	if err != nil {
+		fmt.Printf("failed to update feed list: %s\n", err.Error())
 	}
 
 	// All done.
