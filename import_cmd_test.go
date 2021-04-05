@@ -31,6 +31,9 @@ https://example.net/
 
 	// Create an OPML file to use as input
 	opml, err := ioutil.TempFile("", "opml")
+	if err != nil {
+		t.Fatalf("Error creating temporary file for OMPL input")
+	}
 	d1 := []byte(`
 <?xml version="1.0" encoding="utf-8"?>
 <opml version="1.0">
