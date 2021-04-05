@@ -121,21 +121,21 @@ func TestPrune(t *testing.T) {
 
 		// These will remain - not be pruned - because
 		// their names are not SHA1 hashes
-		Entry{"foo", true, true},
-		Entry{"bar", false, true},
+		{"foo", true, true},
+		{"bar", false, true},
 
 		// Note "X" in name
-		Entry{"9cX5770b3bb4b2a1d59be2d97e34379cd192299f", true, true},
+		{"9cX5770b3bb4b2a1d59be2d97e34379cd192299f", true, true},
 
 		// We expect this to be reaped ("steve")
 		//
 		// The file is "old", and has a suitable name.
-		Entry{"9ce5770b3bb4b2a1d59be2d97e34379cd192299f", true, false},
+		{"9ce5770b3bb4b2a1d59be2d97e34379cd192299f", true, false},
 
 		// But not this ("kemp")
 		//
 		// This file is "new" so the name doesn't matter.
-		Entry{"d2e31a60feabe8a58c828264eb0a75257fbe45ad", false, true},
+		{"d2e31a60feabe8a58c828264eb0a75257fbe45ad", false, true},
 	}
 
 	// Create a temporary directory

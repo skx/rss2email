@@ -15,8 +15,6 @@ import (
 	"github.com/skx/rss2email/configfile"
 )
 
-const ()
-
 // HTTPFetch is our state-storing structure
 type HTTPFetch struct {
 
