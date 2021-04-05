@@ -54,6 +54,6 @@ func (l *listDefaultTemplateCmd) Execute(args []string) int {
 		os.Exit(1)
 	}
 
-	fmt.Printf("%s\n", string(content))
+	fmt.Fprintf(out, "%s\n", string(content))
 	return 0
 }

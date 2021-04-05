@@ -5,8 +5,8 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 	"text/template"
 
 	"github.com/skx/rss2email/configfile"
@@ -18,6 +18,9 @@ type exportCmd struct {
 
 	// We embed the NoFlags option, because we accept no command-line flags.
 	subcommands.NoFlags
+
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
 }
 
 // Info is part of the subcommand-API
@@ -37,6 +40,14 @@ Example:
 `
 }
 
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (e *exportCmd) Arguments(flags *flag.FlagSet) {
+	e.config = configfile.New()
+}
+
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (e *exportCmd) Execute(args []string) int {
 
@@ -51,14 +62,11 @@ func (e *exportCmd) Execute(args []string) int {
 	}
 	data := TemplateData{}
 
-	// Get the configuration-file
-	conf := configfile.New()
-
-	// Upgrade it if necessary
-	conf.Upgrade()
+	// Upgrade our configuration file if necessary
+	e.config.Upgrade()
 
 	// Now do the parsing
-	entries, err := conf.Parse()
+	entries, err := e.config.Parse()
 	if err != nil {
 		fmt.Printf("Error with config-file: %s\n", err.Error())
 		return 1
@@ -83,7 +91,7 @@ func (e *exportCmd) Execute(args []string) int {
 `
 	// Compile the template and write to STDOUT
 	t := template.Must(template.New("tmpl").Parse(tmpl))
-	err = t.Execute(os.Stdout, data)
+	err = t.Execute(out, data)
 	if err != nil {
 		fmt.Printf("error rendering template: %s\n", err.Error())
 		return 1

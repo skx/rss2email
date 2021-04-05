@@ -101,10 +101,10 @@ delay   | The amount of time to sleep between retried HTTP-fetches.
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (a *configCmd) Execute(args []string) int {
 
-	fmt.Printf("This command only exists to show help, when executed as")
-	fmt.Printf("\n")
-	fmt.Printf("rss2email help config")
-	fmt.Printf("\n")
+	fmt.Fprintf(out, "This command only exists to show help, when executed as:")
+	fmt.Fprintf(out, "\n")
+	fmt.Fprintf(out, "rss2email help config")
+	fmt.Fprintf(out, "\n")
 
 	// All done, with no errors.
 	return 0
