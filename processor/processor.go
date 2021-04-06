@@ -107,6 +107,9 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// If we've not already notified about this one.
 		if item.IsNew() {
 
+			// Should we skip this item?
+			skip := false
+
 			// Show the new item.
 			if p.verbose {
 				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
@@ -119,27 +122,36 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 					content = item.RawContent()
 				}
 
-				// Should we skip this one?
-				skip := false
-
 				// Walk over the options for this feed
 				for _, opt := range entry.Options {
 
-					// Exclude?
+					// If we're already skipping we can
+					// stop here.
+					if skip {
+						continue
+					}
+					// Exclude by title?
+					if opt.Name == "exclude-title" {
+						match, _ := regexp.MatchString(opt.Value, item.Title)
+						if match {
+							skip = true
+						}
+					}
+
+					// Exclude by body/content?
 					if opt.Name == "exclude" {
 
 						match, _ := regexp.MatchString(opt.Value, content)
 						if match {
-							if p.verbose {
-								fmt.Printf("\t\t\tSkipping Entry - it matched the exclude pattern '%s'\n", opt.Value)
-
-							}
 							skip = true
 						}
 					}
 				}
 
 				if skip {
+					if p.verbose {
+						fmt.Printf("\t\t\tSkipping Entry due to exclude-setting.\n")
+					}
 					continue
 				}
 
