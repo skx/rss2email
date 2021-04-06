@@ -9,14 +9,10 @@ import (
 	"fmt"
 
 	"github.com/skx/rss2email/configfile"
-	"github.com/skx/subcommands"
 )
 
 // Structure for our options and state.
 type addCmd struct {
-
-	// We embed the NoFlags option, because we accept no command-line flags.
-	subcommands.NoFlags
 
 	// Configuration file, used for testing
 	config *configfile.ConfigFile
