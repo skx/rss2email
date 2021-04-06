@@ -2,8 +2,13 @@ package main
 
 import (
 	"bytes"
+	"flag"
+	"io/ioutil"
+	"os"
 	"strings"
 	"testing"
+
+	"github.com/skx/rss2email/configfile"
 )
 
 func TestConfig(t *testing.T) {
@@ -33,6 +38,46 @@ func TestConfig(t *testing.T) {
 	for _, txt := range expected {
 		if !strings.Contains(output, txt) {
 			t.Fatalf("Failed to find expected output")
+		}
+	}
+}
+
+// TestMissingConfig ensures we see a warning if the configuration
+// file is not present.
+func TestMissingConfig(t *testing.T) {
+
+	// Create a temporary file, so we get a name of something
+	// that doesn't exist
+	tmpfile, err := ioutil.TempFile("", "example")
+	if err != nil {
+		t.Fatalf("failed to create temporary file")
+	}
+	os.Remove(tmpfile.Name())
+
+	//
+	// Setup a configuration-file, which doesn't exist.
+	//
+	s := configCmd{}
+	flags := flag.NewFlagSet("test", flag.ContinueOnError)
+	s.Arguments(flags)
+	config := configfile.NewWithPath(tmpfile.Name())
+	s.config = config
+
+	// Get the documentation
+	_, doc := s.Info()
+
+	//
+	// Look for some lines in the output
+	//
+	expected := []string{
+		"The configuration file does not currently exist!",
+		"If nothing is present this application will do nothing useful!",
+		tmpfile.Name(),
+	}
+
+	for _, txt := range expected {
+		if !strings.Contains(doc, txt) {
+			t.Fatalf("Failed to find expected output: %s", txt)
 		}
 	}
 }

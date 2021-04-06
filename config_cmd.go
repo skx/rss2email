@@ -5,26 +5,36 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
 	"github.com/skx/rss2email/configfile"
-	"github.com/skx/subcommands"
 )
 
 // Structure for our options and state.
 type configCmd struct {
 
-	// We embed the NoFlags option, because we accept no command-line flags.
-	subcommands.NoFlags
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
+}
+
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (c *configCmd) Arguments(flags *flag.FlagSet) {
+	c.config = configfile.New()
 }
 
 // Info is part of the subcommand-API
-func (a *configCmd) Info() (string, string) {
+func (c *configCmd) Info() (string, string) {
 
 	// Get some details of the (new) configuration file.
-	conf := configfile.New()
-	path := conf.Path()
-	exists := conf.Exists()
+	if c.config == nil {
+		c.config = configfile.New()
+	}
+	path := c.config.Path()
+	exists := c.config.Exists()
 
 	name := "config"
 	doc := `Provide documentation for our configuration file.
@@ -89,17 +99,18 @@ as such.
 Available Options
 ------------------
 
-Key     | Purpose
---------+-------------------------------------------------------------------
-exclude | Exclude any feed-entries matching the given regular-expression.
-retry   | The maximum number of times a failing HTTP-fetch should be retried.
-delay   | The amount of time to sleep between retried HTTP-fetches.
+Key           | Purpose
+--------------+--------------------------------------------------------------
+exclude       | Exclude any item which matches the given regular-expression.
+exclude-title | Exclude any item title matching the given regular-expression.
+retry         | The maximum number of times to retry a failing HTTP-fetch.
+delay         | The amount of time to sleep between retried HTTP-fetches.
 `
 	return name, doc
 }
 
 // Execute is invoked if the user specifies `add` as the subcommand.
-func (a *configCmd) Execute(args []string) int {
+func (c *configCmd) Execute(args []string) int {
 
 	fmt.Fprintf(out, "This command only exists to show help, when executed as:")
 	fmt.Fprintf(out, "\n")
