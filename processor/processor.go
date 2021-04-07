@@ -1,6 +1,11 @@
 // Package processor contains the code which will actually poll
 // the list of URLs the user is watching, and send emails for those
 // entries which are new.
+//
+// Items which are excluded are treated the same as normal items,
+// in the sense they are processed once and then marked as having
+// been seen - the only difference is no email is actually generated
+// for them.
 package processor
 
 import (
@@ -79,7 +84,8 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 // processFeed takes a configuration entry as input, fetches the appropriate
 // remote contents, and then processes each feed item found within it.
 //
-// Feed items which are new/unread will generate an email.
+// Feed items which are new/unread will generate an email, unless they are
+// specifically excluded by the per-feed options.
 func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
 	// Show what we're doing.
@@ -101,7 +107,9 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	// For each entry in the feed ..
 	for _, xp := range feed.Items {
 
-		// Wrap it so we can use our helper methods
+		// Wrap the feed-item in a class of our own,
+		// so that we can use our helper methods to mark
+		// read-state.
 		item := withstate.FeedItem{Item: xp}
 
 		// If we've not already notified about this one.
@@ -112,15 +120,25 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				fmt.Printf("\t\tFeed entry: %s\n", item.Title)
 			}
 
-			// If we're supposed to send email then do that
+			// If we're supposed to send email then do that.
 			if p.send {
 
+				// Get the content of the feed-item.
+				//
+				// This has to be done ahead of sending email,
+				// as we can use this to skip entries via
+				// regular expression on the title/body contents.
 				content, err := item.HTMLContent()
 				if err != nil {
 					content = item.RawContent()
 				}
 
-				if !p.shouldSkip(entry, item, content) {
+				// Should we skip this entry?
+				//
+				// Skipping here means that we don't send an email,
+				// however we do mark it as read - so it will only
+				// be processed once.
+				if !p.shouldSkip(entry, item.Title, content) {
 
 					// Convert the content to text.
 					text := html2text.HTML2Text(content)
@@ -136,7 +154,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		}
 
 		// Mark the item as having been seen, after the
-		// email was sent.
+		// email was (probably) sent.
 		//
 		// This does run the risk that sending mail
 		// fails, due to error, and that keeps happening
@@ -149,16 +167,21 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 // shouldSkip returns true if this entry should be skipped.
 //
-// If an entry should be skipped it is still marked as read, but no email is sent.
-func (p *Processor) shouldSkip(config configfile.Feed, item withstate.FeedItem, content string) bool {
+// Our configuration file allows a series of per-feed configuration items,
+// and those allow skipping the entry by regular expression matches on
+// the item title or body.
+//
+// Note that if an entry should be skipped it is still marked as
+// having been read, but no email is sent.
+func (p *Processor) shouldSkip(config configfile.Feed, title string, content string) bool {
 
-	// Walk over the options for this feed to see if the new entry
-	// should be skipped.
+	// Walk over the options to see if there are any exclude* options
+	// specified.
 	for _, opt := range config.Options {
 
 		// Exclude by title?
 		if opt.Name == "exclude-title" {
-			match, _ := regexp.MatchString(opt.Value, item.Title)
+			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
 				if p.verbose {
 					fmt.Printf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value)
