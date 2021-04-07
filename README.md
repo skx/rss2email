@@ -70,9 +70,9 @@ OPML files can be imported via the `import` sub-command:
 
      $ rss2email import feeds.opml
 
-The list of feeds can be displayed via the `list` subcommand:
+The list of feeds can be displayed via the `list` subcommand (note that adding the `-verbose` flag will fetch each of the feeds and that will be slow):
 
-     $ rss2email list
+     $ rss2email list [-verbose]
 
 Finally you can remove an entry from the feed-list via the `delete` sub-command:
 
@@ -89,10 +89,16 @@ This is documented and explained in the integrated help:
 
     $ rss2email help config
 
+Adding per-feed items allows excluding feed-entries by regular expression, for example this does what you'd expect:
+
+       https://www.filfre.net/feed/rss/
+        - exclude-title: The Analog Antiquarian
+
+
 
 # Usage
 
-Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing the configuration file `~/.rss2email/feeds.txt` directly, you are now ready to actually launch the application.
+Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing the configuration file directly, you are now ready to actually launch the application.
 
 To run the application, announcing all new feed-items by email to `user@host.com` you'd run this:
 
@@ -126,7 +132,7 @@ Typically you'd invoke `rss2email` with the `cron` sub-command as we documented 
 * For each feed-item which is new generate and send an email.
 * Terminate.
 
-The `daemon` process does exactly the same thing, however it does __not__ terminate.  Instead the process becomes:
+The `daemon` process does a similar thing, however it does __not__ terminate.  Instead the process becomes:
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
