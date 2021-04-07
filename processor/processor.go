@@ -84,7 +84,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 	// Show what we're doing.
 	if p.verbose {
-		fmt.Printf("Fetching: %s\n", entry.URL)
+		fmt.Printf("Fetching feed: %s\n", entry.URL)
 	}
 
 	// Fetch the feed for the input URL
@@ -95,7 +95,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	}
 
 	if p.verbose {
-		fmt.Printf("\tFound %d entries\n", len(feed.Items))
+		fmt.Printf("\tFeed contains %d entries\n", len(feed.Items))
 	}
 
 	// For each entry in the feed ..
@@ -107,62 +107,30 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// If we've not already notified about this one.
 		if item.IsNew() {
 
-			// Should we skip this item?
-			skip := false
-
 			// Show the new item.
 			if p.verbose {
-				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
+				fmt.Printf("\t\tFeed entry: %s\n", item.Title)
 			}
 
 			// If we're supposed to send email then do that
 			if p.send {
+
 				content, err := item.HTMLContent()
 				if err != nil {
 					content = item.RawContent()
 				}
 
-				// Walk over the options for this feed
-				for _, opt := range entry.Options {
+				if !p.shouldSkip(entry, item, content) {
 
-					// If we're already skipping we can
-					// stop here.
-					if skip {
-						continue
+					// Convert the content to text.
+					text := html2text.HTML2Text(content)
+
+					// Send the mail
+					helper := emailer.New(feed, item)
+					err = helper.Sendmail(recipients, text, content)
+					if err != nil {
+						return err
 					}
-					// Exclude by title?
-					if opt.Name == "exclude-title" {
-						match, _ := regexp.MatchString(opt.Value, item.Title)
-						if match {
-							skip = true
-						}
-					}
-
-					// Exclude by body/content?
-					if opt.Name == "exclude" {
-
-						match, _ := regexp.MatchString(opt.Value, content)
-						if match {
-							skip = true
-						}
-					}
-				}
-
-				if skip {
-					if p.verbose {
-						fmt.Printf("\t\t\tSkipping Entry due to exclude-setting.\n")
-					}
-					continue
-				}
-
-				// Convert the content to text.
-				text := html2text.HTML2Text(content)
-
-				// Send the mail
-				helper := emailer.New(feed, item)
-				err = helper.Sendmail(recipients, text, content)
-				if err != nil {
-					return err
 				}
 			}
 		}
@@ -177,6 +145,42 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	}
 
 	return nil
+}
+
+// shouldSkip returns true if this entry should be skipped.
+//
+// If an entry should be skipped it is still marked as read, but no email is sent.
+func (p *Processor) shouldSkip(config configfile.Feed, item withstate.FeedItem, content string) bool {
+
+	// Walk over the options for this feed to see if the new entry
+	// should be skipped.
+	for _, opt := range config.Options {
+
+		// Exclude by title?
+		if opt.Name == "exclude-title" {
+			match, _ := regexp.MatchString(opt.Value, item.Title)
+			if match {
+				if p.verbose {
+					fmt.Printf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value)
+				}
+				return true
+			}
+		}
+
+		// Exclude by body/content?
+		if opt.Name == "exclude" {
+
+			match, _ := regexp.MatchString(opt.Value, content)
+			if match {
+				if p.verbose {
+					fmt.Printf("\t\t\tSkipping due to 'exclude' match of %s.\n", opt.Value)
+				}
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // SetVerbose updates the verbosity state of this object.
