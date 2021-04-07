@@ -16,7 +16,7 @@ func TestCronNoArguments(t *testing.T) {
 
 func TestCronNotEmails(t *testing.T) {
 
-	d := daemonCmd{}
+	d := cronCmd{}
 
 	out := d.Execute([]string{"foo@example.com", "bar"})
 	if out != 1 {

@@ -25,10 +25,19 @@ func TestExists(t *testing.T) {
 		t.Fatalf("The config file doesn't exist, and it should!")
 	}
 
+	// Same again with the different constructor.
+	conf2 := NewWithPath(tmpfile.Name())
+	if !conf2.Exists() {
+		t.Fatalf("The config file doesn't exist, and it should!")
+	}
+
 	// Remove it
 	os.Remove(conf.path)
 
 	if conf.Exists() {
+		t.Fatalf("Config file exists, but we just deleted it!")
+	}
+	if conf2.Exists() {
 		t.Fatalf("Config file exists, but we just deleted it!")
 	}
 
@@ -36,6 +45,52 @@ func TestExists(t *testing.T) {
 	_, err = conf.Parse()
 	if err == nil {
 		t.Fatalf("Expected an error parsing a missing file, got none!")
+	}
+}
+
+// TestHome ensures that the result of Home() is a directory, and that our
+// default configuration has that as a prefix.
+func TestHome(t *testing.T) {
+
+	config := New()
+	home := config.Home()
+	fi, err := os.Stat(home)
+	if err != nil {
+		t.Fatalf("Failed to stat()")
+	}
+
+	mode := fi.Mode()
+
+	if !mode.IsDir() {
+		t.Fatalf("Home() resulted in a non-directory")
+	}
+
+	// Test the path starts beneath home
+	path := config.Path()
+	if !strings.HasPrefix(path, home) {
+		t.Fatalf("config file doesn't seem to exist beneath home")
+	}
+
+	//
+	// Same again, but unset the environmental variable too
+	//
+	os.Unsetenv("HOME")
+	home = config.Home()
+	fi, err = os.Stat(home)
+	if err != nil {
+		t.Fatalf("Failed to stat()")
+	}
+
+	mode = fi.Mode()
+
+	if !mode.IsDir() {
+		t.Fatalf("Home() resulted in a non-directory")
+	}
+
+	// Test the path starts beneath home
+	path = config.Path()
+	if !strings.HasPrefix(path, home) {
+		t.Fatalf("config file doesn't seem to exist beneath home")
 	}
 }
 
