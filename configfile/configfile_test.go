@@ -86,12 +86,6 @@ func TestHome(t *testing.T) {
 	if !mode.IsDir() {
 		t.Fatalf("Home() resulted in a non-directory")
 	}
-
-	// Test the path starts beneath home
-	path = config.Path()
-	if !strings.HasPrefix(path, home) {
-		t.Fatalf("config file doesn't seem to exist beneath home")
-	}
 }
 
 // TestBasicFile tests parsing a basic file.
