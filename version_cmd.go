@@ -7,8 +7,15 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
+	"os"
 	"runtime"
 )
+
+//
+// modified during testing
+//
+var out io.Writer = os.Stdout
 
 var (
 	version = "unreleased"
@@ -35,9 +42,9 @@ func (v *versionCmd) Arguments(f *flag.FlagSet) {
 // Show the version - using the "out"-writer.
 //
 func showVersion(verbose bool) {
-	fmt.Printf("%s\n", version)
+	fmt.Fprintf(out, "%s\n", version)
 	if verbose {
-		fmt.Printf("Built with %s\n", runtime.Version())
+		fmt.Fprintf(out, "Built with %s\n", runtime.Version())
 	}
 }
 

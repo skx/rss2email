@@ -6,7 +6,6 @@ Table of Contents
 =================
 
 * [RSS2Email](#rss2email)
-  * [Rationale](#rationale)
 * [Installation](#installation)
   * [Build with Go Modules](#build-with-go-modules)
   * [bash completion](#bash-completion)
@@ -16,6 +15,7 @@ Table of Contents
 * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
 * [Email Customization](#email-customization)
+* [Implementation Overview](#implementation-overview)
 * [Github Setup](#github-setup)
 
 
@@ -32,28 +32,6 @@ Over time we've now gained a few more features:
   * See [SMTP-setup](#smtp-setup) for details.
 
 
-
-## Rationale
-
-I prefer to keep my server(s) pretty minimal, and replacing `r2e` allowed
-me to remove a bunch of Python packages I otherwise had no need for:
-
-      steve@ssh ~ $ sudo dpkg --purge rss2email
-      Removing rss2email (1:3.9-2.1) ...
-
-      ssh ~ # apt-get autoremove
-      Reading package lists... Done
-      Building dependency tree
-      Reading state information... Done
-      The following packages will be REMOVED:
-       python-xdg python3-bs4 python3-chardet python3-feedparser python3-html2text
-       python3-html5lib python3-lxml python3-six python3-webencodings
-      0 upgraded, 0 newly installed, 9 to remove and 0 not upgraded.
-
-This project is self-contained binary, and easy to deploy without the need for additional external libraries.
-
-
-
 # Installation
 
 If you wish you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
@@ -66,7 +44,7 @@ If you wish you can fetch a binary from [our release page](https://github.com/sk
     cd rss2email
     go install
 
-**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our template within the binary.
+**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our email-template within the binary.
 
 
 ## bash completion
@@ -80,7 +58,11 @@ source <(./rss2email bash-completion)
 
 # Feed Configuration
 
-Once you have installed the application you'll need to configure the feeds to monitor.  The list of URLs to monitor are stored in `~/.rss2email/feeds` and you can create/edit that file by hand if you wish.  However we do have several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
+Once you have installed the application you'll need to configure the feeds to monitor.   As of the 2.x release of `rss2email` the configuration file is:
+
+* `~/.rss2email/feeds.txt`
+
+You can create/edit that file by hand if you wish, however there are several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
 
@@ -88,20 +70,35 @@ OPML files can be imported via the `import` sub-command:
 
      $ rss2email import feeds.opml
 
-The list of feeds can be displayed via the `list` subcommand:
+The list of feeds can be displayed via the `list` subcommand (note that adding the `-verbose` flag will fetch each of the feeds and that will be slow):
 
-     $ rss2email list
-
-> **NOTE**: You can add `-verbose` to list the number of entries present in each feed, and get an idea of the age of entries.  This will be a little slow as URLs are fetched to process them.
+     $ rss2email list [-verbose]
 
 Finally you can remove an entry from the feed-list via the `delete` sub-command:
 
      $ rss2email delete https://example.com/foo.rss
 
+The configuration file in its simplest form is nothing more than a list of URLs, one per line.  However there is also support for adding per-feed options:
+
+       https://foo.example.com/
+        - key:value
+       https://foo.example.com/
+        - key2:value2
+
+This is documented and explained in the integrated help:
+
+    $ rss2email help config
+
+Adding per-feed items allows excluding feed-entries by regular expression, for example this does what you'd expect:
+
+       https://www.filfre.net/feed/rss/
+        - exclude-title: The Analog Antiquarian
+
+
 
 # Usage
 
-Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing `~/.rss2email/feeds` directly, you are now ready to actually launch the application.
+Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing the configuration file directly, you are now ready to actually launch the application.
 
 To run the application, announcing all new feed-items by email to `user@host.com` you'd run this:
 
@@ -133,9 +130,9 @@ Typically you'd invoke `rss2email` with the `cron` sub-command as we documented 
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
-* Terminate
+* Terminate.
 
-The `daemon` process does exactly the same thing, however it does __not__ terminate.  Instead the process becomes:
+The `daemon` process does a similar thing, however it does __not__ terminate.  Instead the process becomes:
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
@@ -214,6 +211,20 @@ If you're a developer who wishes to submit changes to the embedded version you s
 * Edit `template/template.txt`, which is the source of the template.
 * Rebuild the application to update the embedded copy.
 
+
+# Implementation Overview
+
+The two main commands are `cron` and `daemon` and they work in roughly the same way:
+
+* They instantiate [processor/processor.go](processor/processor.go) to run the logic
+  * That walks over the list of feeds from [configfile/configfile.go](configfile/configfile.go).
+  * For each feed [httpfetch/httpfetch.go](httpfetch/httpfetch.go) is used to fetch the contents.
+  * The result is a collection of `*gofeed.Feed` items, one for each entry in the remote feed.
+    * These are wrapped via [withstate/feeditem.go](withstate/feeditem.go) so we can test if they're new.
+    * [processor/emailer/emailer.go](processor/emailer/emailer.go) is used to send the email if necessary.
+    * Either by SMTP or by executing `/usr/sbin/sendmail`
+
+The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go]) to add/delete/list the contents of the feed-list.
 
 
 # Github Setup

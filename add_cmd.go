@@ -5,24 +5,37 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 
-	"github.com/skx/rss2email/feedlist"
-	"github.com/skx/subcommands"
+	"github.com/skx/rss2email/configfile"
 )
 
 // Structure for our options and state.
 type addCmd struct {
 
-	// We embed the NoFlags option, because we accept no command-line flags.
-	subcommands.NoFlags
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
+}
+
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (a *addCmd) Arguments(flags *flag.FlagSet) {
+	a.config = configfile.New()
 }
 
 // Info is part of the subcommand-API
 func (a *addCmd) Info() (string, string) {
 	return "add", `Add a new feed to our feed-list.
 
-Add one or more specified URLs to our feed-list.
+Add one or more specified URLs to the configuration file.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
 
 Example:
 
@@ -33,23 +46,24 @@ Example:
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (a *addCmd) Execute(args []string) int {
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Upgrade our configuration-file if necessary
+	a.config.Upgrade()
+
+	_, err := a.config.Parse()
+	if err != nil {
+		fmt.Printf("Error parsing file: %s\n", err.Error())
+		return 1
+	}
 
 	// For each argument add it to the list
 	for _, entry := range args {
 
 		// Add the entry
-		errors := list.Add(entry)
-
-		// Errors?
-		for _, err := range errors {
-			fmt.Printf("%s\n", (err.Error()))
-		}
+		a.config.Add(entry)
 	}
 
 	// Save the list.
-	err := list.Save()
+	err = a.config.Save()
 	if err != nil {
 		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
 		return 1

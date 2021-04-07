@@ -5,15 +5,17 @@
 package main
 
 import (
-	"flag"
 	"fmt"
-	"os"
 
 	"github.com/skx/rss2email/template"
+	"github.com/skx/subcommands"
 )
 
 // listDefaultTemplateCmd holds our state.
 type listDefaultTemplateCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
 }
 
 // Info is part of the subcommand-API
@@ -39,22 +41,13 @@ Example:
 `
 }
 
-// Arguments handles our flag-setup.
-func (l *listDefaultTemplateCmd) Arguments(f *flag.FlagSet) {
-}
-
 //
 // Entry-point.
 //
 func (l *listDefaultTemplateCmd) Execute(args []string) int {
 
 	// Load the default template from the embedded resource.
-	content, err := template.EmailTemplate()
-	if err != nil {
-		fmt.Printf("failed to load embedded resource: %s\n", err.Error())
-		os.Exit(1)
-	}
-
-	fmt.Printf("%s\n", string(content))
+	content := template.EmailTemplate()
+	fmt.Fprintf(out, "%s\n", string(content))
 	return 0
 }

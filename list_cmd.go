@@ -7,38 +7,100 @@ package main
 import (
 	"flag"
 	"fmt"
-	"os"
+	"time"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
+	"github.com/skx/rss2email/httpfetch"
+)
+
+var (
+	maxInt = int(^uint(0) >> 1)
 )
 
 // Structure for our options and state.
 type listCmd struct {
 
-	// Should we list the template-contents, rather than the feed list?
-	template bool
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
 
-	// Should we show extra information about a feed?
+	// verbose controls whether our feed-list contains information
+	// about feed entries and their ages
 	verbose bool
+}
+
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (l *listCmd) Arguments(flags *flag.FlagSet) {
+
+	// Setup configuration file
+	l.config = configfile.New()
+
+	// Are we listing verbosely?
+	flags.BoolVar(&l.verbose, "verbose", false, "Show extra information about each feed (slow)?")
 }
 
 // Info is part of the subcommand-API
 func (l *listCmd) Info() (string, string) {
 	return "list", `Output the list of feeds which are being polled.
 
-This subcommand lists the configured feeds which will be polled.
+This subcommand lists the feeds which are specified in the
+configuration file.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
+
+
+You can add '-verbose' to see details about the feed contents, but note
+that this will require downloading the contents of each feed and will
+thus be slow.
 
 Example:
 
     $ rss2email list
-    $ rss2email list -verbose
 `
 }
 
-// Arguments handles our flag-setup.
-func (l *listCmd) Arguments(f *flag.FlagSet) {
-	f.BoolVar(&l.template, "template", false, "Show the contents of the default template?")
-	f.BoolVar(&l.verbose, "verbose", false, "Show extra information about each feed?")
+func (l *listCmd) showFeedDetails(entry configfile.Feed) {
+
+	// Fetch the details
+	helper := httpfetch.New(entry)
+	feed, err := helper.Fetch()
+	if err != nil {
+		fmt.Fprintf(out, "# %s\n%s\n", err.Error(), entry.URL)
+		return
+	}
+
+	// Handle single vs. plural entries
+	entriesString := "entries"
+	if len(feed.Items) == 1 {
+		entriesString = "entry"
+	}
+
+	// get the age-range of the feed-entries
+	oldest := -1
+	newest := maxInt
+	for _, item := range feed.Items {
+		if item.PublishedParsed == nil {
+			break
+		}
+
+		age := int(time.Since(*item.PublishedParsed) / (24 * time.Hour))
+		if age > oldest {
+			oldest = age
+		}
+
+		if age < newest {
+			newest = age
+		}
+	}
+
+	// Now show the details, which is a bit messy.
+	fmt.Fprintf(out, "# %d %s, aged %d-%d days\n", len(feed.Items), entriesString, newest, oldest)
+	fmt.Fprintf(out, "%s\n", entry.URL)
 }
 
 //
@@ -46,16 +108,25 @@ func (l *listCmd) Arguments(f *flag.FlagSet) {
 //
 func (l *listCmd) Execute(args []string) int {
 
-	if l.template {
+	// Upgrade our configuration-file if necessary
+	l.config.Upgrade()
 
-		fmt.Fprintln(os.Stderr, "'rss2email list -template' was replaced by 'rss2email list-default-template'")
+	// Now do the parsing
+	entries, err := l.config.Parse()
+	if err != nil {
+		fmt.Printf("Error with config-file: %s\n", err.Error())
 		return 1
 	}
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Show the feeds
+	for _, entry := range entries {
 
-	list.WriteAllEntriesIncludingComments(os.Stdout, l.verbose)
+		if l.verbose {
+			l.showFeedDetails(entry)
+		} else {
+			fmt.Fprintf(out, "%s\n", entry.URL)
+		}
+	}
 
 	return 0
 }

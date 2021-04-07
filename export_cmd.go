@@ -5,11 +5,11 @@
 package main
 
 import (
+	"flag"
 	"fmt"
-	"os"
 	"text/template"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -18,6 +18,9 @@ type exportCmd struct {
 
 	// We embed the NoFlags option, because we accept no command-line flags.
 	subcommands.NoFlags
+
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
 }
 
 // Info is part of the subcommand-API
@@ -26,10 +29,23 @@ func (e *exportCmd) Info() (string, string) {
 
 This command exports the list of configured feeds as an OPML file.
 
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
+
 Example:
 
     $ rss2email export
 `
+}
+
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (e *exportCmd) Arguments(flags *flag.FlagSet) {
+	e.config = configfile.New()
 }
 
 // Execute is invoked if the user specifies `add` as the subcommand.
@@ -46,11 +62,19 @@ func (e *exportCmd) Execute(args []string) int {
 	}
 	data := TemplateData{}
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Upgrade our configuration file if necessary
+	e.config.Upgrade()
 
-	for _, entry := range list.Entries() {
-		data.Entries = append(data.Entries, Feed{URL: entry})
+	// Now do the parsing
+	entries, err := e.config.Parse()
+	if err != nil {
+		fmt.Printf("Error with config-file: %s\n", err.Error())
+		return 1
+	}
+
+	// Populate our template variables
+	for _, entry := range entries {
+		data.Entries = append(data.Entries, Feed{URL: entry.URL})
 	}
 
 	// Template
@@ -67,7 +91,7 @@ func (e *exportCmd) Execute(args []string) int {
 `
 	// Compile the template and write to STDOUT
 	t := template.Must(template.New("tmpl").Parse(tmpl))
-	err := t.Execute(os.Stdout, data)
+	err = t.Execute(out, data)
 	if err != nil {
 		fmt.Printf("error rendering template: %s\n", err.Error())
 		return 1

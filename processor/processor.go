@@ -1,13 +1,20 @@
 // Package processor contains the code which will actually poll
 // the list of URLs the user is watching, and send emails for those
 // entries which are new.
+//
+// Items which are excluded are treated the same as normal items,
+// in the sense they are processed once and then marked as having
+// been seen - the only difference is no email is actually generated
+// for them.
 package processor
 
 import (
 	"fmt"
+	"regexp"
 
 	"github.com/k3a/html2text"
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
+	"github.com/skx/rss2email/httpfetch"
 	"github.com/skx/rss2email/processor/emailer"
 	"github.com/skx/rss2email/withstate"
 )
@@ -37,16 +44,26 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	//
 	var errors []error
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Get the configuration-file
+	conf := configfile.New()
+
+	// Upgrade it if necessary
+	conf.Upgrade()
+
+	// Now do the parsing
+	entries, err := conf.Parse()
+	if err != nil {
+		errors = append(errors, fmt.Errorf("error with config-file %s - %s", conf.Path(), err))
+		return errors
+	}
 
 	// For each entry in the list ..
-	for _, uri := range list.Entries() {
+	for _, entry := range entries {
 
 		// Handle it.
-		err := p.processURL(uri, recipients)
+		err := p.processFeed(entry, recipients)
 		if err != nil {
-			errors = append(errors, fmt.Errorf("error processing %s - %s", uri, err))
+			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
 		}
 	}
 
@@ -64,31 +81,35 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	return errors
 }
 
-// processURL takes an URL as input, fetches the contents, and then
-// processes each feed item found within it.
+// processFeed takes a configuration entry as input, fetches the appropriate
+// remote contents, and then processes each feed item found within it.
 //
-// Feed items which are new/unread will generate an email.
-func (p *Processor) processURL(input string, recipients []string) error {
+// Feed items which are new/unread will generate an email, unless they are
+// specifically excluded by the per-feed options.
+func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
 	// Show what we're doing.
 	if p.verbose {
-		fmt.Printf("Fetching: %s\n", input)
+		fmt.Printf("Fetching feed: %s\n", entry.URL)
 	}
 
 	// Fetch the feed for the input URL
-	feed, err := feedlist.Feed(input)
+	helper := httpfetch.New(entry)
+	feed, err := helper.Fetch()
 	if err != nil {
 		return err
 	}
 
 	if p.verbose {
-		fmt.Printf("\tFound %d entries\n", len(feed.Items))
+		fmt.Printf("\tFeed contains %d entries\n", len(feed.Items))
 	}
 
 	// For each entry in the feed ..
 	for _, xp := range feed.Items {
 
-		// Wrap it so we can use our helper methods
+		// Wrap the feed-item in a class of our own,
+		// so that we can use our helper methods to mark
+		// read-state.
 		item := withstate.FeedItem{Item: xp}
 
 		// If we've not already notified about this one.
@@ -96,30 +117,44 @@ func (p *Processor) processURL(input string, recipients []string) error {
 
 			// Show the new item.
 			if p.verbose {
-				fmt.Printf("\t\tNew Entry: %s\n", item.Title)
+				fmt.Printf("\t\tFeed entry: %s\n", item.Title)
 			}
 
-			// If we're supposed to send email then do that
+			// If we're supposed to send email then do that.
 			if p.send {
+
+				// Get the content of the feed-item.
+				//
+				// This has to be done ahead of sending email,
+				// as we can use this to skip entries via
+				// regular expression on the title/body contents.
 				content, err := item.HTMLContent()
 				if err != nil {
 					content = item.RawContent()
 				}
 
-				// Convert the content to text.
-				text := html2text.HTML2Text(content)
+				// Should we skip this entry?
+				//
+				// Skipping here means that we don't send an email,
+				// however we do mark it as read - so it will only
+				// be processed once.
+				if !p.shouldSkip(entry, item.Title, content) {
 
-				// Send the mail
-				helper := emailer.New(feed, item)
-				err = helper.Sendmail(recipients, text, content)
-				if err != nil {
-					return err
+					// Convert the content to text.
+					text := html2text.HTML2Text(content)
+
+					// Send the mail
+					helper := emailer.New(feed, item)
+					err = helper.Sendmail(recipients, text, content)
+					if err != nil {
+						return err
+					}
 				}
 			}
 		}
 
 		// Mark the item as having been seen, after the
-		// email was sent.
+		// email was (probably) sent.
 		//
 		// This does run the risk that sending mail
 		// fails, due to error, and that keeps happening
@@ -128,6 +163,47 @@ func (p *Processor) processURL(input string, recipients []string) error {
 	}
 
 	return nil
+}
+
+// shouldSkip returns true if this entry should be skipped.
+//
+// Our configuration file allows a series of per-feed configuration items,
+// and those allow skipping the entry by regular expression matches on
+// the item title or body.
+//
+// Note that if an entry should be skipped it is still marked as
+// having been read, but no email is sent.
+func (p *Processor) shouldSkip(config configfile.Feed, title string, content string) bool {
+
+	// Walk over the options to see if there are any exclude* options
+	// specified.
+	for _, opt := range config.Options {
+
+		// Exclude by title?
+		if opt.Name == "exclude-title" {
+			match, _ := regexp.MatchString(opt.Value, title)
+			if match {
+				if p.verbose {
+					fmt.Printf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value)
+				}
+				return true
+			}
+		}
+
+		// Exclude by body/content?
+		if opt.Name == "exclude" {
+
+			match, _ := regexp.MatchString(opt.Value, content)
+			if match {
+				if p.verbose {
+					fmt.Printf("\t\t\tSkipping due to 'exclude' match of %s.\n", opt.Value)
+				}
+				return true
+			}
+		}
+	}
+
+	return false
 }
 
 // SetVerbose updates the verbosity state of this object.

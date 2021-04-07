@@ -6,10 +6,11 @@ package main
 
 import (
 	"encoding/xml"
+	"flag"
 	"fmt"
 	"io/ioutil"
 
-	"github.com/skx/rss2email/feedlist"
+	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
 )
 
@@ -34,11 +35,22 @@ type importCmd struct {
 
 	// We embed the NoFlags option, because we accept no command-line flags.
 	subcommands.NoFlags
+
+	// Configuration file, used for testing
+	config *configfile.ConfigFile
 }
 
 // Info is part of the subcommand-API
 func (i *importCmd) Info() (string, string) {
 	return "import", `Import a list of feeds via an OPML file.
+
+This command imports a series of feeds from the specified OPML
+file into the configuration file this application uses.
+
+To see details of the configuration file, including the location,
+please run:
+
+   $ rss2email help config
 
 Example:
 
@@ -46,13 +58,25 @@ Example:
 `
 }
 
+// Arguments handles argument-flags we might have.
+//
+// In our case we use this as a hook to setup our configuration-file,
+// which allows testing.
+func (i *importCmd) Arguments(flags *flag.FlagSet) {
+	i.config = configfile.New()
+}
+
 // Execute is invoked if the user specifies `import` as the subcommand.
 func (i *importCmd) Execute(args []string) int {
 
-	// Get the feed-list, from the default location.
-	list := feedlist.New("")
+	// Upgrade it if necessary
+	i.config.Upgrade()
 
-	added := 0
+	_, err := i.config.Parse()
+	if err != nil {
+		fmt.Printf("Error parsing file: %s\n", err.Error())
+		return 1
+	}
 
 	// For each file on the command-line
 	for _, file := range args {
@@ -71,27 +95,21 @@ func (i *importCmd) Execute(args []string) int {
 			fmt.Printf("failed to parse %s: %s\n", file, err.Error())
 			continue
 		}
-		entries := make([]string, len(o.Outlines))
-		for i, outline := range o.Outlines {
+
+		for _, outline := range o.Outlines {
 
 			if outline.XMLURL != "" {
 				fmt.Printf("Adding %s\n", outline.XMLURL)
-				entries[i] = outline.XMLURL
-				added++
+				i.config.Add(outline.XMLURL)
 			}
 		}
-		errors := list.Add(entries...)
-		for _, err := range errors {
-			fmt.Printf("%s\n", (err.Error()))
-		}
+
 	}
 
 	// Did we make a change?  Then add them.
-	if added > 0 {
-		err := list.Save()
-		if err != nil {
-			fmt.Printf("failed to update feed list: %s\n", err.Error())
-		}
+	err = i.config.Save()
+	if err != nil {
+		fmt.Printf("failed to update feed list: %s\n", err.Error())
 	}
 
 	// All done.

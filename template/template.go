@@ -13,6 +13,6 @@ import (
 var message string
 
 // EmailTemplate returns the embedded email template.
-func EmailTemplate() ([]byte, error) {
-	return []byte(message), nil
+func EmailTemplate() []byte {
+	return []byte(message)
 }
