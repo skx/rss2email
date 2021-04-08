@@ -71,7 +71,6 @@ func TestMissingConfig(t *testing.T) {
 	//
 	expected := []string{
 		"The configuration file does not currently exist!",
-		"If nothing is present this application will do nothing useful!",
 		tmpfile.Name(),
 	}
 
