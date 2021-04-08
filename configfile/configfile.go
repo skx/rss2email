@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/user"
 	"path/filepath"
+	"regexp"
 	"strings"
 )
 
@@ -58,17 +59,27 @@ type ConfigFile struct {
 
 	// The entries we found.
 	entries []Feed
+
+	// Key:value regular expression
+	re *regexp.Regexp
 }
 
 // New creates a new configuration-file reader.
 func New() *ConfigFile {
-	return &ConfigFile{}
+	return &ConfigFile{re: regexp.MustCompile(`^([^:]+):(.*)$`)}
 }
 
 // NewWithPath creates a configuration-file reader, using the given file as
 // a source.
 func NewWithPath(file string) *ConfigFile {
-	return &ConfigFile{path: file}
+
+	// Create new object - to avoid having to repeat our regexp
+	// initialization.
+	x := New()
+
+	// Setup the path, and return the updated object.
+	x.path = file
+	return x
 }
 
 // Home returns the home-directory for the current user
@@ -207,12 +218,14 @@ func (c *ConfigFile) Parse() ([]Feed, error) {
 
 			// Remove the prefix and split by ":"
 			line = strings.TrimPrefix(line, "-")
-			vals := strings.Split(line, ":")
 
-			// If we got key/val then save them awya
-			if len(vals) > 1 {
-				key := strings.TrimSpace(vals[0])
-				val := strings.TrimSpace(vals[1])
+			// Look for "foo:bar"
+			fields := c.re.FindStringSubmatch(line)
+
+			// If we got key/val then save them away
+			if len(fields) == 3 {
+				key := strings.TrimSpace(fields[1])
+				val := strings.TrimSpace(fields[2])
 				tmp.Options = append(tmp.Options, Option{Name: key, Value: val})
 			}
 		} else {
