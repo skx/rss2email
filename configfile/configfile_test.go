@@ -185,6 +185,39 @@ http://example.com/
 	os.Remove(c.path)
 }
 
+// TestComplexOption tests parsing an option containing ":"
+func TestComplexOption(t *testing.T) {
+
+	c := ParserHelper(t, `
+http://example.com/
+ - include:(?i)(foo:|bar:)
+`)
+
+	out, err := c.Parse()
+	if err != nil {
+		t.Fatalf("Error parsing file: %v", err)
+	}
+
+	// One entry
+	if len(out) != 1 {
+		t.Fatalf("parsed wrong number of entries, got %d\n%v", len(out), out)
+	}
+
+	// We should have one option
+	if len(out[0].Options) != 1 {
+		t.Fatalf("Found wrong number of options, got %d", len(out[0].Options))
+	}
+
+	if out[0].Options[0].Name != "include" {
+		t.Fatalf("unexpected option name")
+	}
+	if out[0].Options[0].Value != "(?i)(foo:|bar:)" {
+		t.Fatalf("unexpected option value")
+	}
+
+	os.Remove(c.path)
+}
+
 // TestBrokenOptions looks for options outside an URL
 func TestBrokenOptions(t *testing.T) {
 
