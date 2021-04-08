@@ -57,10 +57,10 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		return errors
 	}
 
-	// For each entry in the list ..
+	// For each feed-item contained in the feed
 	for _, entry := range entries {
 
-		// Handle it.
+		// Process this specific entry.
 		err := p.processFeed(entry, recipients)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
@@ -165,11 +165,14 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	return nil
 }
 
-// shouldSkip returns true if this entry should be skipped.
+// shouldSkip returns true if this entry should be skipped/ignored.
 //
 // Our configuration file allows a series of per-feed configuration items,
 // and those allow skipping the entry by regular expression matches on
 // the item title or body.
+//
+// Similarly there is an `include` setting which will ensure we only
+// email items matching a particular regular expression.
 //
 // Note that if an entry should be skipped it is still marked as
 // having been read, but no email is sent.
@@ -186,6 +189,8 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 				if p.verbose {
 					fmt.Printf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value)
 				}
+
+				// True: skip/ignore this entry
 				return true
 			}
 		}
@@ -198,11 +203,55 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 				if p.verbose {
 					fmt.Printf("\t\t\tSkipping due to 'exclude' match of %s.\n", opt.Value)
 				}
+
+				// True: skip/ignore this entry
 				return true
 			}
 		}
 	}
 
+	// If we have an include-setting then we must skip the entry unless
+	// it matches.
+	//
+	// There might be more than one include setting and a match against
+	// any will suffice.
+	//
+	include := false
+
+	for _, opt := range config.Options {
+		if opt.Name == "include" {
+
+			// We found (at least one) include option
+			include = true
+
+			// OK we've found a `include` setting,
+			// so we MUST skip unless there is a match
+			match, _ := regexp.MatchString(opt.Value, content)
+			if match {
+				if p.verbose {
+					fmt.Printf("\t\t\tIncluding as this entry matches %s.\n", opt.Value)
+				}
+
+				// False: Do not skip/ignore this entry
+				return false
+			}
+		}
+	}
+
+	// If we had at least one "include" setting and we reach here
+	// the we had no match.
+	//
+	// i.e. The entry did not include a string we regarded as mandatory.
+	if include {
+		if p.verbose {
+			fmt.Printf("\t\t\tExcluding entry, as it didn't match any include-patterns\n")
+		}
+
+		// True: skip/ignore this entry
+		return true
+	}
+
+	// False: Do not skip/ignore this entry
 	return false
 }
 
