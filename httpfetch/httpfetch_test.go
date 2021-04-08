@@ -3,6 +3,7 @@ package httpfetch
 import (
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/skx/rss2email/configfile"
 	"github.com/skx/rss2email/withstate"
@@ -129,5 +130,52 @@ func TestRewrite(t *testing.T) {
 	// not: href="/foo"
 	if strings.Contains(content, "\"/foo") {
 		t.Fatalf("Failed to expand URLS: %s", content)
+	}
+}
+
+func TestDelay(t *testing.T) {
+
+	// Valid number
+	n := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
+		Options: []configfile.Option{
+			{Name: "delay", Value: "15"},
+		}})
+
+	if n.retryDelay != 15*time.Millisecond {
+		t.Errorf("failed to parse delay value")
+	}
+
+	// Invalid number
+	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
+		Options: []configfile.Option{
+			{Name: "delay", Value: "steve"},
+		}})
+
+	if i.retryDelay != 1000*time.Millisecond {
+		t.Errorf("bogus value changed our delay-value")
+	}
+}
+
+func TestRetry(t *testing.T) {
+
+	// Valid number
+	n := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
+		Options: []configfile.Option{
+			{Name: "retry", Value: "33"},
+			{Name: "moi", Value: "3"},
+		}})
+
+	if n.maxRetries != 33 {
+		t.Errorf("failed to parse retry value")
+	}
+
+	// Invalid number
+	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
+		Options: []configfile.Option{
+			{Name: "retry", Value: "steve"},
+		}})
+
+	if i.maxRetries != 3 {
+		t.Errorf("bogus value changed our default")
 	}
 }
