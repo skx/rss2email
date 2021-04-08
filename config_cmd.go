@@ -43,12 +43,14 @@ About
 -----
 
 RSS2Email is a simple command-line utility which will fetch items from
-remote Atom and RSS feeds and generate emails.  In order to operate it
-obviously needs a list of locations to poll.
+remote Atom and RSS feeds and generate emails.
+
+In order to operate it needs a list of remote Atom/RSS feeds to
+process, which are stored in a configuration file.
 
 
-Config Location
----------------
+Configuration File Location
+---------------------------
 
 As of the 2.x series of rss2email releases the configuration file format
 and location have changed.  The new configuration file will be read from:
@@ -58,10 +60,12 @@ and location have changed.  The new configuration file will be read from:
 	if !exists {
 		doc += `
 
+NOTE:
 NOTE: The configuration file does not currently exist!
+NOTE:
 NOTE: The legacy file will be read if it is present.
 NOTE:
-NOTE: If nothing is present this application will do nothing useful!`
+`
 	}
 
 	doc += `
@@ -80,12 +84,13 @@ Entries can be commented out via the '#' character, temporarily:
        https://blog.steve.fi/index.rss
        # http://floooh.github.io/feed.xml
 
-In the future it will be possible to do more, and with that in mind there
-is scope for adding options which apply only to specific feeds.  The general
-form of this support looks like this:
+In addition to containing a list of feed-locations the configuration file
+allows per-feed configuration options to be set.  The general form of this
+support looks like this:
 
        https://foo.example.com/
         - key:value
+        - key:value2
        https://foo.example.com/
         - key2:value2
 
@@ -93,16 +98,20 @@ Here you see that lines prefixed with " -" will be used to specify a key
 and value separated with a ":" character.  Configuration-options apply to
 the URL above their appearance.
 
-Any option appearing before an URL is a fatal error, and will be reported
-as such.
+The first example demonstrates that configuration-keys may be repeated multiple
+times, if you desire.
 
-Available Options
-------------------
+As configuration-items refer to feeds it is a fatal error for such a thing
+to appear before a URL.
+
+Per-Feed Configuration Options
+------------------------------
 
 Key           | Purpose
 --------------+--------------------------------------------------------------
 exclude       | Exclude any item which matches the given regular-expression.
-exclude-title | Exclude any item title matching the given regular-expression.
+exclude-title | Exclude any item with title matching the given regular-expression.
+include       | Include ONLY items which match the given regular-expression.
 retry         | The maximum number of times to retry a failing HTTP-fetch.
 delay         | The amount of time to sleep between retried HTTP-fetches.
 `
@@ -114,7 +123,7 @@ func (c *configCmd) Execute(args []string) int {
 
 	fmt.Fprintf(out, "This command only exists to show help, when executed as:")
 	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "rss2email help config")
+	fmt.Fprintf(out, "\trss2email help config")
 	fmt.Fprintf(out, "\n")
 
 	// All done, with no errors.
