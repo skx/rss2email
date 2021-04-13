@@ -111,9 +111,25 @@ Key           | Purpose
 --------------+--------------------------------------------------------------
 exclude       | Exclude any item which matches the given regular-expression.
 exclude-title | Exclude any item with title matching the given regular-expression.
-include       | Include ONLY items which match the given regular-expression.
+include       | Include only items which match the given regular-expression.
+include-title | Include only items with title matching the given regular-expression.
 retry         | The maximum number of times to retry a failing HTTP-fetch.
 delay         | The amount of time to sleep between retried HTTP-fetches.
+
+
+Regular Expression Tips
+-----------------------
+
+Regular expressions are case-sensitive by default, to make them ignore any
+differences in case prefix them with "(?i)".
+
+For example the following entry will ignore any feed-items containing the
+word "cake" in their titles regardless of whether it is written as "cake",
+"Cake", or some other combination of upper and lower-cased letters:
+
+      https://example.com/feed/path/here
+       - exclude-title: (?i)cake
+
 `
 	return name, doc
 }
