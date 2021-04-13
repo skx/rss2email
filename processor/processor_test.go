@@ -109,3 +109,65 @@ func TestSkipInclude(t *testing.T) {
 		t.Fatalf("nothing specified, shouldn't be skipped")
 	}
 }
+
+// TestSkipIncludeTitle ensures that we can exclude items by regexp
+func TestSkipIncludeTitle(t *testing.T) {
+
+	feed := configfile.Feed{
+		URL: "blah",
+		Options: []configfile.Option{
+			configfile.Option{Name: "include", Value: "good"},
+			configfile.Option{Name: "include-title", Value: "(?i)cake"},
+		},
+	}
+
+	// Create the new processor
+	x := New()
+
+	// Set it as verbose
+	x.SetVerbose(true)
+
+	if x.shouldSkip(feed, "Title here", "<p>This is good</p>") {
+		t.Fatalf("this should be included because it contains good")
+	}
+	if x.shouldSkip(feed, "I like Cake!", "<p>Food is good.</p>") {
+		t.Fatalf("this should be included because of the title")
+	}
+
+	//
+	// Second test, only include titles
+	//
+	feed = configfile.Feed{
+		URL: "blah",
+		Options: []configfile.Option{
+			configfile.Option{Name: "include-title", Value: "(?i)cake"},
+			configfile.Option{Name: "include-title", Value: "(?i)pie"},
+		},
+	}
+
+	//
+	// Some titles which are OK
+	//
+	valid := []string{"I like cake", "I like pie", "piecemeal", "cupcake", "pancake"}
+	bogus := []string{"I do not like food", "I don't like cooked goods", "cheese is dead milk", "books are fun", "tv is good"}
+
+	// Create the new processor
+	x = New()
+
+	// Set it as verbose
+	x.SetVerbose(true)
+
+	// include
+	for _, entry := range valid {
+		if x.shouldSkip(feed, entry, "content") {
+			t.Fatalf("this should be included due to include-title")
+		}
+	}
+
+	// exclude
+	for _, entry := range bogus {
+		if !x.shouldSkip(feed, entry, "content") {
+			t.Fatalf("this shouldn't be included!")
+		}
+	}
+}

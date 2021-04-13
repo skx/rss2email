@@ -72,6 +72,12 @@ func TestMissingConfig(t *testing.T) {
 	expected := []string{
 		"The configuration file does not currently exist!",
 		tmpfile.Name(),
+
+		// known configuration options
+		"include ",
+		"include-title",
+		"exclude ",
+		"exclude-title",
 	}
 
 	for _, txt := range expected {
