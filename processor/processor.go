@@ -219,6 +219,23 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	include := false
 
 	for _, opt := range config.Options {
+		if opt.Name == "include-title" {
+
+			// We found (at least one) include option
+			include = true
+
+			// OK we've found a `include` setting,
+			// so we MUST skip unless there is a match
+			match, _ := regexp.MatchString(opt.Value, title)
+			if match {
+				if p.verbose {
+					fmt.Printf("\t\t\tIncluding as this entry's title matches %s.\n", opt.Value)
+				}
+
+				// False: Do not skip/ignore this entry
+				return false
+			}
+		}
 		if opt.Name == "include" {
 
 			// We found (at least one) include option
@@ -244,7 +261,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	// i.e. The entry did not include a string we regarded as mandatory.
 	if include {
 		if p.verbose {
-			fmt.Printf("\t\t\tExcluding entry, as it didn't match any include-patterns\n")
+			fmt.Printf("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns\n")
 		}
 
 		// True: skip/ignore this entry
