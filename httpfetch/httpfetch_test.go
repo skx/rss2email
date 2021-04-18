@@ -1,6 +1,9 @@
 package httpfetch
 
 import (
+	"fmt"
+	"net/http"
+	"net/http/httptest"
 	"strings"
 	"testing"
 	"time"
@@ -177,5 +180,97 @@ func TestRetry(t *testing.T) {
 
 	if i.maxRetries != 3 {
 		t.Errorf("bogus value changed our default")
+	}
+}
+
+// Make a HTTP-request against a local entry
+func TestHTTPFetch(t *testing.T) {
+
+	// Setup a stub server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, "Hello, client")
+	}))
+	defer ts.Close()
+
+	// Create a config-entry which points to the fake HTTP-server
+	conf := configfile.Feed{URL: ts.URL}
+
+	// Create a fetcher
+	obj := New(conf)
+
+	// Now make the HTTP-fetch
+	_, err := obj.Fetch()
+
+	if err == nil {
+		t.Fatalf("expected an error from the fetch")
+	}
+	if !strings.Contains(err.Error(), "Failed to detect feed type") {
+		t.Fatalf("got an error, but the wrong kind")
+	}
+}
+
+// Make a HTTP-request against a local entry
+func TestHTTPFetchValid(t *testing.T) {
+
+	feed := `<?xml version="1.0"?>
+<rdf:RDF
+ xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+ xmlns:dc="http://purl.org/dc/elements/1.1/"
+ xmlns:foaf="http://xmlns.com/foaf/0.1/"
+ xmlns:content="http://purl.org/rss/1.0/modules/content/"
+ xmlns="http://purl.org/rss/1.0/"
+>
+<channel rdf:about="https://blog.steve.fi/">
+<title>Steve Kemp&#39;s Blog</title>
+<link>https://blog.steve.fi/</link>
+<description>Debian and Free Software</description>
+<items>
+ <rdf:Seq>
+  <rdf:li rdf:resource="https://blog.steve.fi/brexit_has_come.html"/>
+ </rdf:Seq>
+</items>
+</channel>
+
+<item rdf:about="https://blog.steve.fi/brexit_has_come.html">
+  <title>Brexit has come</title>
+  <link>https://blog.steve.fi/brexit_has_come.html</link>
+  <guid>https://blog.steve.fi/brexit_has_come.html</guid>
+  <content:encoded>Hello, World</content:encoded>
+  <dc:date>2020-05-22T09:00:00Z</dc:date>
+</item>
+</rdf:RDF>
+`
+	// User-agent setup
+	agent := "foo:bar:baz"
+
+	// Setup a stub server
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		fmt.Fprintln(w, feed)
+	}))
+	defer ts.Close()
+
+	// Create a config-entry which points to the fake HTTP-server
+	conf := configfile.Feed{URL: ts.URL,
+		Options: []configfile.Option{
+			configfile.Option{Name: "user-agent", Value: agent},
+		},
+	}
+
+	// Create a fetcher
+	obj := New(conf)
+
+	if obj.userAgent != agent {
+		t.Fatalf("failed to setup user-agent")
+	}
+
+	// Now make the HTTP-fetch
+	res, err := obj.Fetch()
+
+	if err != nil {
+		t.Fatalf("unexpected error fetching feed")
+	}
+
+	if len(res.Items) != 1 {
+		t.Fatalf("wrong feed count")
 	}
 }

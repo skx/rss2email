@@ -32,13 +32,19 @@ type HTTPFetch struct {
 	// the remote server.  This specifies how many times we should
 	// do that.
 	retryDelay time.Duration
+
+	// The User-Agent header to send when making our HTTP fetch
+	userAgent string
 }
 
 // New creates a new object which will fetch our content
 func New(entry configfile.Feed) *HTTPFetch {
+
+	// Create object with defaults
 	state := &HTTPFetch{url: entry.URL,
 		maxRetries: 3,
 		retryDelay: 1000 * time.Millisecond,
+		userAgent:  "rss2email (https://github.com/skx/rss2email)",
 	}
 
 	// Are any of our options overridden?
@@ -60,6 +66,11 @@ func New(entry configfile.Feed) *HTTPFetch {
 			if err == nil {
 				state.retryDelay = time.Duration(num) * time.Millisecond
 			}
+		}
+
+		// User-Agent
+		if opt.Name == "user-agent" {
+			state.userAgent = opt.Value
 		}
 	}
 
@@ -111,8 +122,12 @@ func (h *HTTPFetch) fetch() error {
 		return err
 	}
 
-	// Make the request, with a valid user-agent
-	req.Header.Set("User-Agent", "rss2email (https://github.com/skx/rss2email)")
+	// Populate the HTTP User-Agent header.
+	//
+	// Some sites (e.g. reddit) fail without a header set.
+	req.Header.Set("User-Agent", h.userAgent)
+
+	// Make the actual HTTP request.
 	resp, err := client.Do(req)
 	if err != nil {
 		return err
