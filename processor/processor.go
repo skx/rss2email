@@ -252,7 +252,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	// i.e. The entry did not include a string we regarded as mandatory.
 	if include {
-		p.message(fmt.Sprintf("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns\n"))
+		p.message("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns\n")
 
 		// True: skip/ignore this entry
 		return true
