@@ -252,7 +252,7 @@ func TestHTTPFetchValid(t *testing.T) {
 	// Create a config-entry which points to the fake HTTP-server
 	conf := configfile.Feed{URL: ts.URL,
 		Options: []configfile.Option{
-			configfile.Option{Name: "user-agent", Value: agent},
+			{Name: "user-agent", Value: agent},
 		},
 	}
 
