@@ -74,11 +74,18 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	errors = append(errors, pruneErrors...)
 
 	// Show what we did, if we should
-	if p.verbose && prunedCount > 0 {
-		fmt.Printf("Pruned %d entry state files\n", prunedCount)
+	if prunedCount > 0 {
+		p.message(fmt.Sprintf("Pruned %d entry state files\n", prunedCount))
 	}
 
 	return errors
+}
+
+// message shows a message if our verbose flag is set
+func (p *Processor) message(msg string) {
+	if p.verbose {
+		fmt.Printf("%s\n", msg)
+	}
 }
 
 // processFeed takes a configuration entry as input, fetches the appropriate
@@ -89,9 +96,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
 	// Show what we're doing.
-	if p.verbose {
-		fmt.Printf("Fetching feed: %s\n", entry.URL)
-	}
+	p.message(fmt.Sprintf("Fetching feed: %s\n", entry.URL))
 
 	// Fetch the feed for the input URL
 	helper := httpfetch.New(entry)
@@ -100,9 +105,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		return err
 	}
 
-	if p.verbose {
-		fmt.Printf("\tFeed contains %d entries\n", len(feed.Items))
-	}
+	p.message(fmt.Sprintf("\tFeed contains %d entries\n", len(feed.Items)))
 
 	// For each entry in the feed ..
 	for _, xp := range feed.Items {
@@ -116,10 +119,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		if item.IsNew() {
 
 			// Show the new item.
-			if p.verbose {
-				fmt.Printf("\t\tFeed entry: %s\n", item.Title)
-			}
-
+			p.message(fmt.Sprintf("\t\tFeed entry: %s\n", item.Title))
 			// If we're supposed to send email then do that.
 			if p.send {
 
@@ -186,9 +186,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 		if opt.Name == "exclude-title" {
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				if p.verbose {
-					fmt.Printf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value)
-				}
+				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value))
 
 				// True: skip/ignore this entry
 				return true
@@ -200,9 +198,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				if p.verbose {
-					fmt.Printf("\t\t\tSkipping due to 'exclude' match of %s.\n", opt.Value)
-				}
+				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude' match of %s.\n", opt.Value))
 
 				// True: skip/ignore this entry
 				return true
@@ -228,9 +224,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				if p.verbose {
-					fmt.Printf("\t\t\tIncluding as this entry's title matches %s.\n", opt.Value)
-				}
+				p.message(fmt.Sprintf("\t\t\tIncluding as this entry's title matches %s.\n", opt.Value))
 
 				// False: Do not skip/ignore this entry
 				return false
@@ -245,9 +239,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				if p.verbose {
-					fmt.Printf("\t\t\tIncluding as this entry matches %s.\n", opt.Value)
-				}
+				p.message(fmt.Sprintf("\t\t\tIncluding as this entry matches %s.\n", opt.Value))
 
 				// False: Do not skip/ignore this entry
 				return false
@@ -260,9 +252,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	// i.e. The entry did not include a string we regarded as mandatory.
 	if include {
-		if p.verbose {
-			fmt.Printf("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns\n")
-		}
+		p.message(fmt.Sprintf("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns\n"))
 
 		// True: skip/ignore this entry
 		return true
