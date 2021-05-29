@@ -43,8 +43,8 @@ func TestSkipExclude(t *testing.T) {
 	feed := configfile.Feed{
 		URL: "blah",
 		Options: []configfile.Option{
-			configfile.Option{Name: "exclude", Value: "foo"},
-			configfile.Option{Name: "exclude-title", Value: "test"},
+			{Name: "exclude", Value: "foo"},
+			{Name: "exclude-title", Value: "test"},
 		},
 	}
 
@@ -80,7 +80,7 @@ func TestSkipInclude(t *testing.T) {
 	feed := configfile.Feed{
 		URL: "blah",
 		Options: []configfile.Option{
-			configfile.Option{Name: "include", Value: "good"},
+			{Name: "include", Value: "good"},
 		},
 	}
 
@@ -116,8 +116,8 @@ func TestSkipIncludeTitle(t *testing.T) {
 	feed := configfile.Feed{
 		URL: "blah",
 		Options: []configfile.Option{
-			configfile.Option{Name: "include", Value: "good"},
-			configfile.Option{Name: "include-title", Value: "(?i)cake"},
+			{Name: "include", Value: "good"},
+			{Name: "include-title", Value: "(?i)cake"},
 		},
 	}
 
@@ -140,8 +140,8 @@ func TestSkipIncludeTitle(t *testing.T) {
 	feed = configfile.Feed{
 		URL: "blah",
 		Options: []configfile.Option{
-			configfile.Option{Name: "include-title", Value: "(?i)cake"},
-			configfile.Option{Name: "include-title", Value: "(?i)pie"},
+			{Name: "include-title", Value: "(?i)cake"},
+			{Name: "include-title", Value: "(?i)pie"},
 		},
 	}
 
