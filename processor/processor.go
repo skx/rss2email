@@ -144,7 +144,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 					text := html2text.HTML2Text(content)
 
 					// Send the mail
-					helper := emailer.New(feed, item)
+					helper := emailer.New(feed, item, entry.Options)
 					err = helper.Sendmail(recipients, text, content)
 					if err != nil {
 						return err
