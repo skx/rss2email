@@ -211,6 +211,9 @@ If you're a developer who wishes to submit changes to the embedded version you s
 * Edit `template/template.txt`, which is the source of the template.
 * Rebuild the application to update the embedded copy.
 
+**NOTE**: If you read the earlier section on configuration you'll see that it is possible to add per-feed configuration values to the config file.  One of the supported options is to setup a feed-specific template-file.
+
+
 
 # Implementation Overview
 

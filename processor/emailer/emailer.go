@@ -45,8 +45,8 @@ type Emailer struct {
 
 // New creates a new Emailer object.
 //
-// The arguments are the source feed, and the feed item to which
-// we'll notify.
+// The arguments are the source feed, the feed item which is being notified,
+// and any associated configuration values from the source feed.
 func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option) *Emailer {
 	return &Emailer{feed: feed, item: item, opts: opts}
 }

@@ -115,7 +115,7 @@ exclude-title | Exclude any item with title matching the given regular-expressio
 include       | Include only items which match the given regular-expression.
 include-title | Include only items with title matching the given regular-expression.
 retry         | The maximum number of times to retry a failing HTTP-fetch.
-template      | Feed specific email template file.
+template      | The path to a feed-specific email template to use.
 user-agent    | Configure a specific User-Agent when making HTTP requests.
 
 
