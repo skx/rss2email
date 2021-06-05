@@ -27,6 +27,7 @@ import (
 	"text/template"
 
 	"github.com/mmcdole/gofeed"
+	"github.com/skx/rss2email/configfile"
 	emailtemplate "github.com/skx/rss2email/template"
 	"github.com/skx/rss2email/withstate"
 )
@@ -38,14 +39,16 @@ type Emailer struct {
 	feed *gofeed.Feed
 	// Item is the feed item itself
 	item withstate.FeedItem
+	// Config options for the feed.
+	opts []configfile.Option
 }
 
 // New creates a new Emailer object.
 //
 // The arguments are the source feed, and the feed item to which
 // we'll notify.
-func New(feed *gofeed.Feed, item withstate.FeedItem) *Emailer {
-	return &Emailer{feed: feed, item: item}
+func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option) *Emailer {
+	return &Emailer{feed: feed, item: item, opts: opts}
 }
 
 // loadTemplate loads the template used for sending the email notification.
@@ -70,6 +73,13 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 
 	// The path to the overridden template
 	override := filepath.Join(home, ".rss2email", "email.tmpl")
+
+	// If a per feed template was set, get it here.
+	for _, opt := range e.opts {
+		if opt.Name == "template" {
+			override = filepath.Join(home, ".rss2email", opt.Value)
+		}
+	}
 
 	// If the file exists, use it.
 	_, err := os.Stat(override)
