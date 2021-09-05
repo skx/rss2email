@@ -227,7 +227,7 @@ The two main commands are `cron` and `daemon` and they work in roughly the same 
     * [processor/emailer/emailer.go](processor/emailer/emailer.go) is used to send the email if necessary.
     * Either by SMTP or by executing `/usr/sbin/sendmail`
 
-The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go]) to add/delete/list the contents of the feed-list.
+The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go) to add/delete/list the contents of the feed-list.
 
 
 # Github Setup
