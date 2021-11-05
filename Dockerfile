@@ -5,6 +5,11 @@
 #
 #   docker build -t rss2email:latest .
 #
+# I tag/push to a github repository like so:
+#
+#   docker tag rss2email:latest docker.pkg.github.com/skx/docker/rss2email:7
+#   docker push docker.pkg.github.com/skx/docker/rss2email:7
+#
 # Running it will be something like this:
 #
 #    docker run -d \
