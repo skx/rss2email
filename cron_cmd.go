@@ -20,6 +20,9 @@ type cronCmd struct {
 
 	// Should we send emails?
 	send bool
+
+	// Sender used for the notices.
+	sender string
 }
 
 // Info is part of the subcommand-API.
@@ -65,6 +68,7 @@ may create a local override for this, for more details see :
 func (c *cronCmd) Arguments(f *flag.FlagSet) {
 	f.BoolVar(&c.verbose, "verbose", false, "Should we be extra verbose?")
 	f.BoolVar(&c.send, "send", true, "Should we send emails, or just pretend to?")
+	f.StringVar(&c.sender, "sender", "", "Sender address (by default, the same email address as the recipient)")
 }
 
 //
@@ -97,6 +101,7 @@ func (c *cronCmd) Execute(args []string) int {
 	// Setup the state
 	p.SetVerbose(c.verbose)
 	p.SetSendEmail(c.send)
+	p.SetSender(c.sender)
 
 	errors := p.ProcessFeeds(recipients)
 

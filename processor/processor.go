@@ -27,6 +27,9 @@ type Processor struct {
 
 	// verbose denotes how verbose we should be in execution.
 	verbose bool
+
+	// sender used for notices
+	sender string
 }
 
 // New creates a new Processor object
@@ -145,7 +148,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 					// Send the mail
 					helper := emailer.New(feed, item, entry.Options)
-					err = helper.Sendmail(recipients, text, content)
+					err = helper.Sendmail(p.sender, recipients, text, content)
 					if err != nil {
 						return err
 					}
@@ -271,4 +274,10 @@ func (p *Processor) SetVerbose(state bool) {
 // is false zero emails are generated.
 func (p *Processor) SetSendEmail(state bool) {
 	p.send = state
+}
+
+// SetSender updates the emails sender (if empty the sender will be
+// the recipient)
+func (p *Processor) SetSender(sender string) {
+	p.sender = sender
 }

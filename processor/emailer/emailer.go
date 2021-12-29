@@ -126,7 +126,7 @@ func (e *Emailer) toQuotedPrintable(s string) (string, error) {
 //
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
-func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) error {
+func (e *Emailer) Sendmail(customSender string, addresses []string, textstr string, htmlstr string) error {
 	var err error
 
 	//
@@ -141,6 +141,14 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 	// Process each address
 	//
 	for _, addr := range addresses {
+
+		// Set the sender
+		var sender string
+		if customSender != "" {
+			sender = customSender
+		} else {
+			sender = addr
+		}
 
 		//
 		// Here is a temporary structure we'll use to popular our email
@@ -168,7 +176,7 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 		var x TemplateParms
 		x.Feed = e.feed.Link
 		x.FeedTitle = e.feed.Title
-		x.From = addr
+		x.From = sender
 		x.Link = e.item.Link
 		x.Subject = e.item.Title
 		x.To = addr
@@ -209,13 +217,13 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 		//
 		if e.isSMTP() {
 
-			err := e.sendSMTP(addr, buf.Bytes())
+			err := e.sendSMTP(sender, addr, buf.Bytes())
 			if err != nil {
 				return err
 			}
 		} else {
 
-			err := e.sendSendmail(addr, buf.Bytes())
+			err := e.sendSendmail(sender, addr, buf.Bytes())
 			if err != nil {
 				return err
 			}
@@ -245,7 +253,7 @@ func (e *Emailer) isSMTP() bool {
 
 // sendSMTP sends the content of the email to the destination address
 // via SMTP.
-func (e *Emailer) sendSMTP(to string, content []byte) error {
+func (e *Emailer) sendSMTP(from string, to string, content []byte) error {
 
 	// basics
 	host := os.Getenv("SMTP_HOST")
@@ -271,17 +279,17 @@ func (e *Emailer) sendSMTP(to string, content []byte) error {
 	addr := fmt.Sprintf("%s:%d", host, p)
 
 	// Send the mail
-	err := smtp.SendMail(addr, auth, to, []string{to}, content)
+	err := smtp.SendMail(addr, auth, from, []string{to}, content)
 
 	return err
 }
 
 // sendSendmail sends the content of the email to the destination address
 // via /usr/sbin/sendmail
-func (e *Emailer) sendSendmail(addr string, content []byte) error {
+func (e *Emailer) sendSendmail(sender string, addr string, content []byte) error {
 
 	// Get the command to run.
-	sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", addr, addr)
+	sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", sender, addr)
 	stdin, err := sendmail.StdinPipe()
 	if err != nil {
 		fmt.Printf("Error sending email: %s\n", err.Error())
