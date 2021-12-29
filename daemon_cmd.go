@@ -20,6 +20,9 @@ type daemonCmd struct {
 
 	// Should we be verbose in operation?
 	verbose bool
+
+	// Sender used for the notices.
+	sender string
 }
 
 // Info is part of the subcommand-API.
@@ -49,6 +52,7 @@ Example:
 // Arguments handles our flag-setup.
 func (d *daemonCmd) Arguments(f *flag.FlagSet) {
 	f.BoolVar(&d.verbose, "verbose", false, "Should we be extra verbose?")
+	f.StringVar(&c.sender, "sender", "", "Sender address (by default, the same email address as the recipient)")
 }
 
 //
@@ -83,6 +87,7 @@ func (d *daemonCmd) Execute(args []string) int {
 		// Setup the state - note we ALWAYS send emails in this mode.
 		p.SetVerbose(d.verbose)
 		p.SetSendEmail(true)
+		p.SetSender(c.sender)
 
 		errors := p.ProcessFeeds(recipients)
 
