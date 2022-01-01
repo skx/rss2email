@@ -78,8 +78,8 @@ func (c *cronCmd) Execute(args []string) int {
 		return 1
 	}
 
-	// The list of addresses to which we should send our notices if the
-	// feed doesn't have the notify option set.
+	// The list of addresses to which we should send our notices unless overriden
+	// by a per-feed configuration.
 	recipients := []string{}
 
 	// Save each argument away, checking it is fully-qualified.
