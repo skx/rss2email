@@ -11,6 +11,7 @@ package processor
 import (
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/k3a/html2text"
 	"github.com/skx/rss2email/configfile"
@@ -60,8 +61,20 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// For each feed-item contained in the feed
 	for _, entry := range entries {
 
+		// Check whether repo-specific recipients have been set.
+		// Otherwise use the default recipients set in the cron command.
+		feedRecipients := recipients
+		for _, opt := range entry.Options {
+			if opt.Name == "notify" {
+				feedRecipients = strings.Split(opt.Value, ",")
+				for i := range feedRecipients {
+					feedRecipients[i] = strings.TrimSpace(feedRecipients[i])
+				}
+			}
+		}
+
 		// Process this specific entry.
-		err := p.processFeed(entry, recipients)
+		err := p.processFeed(entry, feedRecipients)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
 		}

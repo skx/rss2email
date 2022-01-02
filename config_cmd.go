@@ -114,6 +114,8 @@ exclude       | Exclude any item which matches the given regular-expression.
 exclude-title | Exclude any item with title matching the given regular-expression.
 include       | Include only items which match the given regular-expression.
 include-title | Include only items with title matching the given regular-expression.
+notify        | Comma-delimited list of emails to send notifications to (if set,
+              | replaces the emails set in the cron/daemon command).
 retry         | The maximum number of times to retry a failing HTTP-fetch.
 template      | The path to a feed-specific email template to use.
 user-agent    | Configure a specific User-Agent when making HTTP requests.
