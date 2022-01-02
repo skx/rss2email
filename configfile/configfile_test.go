@@ -393,11 +393,6 @@ func TestSaveBogusFile(t *testing.T) {
 
 }
 
-// TestFuzz is a fake-test just to get our coverage increased
-func TestFuzz(t *testing.T) {
-	Fuzz([]byte("- foo:bar"))
-}
-
 // ParserHelper writes the specified text to a configuration-file
 // and configures that path to be used for a ConfigFile object
 func ParserHelper(t *testing.T, content string) *ConfigFile {
