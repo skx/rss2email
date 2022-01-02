@@ -44,7 +44,13 @@ If you wish you can fetch a binary from [our release page](https://github.com/sk
     cd rss2email
     go install
 
-**NOTE**: You'll need version **1.16** or higher to build, because we use the new `go embed` support to embed our email-template within the binary.
+**Version NOTES**:
+
+* You'll need version **1.16** or higher to build.
+  * Because we use `go embed` to embed our (default) email-template within the binary.
+* If you wish to run the included fuzz-tests against our configuration file parser you'll need at least version **1.18beta1**.
+  * See [configfile/FUZZING.md](configfile/FUZZING.md) for details.
+
 
 
 ## bash completion
