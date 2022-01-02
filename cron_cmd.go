@@ -78,8 +78,8 @@ func (c *cronCmd) Execute(args []string) int {
 		return 1
 	}
 
-	// The list of addresses to which we should send our notices unless overriden
-	// by a per-feed configuration.
+	// The list of addresses to notify, unless overridden by a per-feed
+	// configuration option.
 	recipients := []string{}
 
 	// Save each argument away, checking it is fully-qualified.
