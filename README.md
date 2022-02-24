@@ -15,6 +15,7 @@ Table of Contents
 * [Initial Run](#initial-run)
 * [Assumptions](#assumptions)
 * [Email Customization](#email-customization)
+  * [Changing default From address](#changing-default-from-address)
 * [Implementation Overview](#implementation-overview)
 * [Github Setup](#github-setup)
 
@@ -218,6 +219,21 @@ If you're a developer who wishes to submit changes to the embedded version you s
 * Rebuild the application to update the embedded copy.
 
 **NOTE**: If you read the earlier section on configuration you'll see that it is possible to add per-feed configuration values to the config file.  One of the supported options is to setup a feed-specific template-file.
+
+
+## Changing default From address
+
+As noted earlier when sending the notification emails the recipient address is used as the sender-address too.   There are no flags for changing the From: address used to send the emails, however using the section above you can [use a customized email-template](#email-customization), and simply update the template to read something like this:
+
+```
+From: my.sender@example.com
+To: {{.To}}
+Subject: [rss2email] {{.Subject}}
+X-RSS-Link: {{.Link}}
+X-RSS-Feed: {{.Feed}}
+```
+
+* i.e. Change the `{{.From}}` to your preferred sender-address.
 
 
 
