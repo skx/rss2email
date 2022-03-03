@@ -23,6 +23,8 @@
 ###########################################################################
 FROM golang:alpine AS builder
 
+LABEL org.opencontainers.image.source=https://github.com/skx/rss2email/
+
 # Ensure we have git
 RUN apk update && apk add --no-cache git
 
