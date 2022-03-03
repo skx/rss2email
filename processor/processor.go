@@ -58,15 +58,25 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		return errors
 	}
 
-	// For each feed-item contained in the feed
+	// For each feed contained in the configuration file
 	for _, entry := range entries {
 
-		// Check whether repo-specific recipients have been set.
-		// Otherwise use the default recipients set in the cron command.
+		// We default to notifying the global recipient-list.
+		//
+		// But there might be a per-feed set of recipients which
+		// we'll prefer if available.
 		feedRecipients := recipients
+
+		// For each option
 		for _, opt := range entry.Options {
+
+			// Is it a set of recipients?
 			if opt.Name == "notify" {
+
+				// Save the values
 				feedRecipients = strings.Split(opt.Value, ",")
+
+				// But trim leading/trailing space
 				for i := range feedRecipients {
 					feedRecipients[i] = strings.TrimSpace(feedRecipients[i])
 				}
@@ -80,15 +90,37 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		}
 	}
 
-	// Prune old state files
-	prunedCount, pruneErrors := withstate.PruneStateFiles()
+	// Prune old state files, unless we saw an error.
+	//
+	// Discussion
+	// ----------
+	//
+	// This is a bit horrid.  The preferred solution would be to
+	// prune state files on a per-feed basis, in the loop above,
+	// however that is not possible because we don't store the
+	// state in such a way that we can easily identify the source
+	// of the files.
+	//
+	// We could open each file, look for a URL beneath the feed,
+	// and process that way.  But that would be slow and equally
+	// horrid.
+	//
+	// The solution for the future is to store the seen-flags
+	// with a per-feed prefix.  However migrating to that will
+	// require some care and future updates.
+	//
+	if len(errors) == 0 {
+		prunedCount, pruneErrors := withstate.PruneStateFiles()
 
-	// If we got any errors propagate them
-	errors = append(errors, pruneErrors...)
+		// If we got any errors propagate them
+		errors = append(errors, pruneErrors...)
 
-	// Show what we did, if we should
-	if prunedCount > 0 {
-		p.message(fmt.Sprintf("Pruned %d entry state files\n", prunedCount))
+		// Show what we did, if we should
+		if prunedCount > 0 {
+			p.message(fmt.Sprintf("Pruned %d entry state files\n", prunedCount))
+		}
+	} else {
+		p.message("Skipping the prune-step because we saw errors processing our feed(s)\n")
 	}
 
 	return errors
