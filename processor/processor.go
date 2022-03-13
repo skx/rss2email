@@ -11,7 +11,9 @@ package processor
 import (
 	"fmt"
 	"regexp"
+	"strconv"
 	"strings"
+	"time"
 
 	"github.com/k3a/html2text"
 	"github.com/skx/rss2email/configfile"
@@ -67,6 +69,9 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// we'll prefer if available.
 		feedRecipients := recipients
 
+		// Should we sleep after getting this feed?
+		sleep := 0
+
 		// For each option
 		for _, opt := range entry.Options {
 
@@ -81,12 +86,30 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 					feedRecipients[i] = strings.TrimSpace(feedRecipients[i])
 				}
 			}
+
+			// Sleep setting?
+			if opt.Name == "sleep" {
+
+				// Convert the value, and if there was
+				// no error save it away.
+				num, err := strconv.Atoi(opt.Value)
+				if err != nil {
+					fmt.Printf("WARNING: %s:%s - failed to parse as sleep-delay %s\n", opt.Name, opt.Value, err.Error())
+				} else {
+					sleep = num
+				}
+			}
 		}
 
 		// Process this specific entry.
 		err := p.processFeed(entry, feedRecipients)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
+		}
+
+		// If we're supposed to sleep, do so
+		if sleep != 0 {
+			time.Sleep(time.Duration(sleep) * time.Second)
 		}
 	}
 
