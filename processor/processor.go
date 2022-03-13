@@ -36,9 +36,6 @@ type Processor struct {
 	// verbose denotes how verbose we should be in execution.
 	verbose bool
 
-	// dbPath holds the path to the database
-	dbPath string
-
 	// database holds the db state
 	dbHandle *bbolt.DB
 }
@@ -360,10 +357,7 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 		return nil
 	})
 
-	if val == "" {
-		return false
-	}
-	return true
+	return val != ""
 }
 
 // recordItem marks an URL as having been seen.

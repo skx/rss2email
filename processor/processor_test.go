@@ -62,11 +62,10 @@ func TestSkipExclude(t *testing.T) {
 	// Create the new processor
 	x, err := New()
 
-	defer x.Close()
-
 	if err != nil {
 		t.Fatalf("error creating processor %s", err.Error())
 	}
+	defer x.Close()
 
 	// Set it as verbose
 	x.SetVerbose(true)
