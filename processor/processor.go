@@ -240,6 +240,9 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	seen := 0
 	unseen := 0
 
+	// Keep track of all the items in the feed.
+	items := []string{}
+
 	// For each entry in the feed ..
 	for _, xp := range feed.Items {
 
@@ -250,16 +253,32 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// TODO: Remove this stuff in the near-future.
 		item := withstate.FeedItem{Item: xp}
 
+		// Keep track of the fact that we saw this feed-item.
+		//
+		// This is used for pruning the BoltDB state file
+		items = append(items, item.Link)
+
 		// If we've not already notified about this one.
 		//
 		// Check legacy-state first, then the new-state.
-		if item.IsNew() || p.seenItem(entry.URL, item.Link) {
+		isNew := true
+
+		if p.seenItem(entry.URL, item.Link) {
+			isNew = false
+		} else {
+			if !item.IsNew() {
+				isNew = false
+			}
+		}
+
+		if isNew {
 
 			// Bump the count
 			unseen += 1
 
 			// Show the new item.
 			p.message(fmt.Sprintf("\t\tNew entry in feed: %s", item.Title))
+			p.message(fmt.Sprintf("\t\t\t%s", item.Link))
 
 			// If we're supposed to send email then do that.
 			if p.send {
@@ -317,6 +336,12 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	p.message(fmt.Sprintf("\t%02d entries already seen", seen))
 	p.message(fmt.Sprintf("\t%02d entries not seen before", unseen))
 
+	// Now prune the items in this feed
+	err = p.pruneFeed(entry.URL, items)
+	if err != nil {
+		return fmt.Errorf("error pruning boltdb for %s: %s", entry.URL, err)
+	}
+
 	return nil
 }
 
@@ -335,7 +360,7 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 		return nil
 	})
 
-	if val != "" {
+	if val == "" {
 		return false
 	}
 	return true
@@ -351,6 +376,60 @@ func (p *Processor) recordItem(feed string, entry string) error {
 		return err
 	})
 	return err
+}
+
+// pruneFeed will remove unknown items from our state database
+func (p *Processor) pruneFeed(feed string, items []string) error {
+
+	// A list of items to remove
+	toRemove := []string{}
+
+	// Create a map of the items we've already seen
+	seen := make(map[string]bool)
+	for _, str := range items {
+		seen[str] = true
+	}
+
+	// Select the bucket, which we know will exist,
+	// and see if we should remove any of the keys
+	// that are present.
+	//
+	// (i.e. Remove the ones that are not in teh map above)
+	p.dbHandle.View(func(tx *bolt.Tx) error {
+
+		// Select the bucket, which we know must exist
+		b := tx.Bucket([]byte(feed))
+
+		c := b.Cursor()
+
+		for k, _ := c.First(); k != nil; k, _ = c.Next() {
+
+			key := string(k)
+			_, ok := seen[key]
+			if !ok {
+				toRemove = append(toRemove, key)
+			}
+		}
+		return nil
+	})
+
+	// Now for each item we should remove we should .. remove it.
+	for _, ent := range toRemove {
+		p.message(fmt.Sprintf("expiring feed entry %s", ent))
+
+		err := p.dbHandle.Update(func(tx *bolt.Tx) error {
+			b := tx.Bucket([]byte(feed))
+			return b.Delete([]byte(ent))
+		})
+		if err != nil {
+			return fmt.Errorf("failed to remove %s - %s", ent, err)
+		}
+
+	}
+
+	return nil
+
+	// We
 }
 
 // shouldSkip returns true if this entry should be skipped/ignored.
