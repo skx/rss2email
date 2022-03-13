@@ -35,7 +35,7 @@ Over time we've now gained a few more features:
 
 # Installation
 
-If you wish you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).  Currently there is only a binary for Linux (amd64) due to the use of `cgo` in our dependencies.
+If you wish you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).
 
 
 ## Build with Go Modules
@@ -127,7 +127,7 @@ the things you care about:
 
 If you wish you may customize the template which is used to generate the notification email, see [email-customization](#email-customization) for details.  It is also possible to run in a [daemon mode](#daemon-mode) which will leave the process running forever, rather than terminating after walking the feeds once.
 
-The state of feed-entries is recorded beneath `~/.rss2email/seen`, which is how we keep track of which items are new/unseen.  These entries are automatically pruned over time, to avoid filling your disk forever.
+The state of feed-entries is recorded beneath `~/.rss2email/state.db`, which is a [boltdb database](https://pkg.go.dev/go.etcd.io/bbolt).
 
 
 
