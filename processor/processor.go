@@ -45,7 +45,13 @@ type Processor struct {
 // This might return an error if we fail to open the database we use
 // for maintaining state.
 func New() (*Processor, error) {
-	db, err := bbolt.Open(dbGetPath(), 0666, nil)
+
+	// Ensure we have a state-directory
+	dir := dbGetPath()
+	os.MkdirAll(dir, 0666)
+
+	// Now create the database, if missing, or open it.
+	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -73,7 +79,7 @@ func dbGetPath() string {
 	}
 
 	// Return the path
-	return filepath.Join(home, ".rss2email", "state.db")
+	return filepath.Join(home, ".rss2email")
 }
 
 // ProcessFeeds is the main workhorse here, we process each feed and send
