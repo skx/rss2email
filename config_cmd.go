@@ -117,7 +117,7 @@ include-title | Include only items with title matching the given regular-express
 notify        | Comma-delimited list of emails to send notifications to (if set,
               | replaces the emails set in the cron/daemon command).
 retry         | The maximum number of times to retry a failing HTTP-fetch.
-sleep         | Sleep the specified number of seconds, after making the request.
+sleep         | Sleep the specified number of seconds, before making the request.
 template      | The path to a feed-specific email template to use.
 user-agent    | Configure a specific User-Agent when making HTTP requests.
 

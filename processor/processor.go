@@ -10,6 +10,7 @@ package processor
 
 import (
 	"fmt"
+	"net/url"
 	"regexp"
 	"strconv"
 	"strings"
@@ -60,8 +61,14 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		return errors
 	}
 
+	// Keep track of the previous URL we fetched
+	prev := ""
+
 	// For each feed contained in the configuration file
 	for _, entry := range entries {
+
+		// Should we sleep after getting this feed?
+		sleep := 0
 
 		// We default to notifying the global recipient-list.
 		//
@@ -69,8 +76,20 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// we'll prefer if available.
 		feedRecipients := recipients
 
-		// Should we sleep after getting this feed?
-		sleep := 0
+		// parse the hostname form the URL
+		host := ""
+		u, err := url.Parse(entry.URL)
+		if err == nil {
+			host = u.Host
+		}
+
+		// Are we fetching from the same host as the previous feed?
+		// If so then we'll add a delay to try to avoid annoying that
+		// host.
+		if host == prev {
+			fmt.Printf("Fetching from same host as previous feed, %s, adding 5s delay\n", host)
+			sleep = 5
+		}
 
 		// For each option
 		for _, opt := range entry.Options {
@@ -92,13 +111,18 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 				// Convert the value, and if there was
 				// no error save it away.
-				num, err := strconv.Atoi(opt.Value)
-				if err != nil {
-					fmt.Printf("WARNING: %s:%s - failed to parse as sleep-delay %s\n", opt.Name, opt.Value, err.Error())
+				num, nErr := strconv.Atoi(opt.Value)
+				if nErr != nil {
+					fmt.Printf("WARNING: %s:%s - failed to parse as sleep-delay %s\n", opt.Name, opt.Value, nErr.Error())
 				} else {
 					sleep = num
 				}
 			}
+		}
+
+		// If we're supposed to sleep, do so
+		if sleep != 0 {
+			time.Sleep(time.Duration(sleep) * time.Second)
 		}
 
 		// Process this specific entry.
@@ -107,10 +131,8 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
 		}
 
-		// If we're supposed to sleep, do so
-		if sleep != 0 {
-			time.Sleep(time.Duration(sleep) * time.Second)
-		}
+		// Now update with our current host.
+		prev = host
 	}
 
 	// Prune old state files, unless we saw an error.
