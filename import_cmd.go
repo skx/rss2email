@@ -82,7 +82,8 @@ func (i *importCmd) Execute(args []string) int {
 	for _, file := range args {
 
 		// Read content
-		data, err := ioutil.ReadFile(file)
+		var data []byte
+		data, err = ioutil.ReadFile(file)
 		if err != nil {
 			fmt.Printf("failed to read %s: %s\n", file, err.Error())
 			continue

@@ -23,10 +23,10 @@ https://example.net/
 		t.Fatalf("Error creating temporary file")
 	}
 
-	if _, err := tmpfile.Write(data); err != nil {
+	if _, err = tmpfile.Write(data); err != nil {
 		t.Fatalf("Error writing to config file")
 	}
-	if err := tmpfile.Close(); err != nil {
+	if err = tmpfile.Close(); err != nil {
 		t.Fatalf("Error creating temporary file")
 	}
 
