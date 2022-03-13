@@ -126,7 +126,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		}
 
 		// Process this specific entry.
-		err := p.processFeed(entry, feedRecipients)
+		err = p.processFeed(entry, feedRecipients)
 		if err != nil {
 			errors = append(errors, fmt.Errorf("error processing %s - %s", entry.URL, err))
 		}
