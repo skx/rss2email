@@ -25,7 +25,6 @@ import (
 	"github.com/skx/rss2email/processor/emailer"
 	"github.com/skx/rss2email/withstate"
 	"go.etcd.io/bbolt"
-	bolt "go.etcd.io/bbolt"
 )
 
 // Processor stores our state
@@ -49,7 +48,7 @@ type Processor struct {
 // This might return an error if we fail to open the database we use
 // for maintaining state.
 func New() (*Processor, error) {
-	db, err := bolt.Open(dbGetPath(), 0666, nil)
+	db, err := bbolt.Open(dbGetPath(), 0666, nil)
 	if err != nil {
 		return nil, err
 	}
@@ -122,7 +121,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// a bucket for each Feed URL, and then store the
 		// URLs we've seen with a random value.
 		//
-		err := p.dbHandle.Update(func(tx *bolt.Tx) error {
+		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 			_, err := tx.CreateBucketIfNotExists([]byte(entry.URL))
 			if err != nil {
 				return fmt.Errorf("create bucket failed: %s", err)
@@ -274,7 +273,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		if isNew {
 
 			// Bump the count
-			unseen += 1
+			unseen++
 
 			// Show the new item.
 			p.message(fmt.Sprintf("\t\tNew entry in feed: %s", item.Title))
@@ -288,7 +287,8 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				// This has to be done ahead of sending email,
 				// as we can use this to skip entries via
 				// regular expression on the title/body contents.
-				content, err := item.HTMLContent()
+				content := ""
+				content, err = item.HTMLContent()
 				if err != nil {
 					content = item.RawContent()
 				}
@@ -314,7 +314,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		} else {
 
 			// Bump the count
-			seen += 1
+			seen++
 
 		}
 
@@ -351,7 +351,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 func (p *Processor) seenItem(feed string, entry string) bool {
 	val := ""
 
-	p.dbHandle.View(func(tx *bolt.Tx) error {
+	p.dbHandle.View(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(feed))
 		v := b.Get([]byte(entry))
 		if v != nil {
@@ -370,7 +370,7 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 //
 // It does this by updating the BoltDB in which we record state.
 func (p *Processor) recordItem(feed string, entry string) error {
-	err := p.dbHandle.Update(func(tx *bolt.Tx) error {
+	err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 		b := tx.Bucket([]byte(feed))
 		err := b.Put([]byte(entry), []byte("seen"))
 		return err
@@ -395,7 +395,7 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 	// that are present.
 	//
 	// (i.e. Remove the ones that are not in teh map above)
-	p.dbHandle.View(func(tx *bolt.Tx) error {
+	p.dbHandle.View(func(tx *bbolt.Tx) error {
 
 		// Select the bucket, which we know must exist
 		b := tx.Bucket([]byte(feed))
@@ -417,7 +417,7 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 	for _, ent := range toRemove {
 		p.message(fmt.Sprintf("expiring feed entry %s", ent))
 
-		err := p.dbHandle.Update(func(tx *bolt.Tx) error {
+		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 			b := tx.Bucket([]byte(feed))
 			return b.Delete([]byte(ent))
 		})
