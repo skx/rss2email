@@ -6,8 +6,8 @@ BASE="rss2email"
 #
 # We build on only a single platform/arch.
 #
-BUILD_PLATFORMS="linux"
-BUILD_ARCHS="amd64"
+BUILD_PLATFORMS="linux darwin freebsd"
+BUILD_ARCHS="amd64 386"
 
 # For each platform
 for OS in ${BUILD_PLATFORMS[@]}; do
@@ -35,7 +35,7 @@ for OS in ${BUILD_PLATFORMS[@]}; do
         # Run the build
         export GOARCH=${ARCH}
         export GOOS=${OS}
-        export CGO_ENABLED=1
+        export CGO_ENABLED=0
 
         go build -ldflags "-X main.version=$(git describe --tags)" -o "${BASE}-${SUFFIX}"
 

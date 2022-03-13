@@ -10,6 +10,7 @@ require (
 	github.com/mmcdole/goxpp v0.0.0-20200921145534-2f3784f67354 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/skx/subcommands v0.9.2
-	golang.org/x/net v0.0.0-20211216030914-fe4d6282115f // indirect
-	golang.org/x/text v0.3.7 // indirect
+	go.etcd.io/bbolt v1.3.6
+	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
+	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
 )

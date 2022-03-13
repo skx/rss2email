@@ -93,7 +93,14 @@ func (c *cronCmd) Execute(args []string) int {
 	}
 
 	// Create the helper
-	p := processor.New()
+	p, err := processor.New()
+	if err != nil {
+		fmt.Printf("Error creating feed processor: %s\n", err.Error())
+		return 1
+	}
+
+	// Close the database handle, once processed.
+	defer p.Close()
 
 	// Setup the state
 	p.SetVerbose(c.verbose)

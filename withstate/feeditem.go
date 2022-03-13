@@ -8,13 +8,11 @@ package withstate
 import (
 	"crypto/sha1"
 	"fmt"
-	"io/ioutil"
 	"net/url"
 	"os"
 	"os/user"
 	"path/filepath"
 	"strings"
-	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mmcdole/gofeed"
@@ -40,28 +38,6 @@ func (item *FeedItem) IsNew() bool {
 		return true
 	}
 	return false
-}
-
-// RecordSeen updates this item, to record the fact that it has been seen.
-func (item *FeedItem) RecordSeen() {
-
-	// Get the file-path
-	file := item.path()
-
-	if _, err := os.Stat(file); !os.IsNotExist(err) {
-		t := time.Now()
-		_ = os.Chtimes(file, t, t)
-		return
-	}
-
-	// Ensure the parent directory exists
-	os.MkdirAll(filepath.Dir(file), os.ModePerm)
-
-	// We'll write out the link to the item in the file
-	d1 := []byte(item.Link)
-
-	// Write it out
-	_ = ioutil.WriteFile(file, d1, 0644)
 }
 
 // RawContent provides content or fallback to description
@@ -192,72 +168,10 @@ func (item *FeedItem) path() string {
 
 }
 
-// isSha1File returns true if a regular file has a name that looks
-// like a sha1.  This is an incomplete check, but may prevent a
-// non-state file from being removed.
-func isSha1File(fi os.FileInfo) bool {
+// RemoveLegacy removes the file that was used to record this
+// entries state - because it is now stored in boltdb
+func (item *FeedItem) RemoveLegacy() {
 
-	name := fi.Name()
-
-	if len(name) != 40 {
-		return false
-	}
-
-	for _, r := range name {
-		if r >= '0' && r <= '9' {
-			continue
-		}
-		if r >= 'a' && r <= 'f' {
-			continue
-		}
-		return false
-	}
-
-	return fi.Mode().IsRegular()
-}
-
-// PruneStateFiles removes no-longer-needed state files
-// It returns the number of files pruned and a slice of errors encountered.
-func PruneStateFiles() (int, []error) {
-
-	stateDirPath := stateDirectory()
-
-	err := os.MkdirAll(stateDirPath, os.ModePerm)
-	if err != nil {
-		return 0, []error{err}
-	}
-
-	stateDir, err := os.Open(stateDirPath)
-	if err != nil {
-		err = fmt.Errorf("failed to open state-file directory: %s", err.Error())
-		return 0, []error{err}
-	}
-
-	fileInfos, err := stateDir.Readdir(0)
-	if err != nil {
-		err = fmt.Errorf("failed to list state files: %s", err.Error())
-		return 0, []error{err}
-	}
-
-	errors := make([]error, 0)
-	prunedCount := 0
-
-	// Prune state files older than 4 days.
-	for _, fi := range fileInfos {
-		if time.Since(fi.ModTime()) > (4*24)*time.Hour {
-			if !isSha1File(fi) {
-				continue
-			}
-
-			err := os.Remove(filepath.Join(stateDirPath, fi.Name()))
-			if err == nil {
-				prunedCount++
-			} else {
-				err = fmt.Errorf("failed to remove state file: %s", err.Error())
-				errors = append(errors, err)
-			}
-		}
-	}
-
-	return prunedCount, errors
+	// Remove the file - ignoring errors.
+	os.Remove(item.path())
 }

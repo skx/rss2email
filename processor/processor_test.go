@@ -8,7 +8,12 @@ import (
 
 func TestSendEmail(t *testing.T) {
 
-	p := New()
+	p, err := New()
+
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
+	defer p.Close()
 
 	if !p.send {
 		t.Fatalf("unexpected default to sending mail")
@@ -24,7 +29,13 @@ func TestSendEmail(t *testing.T) {
 
 func TestVerbose(t *testing.T) {
 
-	p := New()
+	p, err := New()
+
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
+
+	defer p.Close()
 
 	if p.verbose {
 		t.Fatalf("unexpected default to verbose")
@@ -49,7 +60,13 @@ func TestSkipExclude(t *testing.T) {
 	}
 
 	// Create the new processor
-	x := New()
+	x, err := New()
+
+	defer x.Close()
+
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
 
 	// Set it as verbose
 	x.SetVerbose(true)
@@ -85,7 +102,12 @@ func TestSkipInclude(t *testing.T) {
 	}
 
 	// Create the new processor
-	x := New()
+	x, err := New()
+
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
+	defer x.Close()
 
 	// Set it as verbose
 	x.SetVerbose(true)
@@ -122,7 +144,10 @@ func TestSkipIncludeTitle(t *testing.T) {
 	}
 
 	// Create the new processor
-	x := New()
+	x, err := New()
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
 
 	// Set it as verbose
 	x.SetVerbose(true)
@@ -152,7 +177,12 @@ func TestSkipIncludeTitle(t *testing.T) {
 	bogus := []string{"I do not like food", "I don't like cooked goods", "cheese is dead milk", "books are fun", "tv is good"}
 
 	// Create the new processor
-	x = New()
+	x.Close()
+	x, err = New()
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
+	defer x.Close()
 
 	// Set it as verbose
 	x.SetVerbose(true)

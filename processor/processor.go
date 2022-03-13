@@ -11,6 +11,9 @@ package processor
 import (
 	"fmt"
 	"net/url"
+	"os"
+	"os/user"
+	"path/filepath"
 	"regexp"
 	"strconv"
 	"strings"
@@ -21,6 +24,8 @@ import (
 	"github.com/skx/rss2email/httpfetch"
 	"github.com/skx/rss2email/processor/emailer"
 	"github.com/skx/rss2email/withstate"
+	"go.etcd.io/bbolt"
+	bolt "go.etcd.io/bbolt"
 )
 
 // Processor stores our state
@@ -31,11 +36,48 @@ type Processor struct {
 
 	// verbose denotes how verbose we should be in execution.
 	verbose bool
+
+	// dbPath holds the path to the database
+	dbPath string
+
+	// database holds the db state
+	dbHandle *bbolt.DB
 }
 
-// New creates a new Processor object
-func New() *Processor {
-	return &Processor{send: true}
+// New creates a new Processor object.
+//
+// This might return an error if we fail to open the database we use
+// for maintaining state.
+func New() (*Processor, error) {
+	db, err := bolt.Open(dbGetPath(), 0666, nil)
+	if err != nil {
+		return nil, err
+	}
+
+	return &Processor{send: true, dbHandle: db}, nil
+}
+
+// Close should be called to cleanup our internal database-handle
+func (p *Processor) Close() {
+	p.dbHandle.Close()
+}
+
+// dbGetPath returns the path to use for the bolt database
+func dbGetPath() string {
+
+	// Default to using $HOME
+	home := os.Getenv("HOME")
+
+	if home == "" {
+		// Get the current user, and use their home if possible.
+		usr, err := user.Current()
+		if err == nil {
+			home = usr.HomeDir
+		}
+	}
+
+	// Return the path
+	return filepath.Join(home, ".rss2email", "state.db")
 }
 
 // ProcessFeeds is the main workhorse here, we process each feed and send
@@ -61,13 +103,40 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		return errors
 	}
 
-	// Keep track of the previous URL we fetched
+	// Keep track of the previous hostname from which we fetched a feed
 	prev := ""
 
 	// For each feed contained in the configuration file
 	for _, entry := range entries {
 
-		// Should we sleep after getting this feed?
+		// Create a bucket to hold the entry-state here,
+		// if we've not done so previously.
+		//
+		// We do this because we store the "seen" vs "unseen"
+		// state in BoltDB database.
+		//
+		// BoltDB has a concept of "Buckets", which contain
+		// key=value entries.
+		//
+		// Since we process feeds it seems logical to create
+		// a bucket for each Feed URL, and then store the
+		// URLs we've seen with a random value.
+		//
+		err := p.dbHandle.Update(func(tx *bolt.Tx) error {
+			_, err := tx.CreateBucketIfNotExists([]byte(entry.URL))
+			if err != nil {
+				return fmt.Errorf("create bucket failed: %s", err)
+			}
+			return nil
+		})
+
+		// If we have a DB-error then we return, this shouldn't happen.
+		if err != nil {
+			errors = append(errors, fmt.Errorf("error creating bucket for %s: %s", entry.URL, err))
+			return (errors)
+		}
+
+		// Should we sleep before getting this feed?
 		sleep := 0
 
 		// We default to notifying the global recipient-list.
@@ -87,7 +156,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// If so then we'll add a delay to try to avoid annoying that
 		// host.
 		if host == prev {
-			fmt.Printf("Fetching from same host as previous feed, %s, adding 5s delay\n", host)
+			p.message(fmt.Sprintf("Fetching from same host as previous feed, %s, adding 5s delay", host))
 			sleep = 5
 		}
 
@@ -135,43 +204,12 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		prev = host
 	}
 
-	// Prune old state files, unless we saw an error.
-	//
-	// Discussion
-	// ----------
-	//
-	// This is a bit horrid.  The preferred solution would be to
-	// prune state files on a per-feed basis, in the loop above,
-	// however that is not possible because we don't store the
-	// state in such a way that we can easily identify the source
-	// of the files.
-	//
-	// We could open each file, look for a URL beneath the feed,
-	// and process that way.  But that would be slow and equally
-	// horrid.
-	//
-	// The solution for the future is to store the seen-flags
-	// with a per-feed prefix.  However migrating to that will
-	// require some care and future updates.
-	//
-	if len(errors) == 0 {
-		prunedCount, pruneErrors := withstate.PruneStateFiles()
-
-		// If we got any errors propagate them
-		errors = append(errors, pruneErrors...)
-
-		// Show what we did, if we should
-		if prunedCount > 0 {
-			p.message(fmt.Sprintf("Pruned %d entry state files\n", prunedCount))
-		}
-	} else {
-		p.message("Skipping the prune-step because we saw errors processing our feed(s)\n")
-	}
-
 	return errors
 }
 
-// message shows a message if our verbose flag is set
+// message shows a message if our verbose flag is set.
+//
+// NOTE: This appends a newline to the message.
 func (p *Processor) message(msg string) {
 	if p.verbose {
 		fmt.Printf("%s\n", msg)
@@ -186,7 +224,7 @@ func (p *Processor) message(msg string) {
 func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
 	// Show what we're doing.
-	p.message(fmt.Sprintf("Fetching feed: %s\n", entry.URL))
+	p.message(fmt.Sprintf("Fetching feed: %s", entry.URL))
 
 	// Fetch the feed for the input URL
 	helper := httpfetch.New(entry)
@@ -195,7 +233,12 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		return err
 	}
 
-	p.message(fmt.Sprintf("\tFeed contains %d entries\n", len(feed.Items)))
+	// Show how many entries we've found in the feed.
+	p.message(fmt.Sprintf("\tFeed contains %d entries", len(feed.Items)))
+
+	// Count how many seen/unseen items there were.
+	seen := 0
+	unseen := 0
 
 	// For each entry in the feed ..
 	for _, xp := range feed.Items {
@@ -203,13 +246,21 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// Wrap the feed-item in a class of our own,
 		// so that we can use our helper methods to mark
 		// read-state.
+		//
+		// TODO: Remove this stuff in the near-future.
 		item := withstate.FeedItem{Item: xp}
 
 		// If we've not already notified about this one.
-		if item.IsNew() {
+		//
+		// Check legacy-state first, then the new-state.
+		if item.IsNew() || p.seenItem(entry.URL, item.Link) {
+
+			// Bump the count
+			unseen += 1
 
 			// Show the new item.
-			p.message(fmt.Sprintf("\t\tFeed entry: %s\n", item.Title))
+			p.message(fmt.Sprintf("\t\tNew entry in feed: %s", item.Title))
+
 			// If we're supposed to send email then do that.
 			if p.send {
 
@@ -241,18 +292,65 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 					}
 				}
 			}
+		} else {
+
+			// Bump the count
+			seen += 1
+
 		}
 
-		// Mark the item as having been seen, after the
-		// email was (probably) sent.
+		// Mark the item as having been seen, after the email was (probably) sent.
 		//
-		// This does run the risk that sending mail
-		// fails, due to error, and that keeps happening
-		// forever...
-		item.RecordSeen()
+		// This does run the risk that sending mail fails, due to error, and
+		// that keeps happening forever...
+		err = p.recordItem(entry.URL, item.Link)
+		if err != nil {
+			return err
+		}
+
+		// Since we've marked this item as being seen we can remove the legacy
+		// state-file
+		item.RemoveLegacy()
 	}
 
+	// Show how many entries we've found in the feed.
+	p.message(fmt.Sprintf("\t%02d entries already seen", seen))
+	p.message(fmt.Sprintf("\t%02d entries not seen before", unseen))
+
 	return nil
+}
+
+// seenItem returns true if we've seen this item.
+//
+// It does this by checking the BoltDB in which we record state.
+func (p *Processor) seenItem(feed string, entry string) bool {
+	val := ""
+
+	p.dbHandle.View(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(feed))
+		v := b.Get([]byte(entry))
+		if v != nil {
+			val = string(v)
+		}
+		return nil
+	})
+
+	if val != "" {
+		return false
+	}
+	return true
+}
+
+// recordItem marks an URL as having been seen.
+//
+// It does this by updating the BoltDB in which we record state.
+func (p *Processor) recordItem(feed string, entry string) error {
+	err := p.dbHandle.Update(func(tx *bolt.Tx) error {
+		b := tx.Bucket([]byte(feed))
+		err := b.Put([]byte(entry), []byte("seen"))
+		return err
+	})
+	return err
 }
 
 // shouldSkip returns true if this entry should be skipped/ignored.
@@ -276,7 +374,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 		if opt.Name == "exclude-title" {
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-title' match of '%s'.\n", opt.Value))
+				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-title' match of '%s'.", opt.Value))
 
 				// True: skip/ignore this entry
 				return true
@@ -288,7 +386,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude' match of %s.\n", opt.Value))
+				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude' match of %s.", opt.Value))
 
 				// True: skip/ignore this entry
 				return true
@@ -314,7 +412,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tIncluding as this entry's title matches %s.\n", opt.Value))
+				p.message(fmt.Sprintf("\t\t\tIncluding as this entry's title matches %s.", opt.Value))
 
 				// False: Do not skip/ignore this entry
 				return false
@@ -329,7 +427,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tIncluding as this entry matches %s.\n", opt.Value))
+				p.message(fmt.Sprintf("\t\t\tIncluding as this entry matches %s.", opt.Value))
 
 				// False: Do not skip/ignore this entry
 				return false
@@ -342,7 +440,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	// i.e. The entry did not include a string we regarded as mandatory.
 	if include {
-		p.message("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns\n")
+		p.message("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns")
 
 		// True: skip/ignore this entry
 		return true
