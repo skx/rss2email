@@ -21,13 +21,13 @@ import (
 	"net/smtp"
 	"os"
 	"os/exec"
-	"os/user"
 	"path/filepath"
 	"strconv"
 	"text/template"
 
 	"github.com/mmcdole/gofeed"
 	"github.com/skx/rss2email/configfile"
+	"github.com/skx/rss2email/state"
 	emailtemplate "github.com/skx/rss2email/template"
 	"github.com/skx/rss2email/withstate"
 )
@@ -57,27 +57,16 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	// Load the default template from the embedded resource.
 	content := emailtemplate.EmailTemplate()
 
-	//
-	// Is there an on-disk template instead?  If so use it.
-	//
-	home := os.Getenv("HOME")
-
-	// If that fails then get the current user, and use
-	// their home if possible.
-	if home == "" {
-		usr, errr := user.Current()
-		if errr == nil {
-			home = usr.HomeDir
-		}
-	}
+	// The directory within which we maintain state
+	stateDir := state.Directory()
 
 	// The path to the overridden template
-	override := filepath.Join(home, ".rss2email", "email.tmpl")
+	override := filepath.Join(stateDir, "email.tmpl")
 
 	// If a per feed template was set, get it here.
 	for _, opt := range e.opts {
 		if opt.Name == "template" {
-			override = filepath.Join(home, ".rss2email", opt.Value)
+			override = filepath.Join(stateDir, opt.Value)
 		}
 	}
 

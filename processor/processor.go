@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strconv"
@@ -23,6 +22,7 @@ import (
 	"github.com/skx/rss2email/configfile"
 	"github.com/skx/rss2email/httpfetch"
 	"github.com/skx/rss2email/processor/emailer"
+	"github.com/skx/rss2email/state"
 	"github.com/skx/rss2email/withstate"
 	"go.etcd.io/bbolt"
 )
@@ -48,7 +48,7 @@ type Processor struct {
 func New() (*Processor, error) {
 
 	// Ensure we have a state-directory.
-	dir := dbGetPath()
+	dir := state.Directory()
 	os.MkdirAll(dir, 0666)
 
 	// Now create the database, if missing, or open it if it exists.
@@ -63,24 +63,6 @@ func New() (*Processor, error) {
 // Close should be called to cleanup our internal database-handle.
 func (p *Processor) Close() {
 	p.dbHandle.Close()
-}
-
-// dbGetPath returns the path to use for the bolt database
-func dbGetPath() string {
-
-	// Default to using $HOME
-	home := os.Getenv("HOME")
-
-	if home == "" {
-		// Get the current user, and use their home if possible.
-		usr, err := user.Current()
-		if err == nil {
-			home = usr.HomeDir
-		}
-	}
-
-	// Return the path
-	return filepath.Join(home, ".rss2email")
 }
 
 // ProcessFeeds is the main workhorse here, we process each feed and send

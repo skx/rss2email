@@ -7,9 +7,9 @@ package main
 import (
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 
+	"github.com/skx/rss2email/state"
 	"github.com/skx/subcommands"
 	"go.etcd.io/bbolt"
 )
@@ -41,7 +41,7 @@ are no longer regarded as new/unseen.)
 func (s *seenCmd) Execute(args []string) int {
 
 	// Ensure we have a state-directory.
-	dir := dbGetPath()
+	dir := state.Directory()
 	os.MkdirAll(dir, 0666)
 
 	// Now create the database, if missing, or open it if it exists.
@@ -97,22 +97,4 @@ func (s *seenCmd) Execute(args []string) int {
 	}
 
 	return 0
-}
-
-// dbGetPath returns the path to use for the bolt database
-func dbGetPath() string {
-
-	// Default to using $HOME
-	home := os.Getenv("HOME")
-
-	if home == "" {
-		// Get the current user, and use their home if possible.
-		usr, err := user.Current()
-		if err == nil {
-			home = usr.HomeDir
-		}
-	}
-
-	// Return the path
-	return filepath.Join(home, ".rss2email")
 }

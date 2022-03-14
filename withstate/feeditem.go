@@ -10,12 +10,12 @@ import (
 	"fmt"
 	"net/url"
 	"os"
-	"os/user"
 	"path/filepath"
 	"strings"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/mmcdole/gofeed"
+	"github.com/skx/rss2email/state"
 )
 
 // statePrefix holds the prefix directory, and is used to
@@ -140,19 +140,8 @@ func stateDirectory() string {
 		return statePrefix
 	}
 
-	// Default to using $HOME
-	home := os.Getenv("HOME")
-
-	if home == "" {
-		// Get the current user, and use their home if possible.
-		usr, err := user.Current()
-		if err == nil {
-			home = usr.HomeDir
-		}
-	}
-
 	// Store the path for the future, and return it.
-	statePrefix = filepath.Join(home, ".rss2email", "seen")
+	statePrefix = filepath.Join(state.Directory(), "seen")
 	return statePrefix
 }
 

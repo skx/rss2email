@@ -19,10 +19,11 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"os/user"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/skx/rss2email/state"
 )
 
 // Option contain options which are used on a per-feed basis.
@@ -82,30 +83,12 @@ func NewWithPath(file string) *ConfigFile {
 	return x
 }
 
-// Home returns the home-directory for the current user
-func (c *ConfigFile) Home() string {
-
-	// Default to using $HOME for our storage
-	home := os.Getenv("HOME")
-
-	// If that fails then get the current user, and use
-	// their home if possible.
-	if home == "" {
-		usr, err := user.Current()
-		if err == nil {
-			home = usr.HomeDir
-		}
-	}
-
-	return home
-}
-
 // Path returns the path to the configuration-file.
 func (c *ConfigFile) Path() string {
 
 	// If we've not calculated the path then do so now.
 	if c.path == "" {
-		c.path = filepath.Join(c.Home(), ".rss2email", "feeds.txt")
+		c.path = filepath.Join(state.Directory(), "feeds.txt")
 	}
 
 	return c.path
@@ -134,7 +117,7 @@ func (c *ConfigFile) Upgrade() {
 	// OK create a new helper, and use that to read the
 	// older entries
 	old := New()
-	old.path = filepath.Join(c.Home(), ".rss2email", "feeds")
+	old.path = filepath.Join(state.Directory(), "feeds")
 
 	// Does it exist?
 	if !old.Exists() {
