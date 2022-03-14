@@ -36,7 +36,8 @@ type Processor struct {
 	// verbose denotes how verbose we should be in execution.
 	verbose bool
 
-	// database holds the db state
+	// database holds a handle to the BoltDB database we use to
+	// store feed-entry state within.
 	dbHandle *bbolt.DB
 }
 
@@ -46,11 +47,11 @@ type Processor struct {
 // for maintaining state.
 func New() (*Processor, error) {
 
-	// Ensure we have a state-directory
+	// Ensure we have a state-directory.
 	dir := dbGetPath()
 	os.MkdirAll(dir, 0666)
 
-	// Now create the database, if missing, or open it.
+	// Now create the database, if missing, or open it if it exists.
 	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
 	if err != nil {
 		return nil, err
@@ -59,7 +60,7 @@ func New() (*Processor, error) {
 	return &Processor{send: true, dbHandle: db}, nil
 }
 
-// Close should be called to cleanup our internal database-handle
+// Close should be called to cleanup our internal database-handle.
 func (p *Processor) Close() {
 	p.dbHandle.Close()
 }
@@ -148,6 +149,10 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		feedRecipients := recipients
 
 		// parse the hostname form the URL
+		//
+		// We do this because some remote sites, such as Reddit,
+		// will apply rate-limiting if we make too many consecutive
+		// requests in a short period of time.
 		host := ""
 		u, err := url.Parse(entry.URL)
 		if err == nil {
@@ -162,7 +167,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 			sleep = 5
 		}
 
-		// For each option
+		// Now look at each per-feed option, if any are set.
 		for _, opt := range entry.Options {
 
 			// Is it a set of recipients?
@@ -206,6 +211,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		prev = host
 	}
 
+	// All feeds were processed, return any errors we found along the way
 	return errors
 }
 
@@ -249,30 +255,40 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	for _, xp := range feed.Items {
 
 		// Wrap the feed-item in a class of our own,
-		// so that we can use our helper methods to mark
-		// read-state.
+		// so that we can get access to the content easily.
 		//
-		// TODO: Remove this stuff in the near-future.
+		// Specifically here we turn relative URLs into absolute
+		// ones, using the feed link as the base.
+		//
+		// We have some legacy code for determining "new" vs "seen",
+		// but that will go away in the future.
 		item := withstate.FeedItem{Item: xp}
 
 		// Keep track of the fact that we saw this feed-item.
 		//
-		// This is used for pruning the BoltDB state file
+		// This is used for pruning the BoltDB state file.
 		items = append(items, item.Link)
 
-		// If we've not already notified about this one.
-		//
-		// Check legacy-state first, then the new-state.
+		// Assume this feed-entry is new, and we've not seen it
+		// in the past.
 		isNew := true
 
+		// Is this link already in the BoltDB?
+		//
+		// If so it's not new.
 		if p.seenItem(entry.URL, item.Link) {
 			isNew = false
 		} else {
+
+			// If it's not in the BoltDB look at the
+			// legacy path.
 			if !item.IsNew() {
 				isNew = false
 			}
 		}
 
+		// If this entry is new then we must notify, unless
+		// the entry is excluded for some reason.
 		if isNew {
 
 			// Bump the count
@@ -321,17 +337,18 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 		}
 
-		// Mark the item as having been seen, after the email was (probably) sent.
+		// Mark the item as having been seen, after the email
+		// was (probably) sent.
 		//
-		// This does run the risk that sending mail fails, due to error, and
-		// that keeps happening forever...
+		// This does run the risk that sending mail fails,
+		// due to error, and that keeps happening forever...
 		err = p.recordItem(entry.URL, item.Link)
 		if err != nil {
 			return err
 		}
 
-		// Since we've marked this item as being seen we can remove the legacy
-		// state-file
+		// Since we've marked this item as being seen we can
+		// remove the legacy state-file, if it exists.
 		item.RemoveLegacy()
 	}
 
@@ -339,7 +356,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	p.message(fmt.Sprintf("\t%02d entries already seen", seen))
 	p.message(fmt.Sprintf("\t%02d entries not seen before", unseen))
 
-	// Now prune the items in this feed
+	// Now prune the items in this feed.
 	err = p.pruneFeed(entry.URL, items)
 	if err != nil {
 		return fmt.Errorf("error pruning boltdb for %s: %s", entry.URL, err)
@@ -355,7 +372,11 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 	val := ""
 
 	p.dbHandle.View(func(tx *bbolt.Tx) error {
+
+		// Select the feed-bucket
 		b := tx.Bucket([]byte(feed))
+
+		// Get the entry with key of the feed URL.
 		v := b.Get([]byte(entry))
 		if v != nil {
 			val = string(v)
@@ -370,8 +391,13 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 //
 // It does this by updating the BoltDB in which we record state.
 func (p *Processor) recordItem(feed string, entry string) error {
+
 	err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
+
+		// Select the feed-bucket
 		b := tx.Bucket([]byte(feed))
+
+		// Set a value "seen" to the key of the feed item link
 		err := b.Put([]byte(entry), []byte("seen"))
 		return err
 	})
@@ -400,36 +426,43 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 		// Select the bucket, which we know must exist
 		b := tx.Bucket([]byte(feed))
 
+		// Get a cursor to the key=value entries in the bucket
 		c := b.Cursor()
 
+		// Iterate over the key/value pairs.
 		for k, _ := c.First(); k != nil; k, _ = c.Next() {
 
+			// Convert the key to a string
 			key := string(k)
+
+			// Is this in our list of seen entries?
 			_, ok := seen[key]
 			if !ok {
+				// If not remove the key/value pair
 				toRemove = append(toRemove, key)
 			}
 		}
 		return nil
 	})
 
-	// Now for each item we should remove we should .. remove it.
+	// Remove each entry that we were supposed to remove.
 	for _, ent := range toRemove {
 		p.message(fmt.Sprintf("expiring feed entry %s", ent))
 
 		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
+
+			// Select the bucket
 			b := tx.Bucket([]byte(feed))
+
+			// Delete the key=value pair.
 			return b.Delete([]byte(ent))
 		})
 		if err != nil {
 			return fmt.Errorf("failed to remove %s - %s", ent, err)
 		}
-
 	}
 
 	return nil
-
-	// We
 }
 
 // shouldSkip returns true if this entry should be skipped/ignored.

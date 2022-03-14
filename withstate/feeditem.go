@@ -20,6 +20,8 @@ import (
 
 // statePrefix holds the prefix directory, and is used to
 // allow changes during testing
+//
+// TODO: Remove this, as legacy.
 var statePrefix string
 
 // FeedItem is a structure wrapping a gofeed.Item, to allow us to record
@@ -31,6 +33,8 @@ type FeedItem struct {
 }
 
 // IsNew reports whether this particular feed-item is new.
+//
+// TODO: Remove this, as legacy.
 func (item *FeedItem) IsNew() bool {
 
 	file := item.path()
@@ -126,6 +130,8 @@ func (item *FeedItem) patchReference(ref string) string {
 }
 
 // stateDirectory returns the directory beneath which we store state
+//
+// TODO: Remove this, as legacy.
 func stateDirectory() string {
 
 	// If we've found it already, or we've mocked it, then
@@ -152,6 +158,8 @@ func stateDirectory() string {
 
 // path returns an appropriate marker-file, which is used to record
 // the seen vs. unseen state of a particular entry.
+//
+// TODO: Remove this, as legacy.
 func (item *FeedItem) path() string {
 
 	guid := item.GUID
@@ -170,6 +178,8 @@ func (item *FeedItem) path() string {
 
 // RemoveLegacy removes the file that was used to record this
 // entries state - because it is now stored in boltdb
+//
+// TODO: Remove this, as legacy.
 func (item *FeedItem) RemoveLegacy() {
 
 	// Remove the file - ignoring errors.
