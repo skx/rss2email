@@ -56,7 +56,9 @@ please run:
 
 You can add '-verbose' to see details about the feed contents, but note
 that this will require downloading the contents of each feed and will
-thus be slow.
+thus be slow - a simpler way of showing history would be to run:
+
+    $ rss2email seen
 
 Example:
 
