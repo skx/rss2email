@@ -85,8 +85,7 @@ func (e *exportCmd) Execute(args []string) int {
 </head>
 <body>
 {{range .Entries}}<outline xmlUrl="{{.URL}}"/>
-{{end}}
-</body>
+{{end}}</body>
 </opml>
 `
 	// Compile the template and write to STDOUT
