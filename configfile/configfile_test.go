@@ -48,46 +48,6 @@ func TestExists(t *testing.T) {
 	}
 }
 
-// TestHome ensures that the result of Home() is a directory, and that our
-// default configuration has that as a prefix.
-func TestHome(t *testing.T) {
-
-	config := New()
-	home := config.Home()
-	fi, err := os.Stat(home)
-	if err != nil {
-		t.Fatalf("Failed to stat()")
-	}
-
-	mode := fi.Mode()
-
-	if !mode.IsDir() {
-		t.Fatalf("Home() resulted in a non-directory")
-	}
-
-	// Test the path starts beneath home
-	path := config.Path()
-	if !strings.HasPrefix(path, home) {
-		t.Fatalf("config file doesn't seem to exist beneath home")
-	}
-
-	//
-	// Same again, but unset the environmental variable too
-	//
-	os.Unsetenv("HOME")
-	home = config.Home()
-	fi, err = os.Stat(home)
-	if err != nil {
-		t.Fatalf("Failed to stat()")
-	}
-
-	mode = fi.Mode()
-
-	if !mode.IsDir() {
-		t.Fatalf("Home() resulted in a non-directory")
-	}
-}
-
 // TestBasicFile tests parsing a basic file.
 func TestBasicFile(t *testing.T) {
 

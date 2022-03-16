@@ -37,7 +37,7 @@ type HTTPFetch struct {
 	userAgent string
 }
 
-// New creates a new object which will fetch our content
+// New creates a new object which will fetch our content.
 func New(entry configfile.Feed) *HTTPFetch {
 
 	// Create object with defaults
@@ -79,8 +79,8 @@ func New(entry configfile.Feed) *HTTPFetch {
 
 // Fetch performs the HTTP-fetch, and returns the feed-contents.
 //
-// If the `content` field is non-empty it will be used in preference
-// to the remote URLs content, for testing.
+// If our internal `content` field is non-empty it will be used in preference
+// to making a remote request, which is useful for testing.
 func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 
 	var feed *gofeed.Feed
@@ -112,7 +112,7 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 	return feed, nil
 }
 
-// fetchURL fetches the text from the remote URL.
+// fetch fetches the text from the remote URL.
 func (h *HTTPFetch) fetch() error {
 
 	// Create a HTTP-client

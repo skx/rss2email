@@ -42,6 +42,7 @@ func main() {
 	subcommands.Register(&importCmd{})
 	subcommands.Register(&listCmd{})
 	subcommands.Register(&listDefaultTemplateCmd{})
+	subcommands.Register(&seenCmd{})
 	subcommands.Register(&versionCmd{})
 
 	//

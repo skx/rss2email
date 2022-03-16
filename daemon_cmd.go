@@ -79,7 +79,15 @@ func (d *daemonCmd) Execute(args []string) int {
 	for {
 
 		// Create the helper
-		p := processor.New()
+		p, err := processor.New()
+
+		if err != nil {
+			fmt.Printf("Error creating feed processor: %s\n", err.Error())
+			return 1
+		}
+
+		// Close the database handle, once processed.
+		defer p.Close()
 
 		// Setup the state - note we ALWAYS send emails in this mode.
 		p.SetVerbose(d.verbose)
