@@ -91,6 +91,9 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Keep track of the previous hostname from which we fetched a feed
 	prev := ""
 
+	// Keep track of each feed we've processed
+	feeds := []string{}
+
 	// For each feed contained in the configuration file
 	for _, entry := range entries {
 
@@ -120,6 +123,10 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 			errors = append(errors, fmt.Errorf("error creating bucket for %s: %s", entry.URL, err))
 			return (errors)
 		}
+
+		// Record the URL of the feed in our list,
+		// which is used for reaping obsolete feeds
+		feeds = append(feeds, entry.URL)
 
 		// Should we sleep before getting this feed?
 		sleep := 0
@@ -191,6 +198,12 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 		// Now update with our current host.
 		prev = host
+	}
+
+	// Reap feeds which are obsolete.
+	err = p.pruneUnknownFeeds(feeds)
+	if err != nil {
+		errors = append(errors, err)
 	}
 
 	// All feeds were processed, return any errors we found along the way
@@ -386,7 +399,13 @@ func (p *Processor) recordItem(feed string, entry string) error {
 	return err
 }
 
-// pruneFeed will remove unknown items from our state database
+// pruneFeed will remove unknown items from our state database.
+//
+// Here we are given the URL of the feed, and a set of feed-item links,
+// we remove items which are no longer in the remote feed.
+//
+// See also `pruneUnknownFeeds` for removing feeds which are no longer
+// fetched at all.
 func (p *Processor) pruneFeed(feed string, items []string) error {
 
 	// A list of items to remove
@@ -441,6 +460,80 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 		})
 		if err != nil {
 			return fmt.Errorf("failed to remove %s - %s", ent, err)
+		}
+	}
+
+	return nil
+}
+
+// pruneUnknownFeeds removes feeds from our database which are no longer
+// contained within our configuration file.
+//
+// To recap BoltDB has a notion of buckets, which are used to store key=value
+// pairs.  We create a bucket for every feed which is present in our
+// configuration value, then use the URL of feed-items as the keys.
+//
+// Here we remove buckets which are obsolete.
+func (p *Processor) pruneUnknownFeeds(feeds []string) error {
+
+	// Create a map for lookup
+	seen := make(map[string]bool)
+	for _, str := range feeds {
+		seen[str] = true
+	}
+
+	// Now walk the database and see which buckets should be removed.
+	toRemove := []string{}
+
+	p.dbHandle.View(func(tx *bbolt.Tx) error {
+
+		tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+
+			// Does this name exist in our map?
+			_, ok := seen[string(bucketName)]
+
+			// If not then it should be removed.
+			if !ok {
+				toRemove = append(toRemove, string(bucketName))
+			}
+			return nil
+		})
+		return nil
+	})
+
+	// For each bucket we need to remove, remove it
+	for _, bucket := range toRemove {
+
+		// We're going to remove the bucket
+		p.message(fmt.Sprintf("removing feed-bucket %s", bucket))
+
+		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
+
+			// Select the bucket, which we know must exist
+			b := tx.Bucket([]byte(bucket))
+
+			// Get a cursor to the key=value entries in the bucket
+			c := b.Cursor()
+
+			// Iterate over the key/value pairs and delete them.
+			for k, _ := c.First(); k != nil; k, _ = c.Next() {
+
+				err := b.Delete(k)
+				if err != nil {
+					return (fmt.Errorf("failed to delete bucket key %s:%s - %s\n", bucket, k, err))
+				}
+			}
+
+			// Now delete the bucket itself
+			err := tx.DeleteBucket([]byte(bucket))
+			if err != nil {
+				return fmt.Errorf("failed to remove bucket %s: %s", bucket, err)
+			}
+
+			return nil
+		})
+		if err != nil {
+			return fmt.Errorf("error removing bucket %s: %s", bucket, err)
 		}
 	}
 
