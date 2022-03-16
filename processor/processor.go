@@ -520,7 +520,7 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 
 				err := b.Delete(k)
 				if err != nil {
-					return (fmt.Errorf("failed to delete bucket key %s:%s - %s\n", bucket, k, err))
+					return (fmt.Errorf("failed to delete bucket key %s:%s - %s", bucket, k, err))
 				}
 			}
 
