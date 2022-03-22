@@ -1,7 +1,7 @@
 # Fuzz-Testing
 
-The upcoming 1.18 release of the golang compiler/toolset has integrated
-support for fuzz-testing.
+The 1.18 release of the golang compiler/toolset has integrated support for
+fuzz-testing.
 
 Fuzz-testing is basically magical and involves generating new inputs "randomly"
 and running test-cases with those inputs.
@@ -31,4 +31,4 @@ our configuration-file parser like so:
     ok  	github.com/skx/rss2email/configfile	301.135s
 
 
-You'll note that I've added `-parellel=1` to the test, because otherwise my desktop system becomes unresponsive while the testing is going on.
+You'll note that I've added `-parallel=1` to the test, because otherwise my desktop system becomes unresponsive while the testing is going on.
