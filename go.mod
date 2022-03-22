@@ -12,5 +12,5 @@ require (
 	github.com/skx/subcommands v0.9.2
 	go.etcd.io/bbolt v1.3.6
 	golang.org/x/net v0.0.0-20220225172249-27dd8689420f // indirect
-	golang.org/x/sys v0.0.0-20220310020820-b874c991c1a5 // indirect
+	golang.org/x/sys v0.0.0-20220319134239-a9b59b0215f8 // indirect
 )
