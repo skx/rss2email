@@ -110,9 +110,9 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// a bucket for each Feed URL, and then store the
 		// URLs we've seen with a random value.
 		//
-		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
-			_, err := tx.CreateBucketIfNotExists([]byte(entry.URL))
-			if err != nil {
+		err = p.dbHandle.Update(func(tx *bbolt.Tx) error {
+			_, err2 := tx.CreateBucketIfNotExists([]byte(entry.URL))
+			if err2 != nil {
 				return fmt.Errorf("create bucket failed: %s", err)
 			}
 			return nil
@@ -143,8 +143,8 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// will apply rate-limiting if we make too many consecutive
 		// requests in a short period of time.
 		host := ""
-		u, err := url.Parse(entry.URL)
-		if err == nil {
+		u, err2 := url.Parse(entry.URL)
+		if err2 == nil {
 			host = u.Host
 		}
 
