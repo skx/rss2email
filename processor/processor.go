@@ -421,7 +421,7 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 	// and see if we should remove any of the keys
 	// that are present.
 	//
-	// (i.e. Remove the ones that are not in teh map above)
+	// (i.e. Remove the ones that are not in the map above)
 	p.dbHandle.View(func(tx *bbolt.Tx) error {
 
 		// Select the bucket, which we know must exist
