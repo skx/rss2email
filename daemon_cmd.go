@@ -86,9 +86,6 @@ func (d *daemonCmd) Execute(args []string) int {
 			return 1
 		}
 
-		// Close the database handle, once processed.
-		defer p.Close()
-
 		// Setup the state - note we ALWAYS send emails in this mode.
 		p.SetVerbose(d.verbose)
 		p.SetSendEmail(true)
@@ -102,6 +99,9 @@ func (d *daemonCmd) Execute(args []string) int {
 				fmt.Fprintln(os.Stderr, err.Error())
 			}
 		}
+
+		// Close the database handle, once processed.
+		p.Close()
 
 		// Default time to sleep - in minutes
 		n := 15
