@@ -1,0 +1,119 @@
+//
+// "Unsee" a feed item
+//
+
+package main
+
+import (
+	"fmt"
+	"os"
+	"path/filepath"
+
+	"github.com/skx/rss2email/state"
+	"github.com/skx/subcommands"
+	"go.etcd.io/bbolt"
+)
+
+// Structure for our options and state.
+type unseeCmd struct {
+
+	// We embed the NoFlags option, because we accept no command-line flags.
+	subcommands.NoFlags
+}
+
+// Info is part of the subcommand-API.
+func (s *unseeCmd) Info() (string, string) {
+	return "unsee", `Regard a feed item as new, and unseen.
+
+This sub-command will allow you to mark an item as
+unseen, or new, meaning the next time the cron or daemon
+commands run they'll trigger an email notification.
+
+This is useful in the case of testing.
+`
+}
+
+//
+// Entry-point.
+//
+func (s *unseeCmd) Execute(args []string) int {
+
+	if len(args) < 1 {
+		fmt.Printf("Please specify the URLs to unsee\n")
+		return 1
+	}
+
+	// Ensure we have a state-directory.
+	dir := state.Directory()
+	os.MkdirAll(dir, 0666)
+
+	// Now create the database, if missing, or open it if it exists.
+	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
+	if err != nil {
+		fmt.Printf("Error opening database: %s\n", err.Error())
+		return 1
+	}
+
+	// Ensure we close when we're done
+	defer db.Close()
+
+	// Keep track of buckets here
+	var bucketNames [][]byte
+
+	// Record each bucket
+	db.View(func(tx *bbolt.Tx) error {
+		tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+			bucketNames = append(bucketNames, bucketName)
+			return nil
+		})
+		return nil
+	})
+
+	// Process each bucket to find the item to remove.
+	for _, buck := range bucketNames {
+
+		err = db.Update(func(tx *bbolt.Tx) error {
+
+			// Items to remove
+			remove := []string{}
+
+			// Select the bucket, which we know must exist
+			b := tx.Bucket([]byte(buck))
+
+			// Get a cursor to the key=value entries in the bucket
+			c := b.Cursor()
+
+			// Iterate over the key/value pairs.
+			for k, _ := c.First(); k != nil; k, _ = c.Next() {
+
+				// Convert the key to a string
+				key := string(k)
+
+				// Is this something to remove?
+				for _, arg := range args {
+
+					// If so append it.
+					//
+					// TODO: regexp?
+					if arg == key {
+						remove = append(remove, key)
+					}
+				}
+
+			}
+
+			// Now remove
+			for _, key := range remove {
+				b.Delete([]byte(key))
+			}
+			return nil
+		})
+
+		if err != nil {
+			fmt.Printf("error iterating over bucket %s: %s\n", buck, err.Error())
+			return 1
+		}
+	}
+
+	return 0
+}
