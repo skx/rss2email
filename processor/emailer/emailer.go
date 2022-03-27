@@ -289,7 +289,11 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	//
 	// Run the command, and pipe in the rendered template-result
 	//
-	sendmail.Start()
+	err = sendmail.Start()
+	if err != nil {
+		fmt.Printf("failed to start sendmail:%s\n", err)
+		return err
+	}
 	_, err = stdin.Write(content)
 	if err != nil {
 		fmt.Printf("Failed to write to sendmail pipe: %s\n", err.Error())

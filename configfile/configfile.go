@@ -153,8 +153,10 @@ func (c *ConfigFile) Upgrade() {
 	for _, ent := range entries {
 		c.Add(ent.URL)
 	}
-	c.Save()
-
+	err = c.Save()
+	if err != nil {
+		fmt.Printf("error saving file:%s\n", err)
+	}
 	fmt.Printf("\n\nMigration complete %d feeds were imported\n", len(entries))
 
 }
