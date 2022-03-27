@@ -5,38 +5,45 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 
 	"github.com/skx/rss2email/state"
-	"github.com/skx/subcommands"
 	"go.etcd.io/bbolt"
 )
 
 // Structure for our options and state.
 type unseeCmd struct {
 
-	// We embed the NoFlags option, because we accept no command-line flags.
-	subcommands.NoFlags
+	// Are our arguments regular expressions?
+	regexp bool
 }
 
 // Info is part of the subcommand-API.
-func (s *unseeCmd) Info() (string, string) {
+func (u *unseeCmd) Info() (string, string) {
 	return "unsee", `Regard a feed item as new, and unseen.
 
 This sub-command will allow you to mark an item as
 unseen, or new, meaning the next time the cron or daemon
 commands run they'll trigger an email notification.
 
-This is useful in the case of testing.
+You can see the URLs which we regard as having already seen
+via the 'seen' sub-command.
 `
+}
+
+// Arguments handles our flag-setup.
+func (u *unseeCmd) Arguments(f *flag.FlagSet) {
+	f.BoolVar(&u.regexp, "regexp", false, "Are our arguments regular expressions, instead of literal URLs?")
 }
 
 //
 // Entry-point.
 //
-func (s *unseeCmd) Execute(args []string) int {
+func (u *unseeCmd) Execute(args []string) int {
 
 	if len(args) < 1 {
 		fmt.Printf("Please specify the URLs to unsee\n")
@@ -94,9 +101,17 @@ func (s *unseeCmd) Execute(args []string) int {
 
 					// If so append it.
 					//
-					// TODO: regexp?
-					if arg == key {
-						remove = append(remove, key)
+					if u.regexp {
+						match, _ := regexp.MatchString(arg, key)
+						if match {
+							remove = append(remove, key)
+						}
+					} else {
+
+						// Literal string-match
+						if arg == key {
+							remove = append(remove, key)
+						}
 					}
 				}
 
