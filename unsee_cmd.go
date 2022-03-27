@@ -65,12 +65,12 @@ func (u *unseeCmd) Execute(args []string) int {
 	defer db.Close()
 
 	// Keep track of buckets here
-	var bucketNames [][]byte
+	var bucketNames []string
 
 	// Record each bucket
 	db.View(func(tx *bbolt.Tx) error {
 		tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
-			bucketNames = append(bucketNames, bucketName)
+			bucketNames = append(bucketNames, string(bucketName))
 			return nil
 		})
 		return nil
@@ -114,12 +114,14 @@ func (u *unseeCmd) Execute(args []string) int {
 						}
 					}
 				}
-
 			}
 
 			// Now remove
 			for _, key := range remove {
-				b.Delete([]byte(key))
+				err := b.Delete([]byte(key))
+				if err != nil {
+					fmt.Printf("Failed to remove %s - %s\n", key, err)
+				}
 			}
 			return nil
 		})
