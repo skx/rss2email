@@ -42,7 +42,10 @@ func (s *seenCmd) Execute(args []string) int {
 
 	// Ensure we have a state-directory.
 	dir := state.Directory()
-	os.MkdirAll(dir, 0666)
+	errM := os.MkdirAll(dir, 0666)
+	if errM != nil {
+		fmt.Printf("failed to mkdirAll %s\n", errM)
+	}
 
 	// Now create the database, if missing, or open it if it exists.
 	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
@@ -57,13 +60,16 @@ func (s *seenCmd) Execute(args []string) int {
 	// Keep track of buckets here
 	var bucketNames [][]byte
 
-	db.View(func(tx *bbolt.Tx) error {
-		tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+	err = db.View(func(tx *bbolt.Tx) error {
+		err := tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
 			bucketNames = append(bucketNames, bucketName)
 			return nil
 		})
-		return nil
+		return err
 	})
+	if err != nil {
+		fmt.Printf("failed to find bucket-names:%s\n", err)
+	}
 
 	// Now we have a list of buckets, we'll show the contents
 	for _, buck := range bucketNames {

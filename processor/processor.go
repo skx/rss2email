@@ -49,7 +49,10 @@ func New() (*Processor, error) {
 
 	// Ensure we have a state-directory.
 	dir := state.Directory()
-	os.MkdirAll(dir, 0666)
+	errM := os.MkdirAll(dir, 0666)
+	if errM != nil {
+		return nil, errM
+	}
 
 	// Now create the database, if missing, or open it if it exists.
 	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
@@ -366,7 +369,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 func (p *Processor) seenItem(feed string, entry string) bool {
 	val := ""
 
-	p.dbHandle.View(func(tx *bbolt.Tx) error {
+	err := p.dbHandle.View(func(tx *bbolt.Tx) error {
 
 		// Select the feed-bucket
 		b := tx.Bucket([]byte(feed))
@@ -378,6 +381,9 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 		}
 		return nil
 	})
+	if err != nil {
+		fmt.Printf("seenItem failed:%s\n", err)
+	}
 
 	return val != ""
 }
@@ -422,7 +428,7 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 	// that are present.
 	//
 	// (i.e. Remove the ones that are not in the map above)
-	p.dbHandle.View(func(tx *bbolt.Tx) error {
+	err := p.dbHandle.View(func(tx *bbolt.Tx) error {
 
 		// Select the bucket, which we know must exist
 		b := tx.Bucket([]byte(feed))
@@ -445,6 +451,11 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 		}
 		return nil
 	})
+
+	if err != nil {
+		fmt.Printf("failed to iterate over keys:%s\n", err)
+		return err
+	}
 
 	// Remove each entry that we were supposed to remove.
 	for _, ent := range toRemove {
@@ -485,9 +496,9 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 	// Now walk the database and see which buckets should be removed.
 	toRemove := []string{}
 
-	p.dbHandle.View(func(tx *bbolt.Tx) error {
+	err := p.dbHandle.View(func(tx *bbolt.Tx) error {
 
-		tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+		return tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
 
 			// Does this name exist in our map?
 			_, ok := seen[string(bucketName)]
@@ -498,9 +509,12 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 			}
 			return nil
 		})
-		return nil
 	})
 
+	if err != nil {
+		fmt.Printf("failed to find orphaned buckets;%s\n", err)
+		return err
+	}
 	// For each bucket we need to remove, remove it
 	for _, bucket := range toRemove {
 

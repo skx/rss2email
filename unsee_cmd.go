@@ -52,7 +52,10 @@ func (u *unseeCmd) Execute(args []string) int {
 
 	// Ensure we have a state-directory.
 	dir := state.Directory()
-	os.MkdirAll(dir, 0666)
+	errM := os.MkdirAll(dir, 0666)
+	if errM != nil {
+		fmt.Printf("failed to run MkdirAll:%s\n", errM)
+	}
 
 	// Now create the database, if missing, or open it if it exists.
 	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
@@ -68,13 +71,15 @@ func (u *unseeCmd) Execute(args []string) int {
 	var bucketNames []string
 
 	// Record each bucket
-	db.View(func(tx *bbolt.Tx) error {
-		tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+	err = db.View(func(tx *bbolt.Tx) error {
+		return tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
 			bucketNames = append(bucketNames, string(bucketName))
 			return nil
 		})
-		return nil
 	})
+	if err != nil {
+		fmt.Printf("failed to find bucket names:%s\n", err)
+	}
 
 	// Process each bucket to find the item to remove.
 	for _, buck := range bucketNames {
