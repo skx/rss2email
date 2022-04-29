@@ -116,7 +116,11 @@ func (d *daemonCmd) Execute(args []string) int {
 		}
 
 		if d.verbose {
-			fmt.Printf("sleeping for %d minutes.\n", n)
+			// show time and sleep
+			fmt.Printf(
+				"%s: sleeping for %d minutes.\n",
+				time.Now().Local().Format("2006-01-02.15:04:05"),
+				n)
 		}
 		time.Sleep(60 * time.Duration(n) * time.Second)
 	}
