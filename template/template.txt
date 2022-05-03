@@ -29,6 +29,7 @@ Subject: [rss2email] {{.Subject}}
 X-RSS-Link: {{.Link}}
 X-RSS-Feed: {{.Feed}}
 X-RSS-GUID: {{.RSSItem.GUID}}
+Content-Base: {{.Link}}
 Mime-Version: 1.0
 
 --21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
