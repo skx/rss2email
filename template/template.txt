@@ -15,9 +15,11 @@
      case you need access to other fields which are not exported expliclty.
      Using that approach you can access {{.RSSItem.GUID}}, for example.
 
-     Functions:
+     The following functions are also available:
 
-      {{quoteprintable .Link}}   -> Quote the specified field.
+      {{env "USER"}}              -> Return the given environmental variable
+      {{quoteprintable .Link}}    -> Quote the specified field.
+      {{split "STRING:HERE" ":"}} -> Split a string into an array by deliminator
 
      This comment will be stripped from the generated email.
 
