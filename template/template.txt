@@ -30,6 +30,9 @@ To: {{.To}}
 Subject: [rss2email] {{if .Tag}}{{.Tag}} {{end}}{{.Subject}}
 X-RSS-Link: {{.Link}}
 X-RSS-Feed: {{.Feed}}
+{{- if .Tag}}
+X-RSS-Tags: {{.Tag}}
+{{- end}}
 X-RSS-GUID: {{.RSSItem.GUID}}
 Content-Base: {{.Link}}
 Mime-Version: 1.0
