@@ -229,6 +229,16 @@ func (p *Processor) message(msg string) {
 // specifically excluded by the per-feed options.
 func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
+	// Is there a tag set for this feed?
+	tag := ""
+
+	// Look at each per-feed option to determine that
+	for _, opt := range entry.Options {
+		if strings.ToLower(opt.Name)== "tag"  {
+			tag = opt.Value
+		}
+	}
+
 	// Show what we're doing.
 	p.message(fmt.Sprintf("Fetching feed: %s", entry.URL))
 
@@ -261,6 +271,11 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// We have some legacy code for determining "new" vs "seen",
 		// but that will go away in the future.
 		item := withstate.FeedItem{Item: xp}
+
+		// Set the tag for the item, if present.
+		if tag != "" {
+			item.Tag = tag
+		}
 
 		// Keep track of the fact that we saw this feed-item.
 		//
