@@ -138,12 +138,13 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 		type TemplateParms struct {
 			Feed      string
 			FeedTitle string
-			To        string
 			From      string
-			Text      string
 			HTML      string
-			Subject   string
 			Link      string
+			Subject   string
+			Tag       string
+			Text      string
+			To        string
 
 			// In case people need access to fields
 			// we've not wrapped/exported explicitly
@@ -163,6 +164,7 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 		x.To = addr
 		x.RSSFeed = e.feed
 		x.RSSItem = e.item
+		x.Tag = e.item.Tag
 
 		// The real meat of the mail is the text & HTML
 		// parts.  They need to be encoded, unconditionally.
