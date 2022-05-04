@@ -13,8 +13,8 @@ func TestCollision(t *testing.T) {
 	// So we want to have two feed items with the same
 	// GUID.  They should map to the same file, so we
 	// can confirm they would be treated as identical
-	a := &FeedItem{&gofeed.Item{}}
-	b := &FeedItem{&gofeed.Item{}}
+	a := &FeedItem{&gofeed.Item{}, ""}
+	b := &FeedItem{&gofeed.Item{}, ""}
 
 	a.GUID = "steve"
 	b.GUID = "steve"
@@ -43,8 +43,8 @@ func TestCollisionMissingHome(t *testing.T) {
 	// So we want to have two feed items with the same
 	// GUID.  They should map to the same file, so we
 	// can confirm they would be treated as identical
-	a := &FeedItem{&gofeed.Item{}}
-	b := &FeedItem{&gofeed.Item{}}
+	a := &FeedItem{&gofeed.Item{}, ""}
+	b := &FeedItem{&gofeed.Item{}, ""}
 
 	a.GUID = "steve"
 	b.GUID = "steve"
