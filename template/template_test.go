@@ -3,8 +3,12 @@ package template
 import "testing"
 
 func TestTemplate(t *testing.T) {
+
+	// content and expected length
 	content := EmailTemplate()
-	if len(content) != 2292 {
-		t.Fatalf("unexpected template size 2265 != %d", len(content))
+	length  := 2484
+
+	if len(content) != length {
+		t.Fatalf("unexpected template size %d != %d", length, len(content))
 	}
 }
