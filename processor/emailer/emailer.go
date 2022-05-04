@@ -23,6 +23,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strconv"
+	"strings"
 	"text/template"
 
 	"github.com/mmcdole/gofeed"
@@ -49,6 +50,16 @@ type Emailer struct {
 // and any associated configuration values from the source feed.
 func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option) *Emailer {
 	return &Emailer{feed: feed, item: item, opts: opts}
+}
+
+// env returns the contents of an environmental variable.
+func env(s string) string {
+        return (os.Getenv(s))
+}
+
+// split converts a string to an array.
+func split(in string, delim string) []string {
+        return strings.Split(in, delim)
 }
 
 // loadTemplate loads the template used for sending the email notification.
@@ -83,7 +94,9 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	// Function map allows exporting functions to the template
 	//
 	funcMap := template.FuncMap{
+                "env":     env,
 		"quoteprintable": e.toQuotedPrintable,
+		"split":     split,
 	}
 
 	tmpl := template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
