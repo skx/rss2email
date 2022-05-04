@@ -30,6 +30,10 @@ type FeedItem struct {
 
 	// Wrapped structure
 	*gofeed.Item
+
+	// Tag is a field that can be set for this feed item,
+	// inside our configuration file.
+	Tag string
 }
 
 // IsNew reports whether this particular feed-item is new.
