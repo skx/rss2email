@@ -31,25 +31,35 @@ Over time we've now gained a few more features:
   * See [email customization](#email-customization) for details.
 * The ability to send email via STMP, or via `/usr/sbin/sendmail`.
   * See [SMTP-setup](#smtp-setup) for details.
+* The ability to include/exclude feed items from the emails.
+  * For example receive emails only of feed items that contain the pattern "playstation".
+
 
 
 # Installation
 
-If you wish you can fetch a binary from [our release page](https://github.com/skx/rss2email/releases).
+If you have golang installed you can fetch, build, and install the latest binary by running:
 
+```sh
+go install github.com/skx/rss2email@latest
+```
 
-## Build with Go Modules
+If you prefer you can also fetch our latest binary release from [our release page](https://github.com/skx/rss2email/releases).
 
-    # make sure to clone outside of GOPATH
-    git clone https://github.com/skx/rss2email
-    cd rss2email
-    go install
+To install from source simply clone the repository and build in the usual manner:
+
+```sh
+git clone https://github.com/skx/rss2email
+cd rss2email
+go build .
+go install .
+```
 
 **Version NOTES**:
 
-* You'll need version **1.16** or higher to build.
+* You'll need go version **1.16** or higher to build.
   * Because we use `go embed` to embed our (default) email-template within the binary.
-* If you wish to run the included fuzz-tests against our configuration file parser you'll need at least version **1.18beta1**.
+* If you wish to run the included fuzz-tests against our configuration file parser you'll need at least version **1.18**.
   * See [configfile/FUZZING.md](configfile/FUZZING.md) for details.
 
 
@@ -59,17 +69,17 @@ If you wish you can fetch a binary from [our release page](https://github.com/sk
 The binary has integrated support for TAB-completion, for bash.  To enable this update your [dotfiles](https://github.com/skx/dotfiles/) to include the following:
 
 ```
-source <(./rss2email bash-completion)
+source <(rss2email bash-completion)
 ```
 
 
 # Feed Configuration
 
-Once you have installed the application you'll need to configure the feeds to monitor.   As of the 2.x release of `rss2email` the configuration file is:
+Once you have installed the application you'll need to configure the feeds to monitor, this could be done by editing the configuration file:
 
 * `~/.rss2email/feeds.txt`
 
-You can create/edit that file by hand if you wish, however there are several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
+There are several built-in sub-commands for manipulating the feed-list, for example you can add a new feed to monitor via the `add` sub-command:
 
      $ rss2email add https://example.com/blog.rss
 
@@ -203,13 +213,13 @@ If those values are present then SMTP will be used, otherwise the email will be 
 
 By default the emails are sent using a template file which is embedded in the application.  You can override the template by creating the file `~/.rss2email/email.tmpl`, if that is present then it will be used instead of the default.
 
-You can copy the default-template to the right location by running the following, before proceeding to edit it as you wish:
-
-    $ rss2email list-default-template > ~/.rss2email/email.tmpl
-
 You can view the default template via the following command:
 
     $ rss2email list-default-template
+
+You can copy the default-template to the right location by running the following, before proceeding to edit it as you wish:
+
+    $ rss2email list-default-template > ~/.rss2email/email.tmpl
 
 The default template contains a brief header documenting the available fields, and functions, which you can use.  As the template uses the standard Golang [text/template](https://golang.org/pkg/text/template/) facilities you can be pretty creative with it!
 
