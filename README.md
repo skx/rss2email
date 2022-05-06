@@ -7,7 +7,6 @@ Table of Contents
 
 * [RSS2Email](#rss2email)
 * [Installation](#installation)
-  * [Build with Go Modules](#build-with-go-modules)
   * [bash completion](#bash-completion)
 * [Feed Configuration](#feed-configuration)
 * [Usage](#usage)
