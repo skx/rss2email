@@ -7,6 +7,16 @@ import (
 	"testing"
 )
 
+// Test the default path works
+func TestDefaultPath(t *testing.T) {
+
+	c := New()
+	p := c.Path()
+	if ! strings.Contains(p, "feeds.txt" ) {
+		t.Fatalf("expected path to be populated")
+	}
+}
+
 // Test a file exists
 func TestExists(t *testing.T) {
 
@@ -21,28 +31,20 @@ func TestExists(t *testing.T) {
 	conf := New()
 	conf.path = tmpfile.Name()
 
-	if !conf.Exists() {
-		t.Fatalf("The config file doesn't exist, and it should!")
-	}
-
 	// Same again with the different constructor.
 	conf2 := NewWithPath(tmpfile.Name())
-	if !conf2.Exists() {
-		t.Fatalf("The config file doesn't exist, and it should!")
-	}
 
-	// Remove it
+	// Remove the temporary file
 	os.Remove(conf.path)
-
-	if conf.Exists() {
-		t.Fatalf("Config file exists, but we just deleted it!")
-	}
-	if conf2.Exists() {
-		t.Fatalf("Config file exists, but we just deleted it!")
-	}
 
 	// Parsing should return an error, when the file doesn't exist
 	_, err = conf.Parse()
+	if err == nil {
+		t.Fatalf("Expected an error parsing a missing file, got none!")
+	}
+
+	// Parsing should return an error, when the file doesn't exist
+	_, err = conf2.Parse()
 	if err == nil {
 		t.Fatalf("Expected an error parsing a missing file, got none!")
 	}

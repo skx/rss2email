@@ -67,11 +67,13 @@ type ConfigFile struct {
 
 // New creates a new configuration-file reader.
 func New() *ConfigFile {
-	return &ConfigFile{re: regexp.MustCompile(`^([^:]+):(.*)$`)}
+	return &ConfigFile{
+		re: regexp.MustCompile(`^([^:]+):(.*)$`),
+	}
 }
 
 // NewWithPath creates a configuration-file reader, using the given file as
-// a source.
+// a source.  This is primarily used for testing.
 func NewWithPath(file string) *ConfigFile {
 
 	// Create new object - to avoid having to repeat our regexp
@@ -92,73 +94,6 @@ func (c *ConfigFile) Path() string {
 	}
 
 	return c.path
-}
-
-// Exists returns true if the configuration-file exists.
-//
-// This is useful as this configuration file was introduced in the 2.x
-// release, previously we used a different configuration file, with
-// a different format and name.
-func (c *ConfigFile) Exists() bool {
-
-	_, err := os.Stat(c.Path())
-
-	return !os.IsNotExist(err)
-}
-
-// Upgrade upgrades any legacy file that might be present
-func (c *ConfigFile) Upgrade() {
-
-	// If our file exists we return
-	if c.Exists() {
-		return
-	}
-
-	// OK create a new helper, and use that to read the
-	// older entries
-	old := New()
-	old.path = filepath.Join(state.Directory(), "feeds")
-
-	// Does it exist?
-	if !old.Exists() {
-		return
-	}
-
-	// Parse the old file
-	entries, err := old.Parse()
-	if err != nil {
-		fmt.Printf("Failed to upgrade legacy file from %s: %s\n", old.path, err.Error())
-		return
-	}
-
-	fmt.Printf(`
-
-  **************************************************************************
-
-   As of the 2.x release of rss2email the configuration file format
-   and location have changed.
-
-   You can read details of the config file, and see the expected location,
-   by running:
-
-        rss2email help config
-
-   Migration in-process now.
-
-
-  **************************************************************************
-`)
-
-	// For each entry
-	for _, ent := range entries {
-		c.Add(ent.URL)
-	}
-	err = c.Save()
-	if err != nil {
-		fmt.Printf("error saving file:%s\n", err)
-	}
-	fmt.Printf("\n\nMigration complete %d feeds were imported\n", len(entries))
-
 }
 
 // Parse returns the entries from the config-file
