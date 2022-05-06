@@ -231,7 +231,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 	// Look at each per-feed option to determine that
 	for _, opt := range entry.Options {
-		if strings.ToLower(opt.Name)== "tag"  {
+		if strings.ToLower(opt.Name) == "tag" {
 			tag = opt.Value
 		}
 	}
