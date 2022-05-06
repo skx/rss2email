@@ -46,9 +46,6 @@ Example:
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (a *addCmd) Execute(args []string) int {
 
-	// Upgrade our configuration-file if necessary
-	a.config.Upgrade()
-
 	_, err := a.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())

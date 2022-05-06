@@ -52,9 +52,6 @@ Example:
 //
 func (d *delCmd) Execute(args []string) int {
 
-	// Upgrade our configuration-file if necessary
-	d.config.Upgrade()
-
 	_, err := d.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())

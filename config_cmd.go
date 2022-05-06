@@ -34,7 +34,6 @@ func (c *configCmd) Info() (string, string) {
 		c.config = configfile.New()
 	}
 	path := c.config.Path()
-	exists := c.config.Exists()
 
 	name := "config"
 	doc := `Provide documentation for our configuration file.
@@ -52,21 +51,11 @@ process, which are stored in a configuration file.
 Configuration File Location
 ---------------------------
 
-As of the 2.x series of rss2email releases the configuration file format
-and location have changed.  The new configuration file will be read from:
+As of release 3.x of rss2email the configuration file will be loaded from
+the following location:
 
      ` + path
 
-	if !exists {
-		doc += `
-
-NOTE:
-NOTE: The configuration file does not currently exist!
-NOTE:
-NOTE: The legacy file will be read if it is present.
-NOTE:
-`
-	}
 
 	doc += `
 
@@ -143,10 +132,8 @@ word "cake" in their titles regardless of whether it is written as "cake",
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (c *configCmd) Execute(args []string) int {
 
-	fmt.Fprintf(out, "This command only exists to show help, when executed as:")
-	fmt.Fprintf(out, "\n")
-	fmt.Fprintf(out, "\trss2email help config")
-	fmt.Fprintf(out, "\n")
+	_, help := c.Info()
+	fmt.Fprintf(out, "%s", help)
 
 	// All done, with no errors.
 	return 0

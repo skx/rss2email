@@ -81,9 +81,6 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Get the configuration-file
 	conf := configfile.New()
 
-	// Upgrade it if necessary
-	conf.Upgrade()
-
 	// Now do the parsing
 	entries, err := conf.Parse()
 	if err != nil {
