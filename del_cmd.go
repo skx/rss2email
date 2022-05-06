@@ -52,22 +52,28 @@ Example:
 //
 func (d *delCmd) Execute(args []string) int {
 
+	// Parse the existing file
 	_, err := d.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())
 		return 1
 	}
 
+	changed := false
+
 	// For each argument remove it from the list, if present.
 	for _, entry := range args {
 		d.config.Delete(entry)
+		changed = true
 	}
 
 	// Save the list.
-	err = d.config.Save()
-	if err != nil {
-		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
-		return 1
+	if ( changed ) {
+		err = d.config.Save()
+		if err != nil {
+			fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
+			return 1
+		}
 	}
 
 	// All done, with no errors.

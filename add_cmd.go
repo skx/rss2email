@@ -46,24 +46,32 @@ Example:
 // Execute is invoked if the user specifies `add` as the subcommand.
 func (a *addCmd) Execute(args []string) int {
 
+	// Parse the existing file
 	_, err := a.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())
 		return 1
 	}
 
+	changed := false
+
 	// For each argument add it to the list
 	for _, entry := range args {
 
 		// Add the entry
 		a.config.Add(entry)
+
+		changed = true
+
 	}
 
 	// Save the list.
-	err = a.config.Save()
-	if err != nil {
-		fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
-		return 1
+	if ( changed ) {
+		err = a.config.Save()
+		if err != nil {
+			fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
+			return 1
+		}
 	}
 
 	// All done, with no errors.
