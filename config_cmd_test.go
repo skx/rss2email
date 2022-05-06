@@ -28,8 +28,8 @@ func TestConfig(t *testing.T) {
 	// Look for some lines in the output
 	//
 	expected := []string{
-		"only exists to show help",
-		"rss2email help config",
+		"release 3.x",
+		"RSS2Email is a simple",
 	}
 
 	// The text written to stdout
@@ -70,7 +70,6 @@ func TestMissingConfig(t *testing.T) {
 	// Look for some lines in the output
 	//
 	expected := []string{
-		"The configuration file does not currently exist!",
 		tmpfile.Name(),
 
 		// known configuration options
