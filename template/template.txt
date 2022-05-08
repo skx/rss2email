@@ -30,6 +30,9 @@ To: {{.To}}
 Subject: [rss2email] {{if .Tag}}{{.Tag}} {{end}}{{.Subject}}
 X-RSS-Link: {{.Link}}
 X-RSS-Feed: {{.Feed}}
+{{- if env "RSS2EMAIL_INSTANCE_NAME"}}
+X-RSS-Instance: {{env "RSS2EMAIL_INSTANCE_NAME"}}
+{{- end}}
 {{- if .Tag}}
 X-RSS-Tags: {{.Tag}}
 {{- end}}
