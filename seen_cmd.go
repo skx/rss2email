@@ -61,7 +61,7 @@ func (s *seenCmd) Execute(args []string) int {
 	var bucketNames [][]byte
 
 	err = db.View(func(tx *bbolt.Tx) error {
-		err := tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
+		err = tx.ForEach(func(bucketName []byte, _ *bbolt.Bucket) error {
 			bucketNames = append(bucketNames, bucketName)
 			return nil
 		})

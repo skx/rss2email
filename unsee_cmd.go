@@ -122,7 +122,7 @@ func (u *unseeCmd) Execute(args []string) int {
 
 			// Now remove
 			for _, key := range remove {
-				err := b.Delete([]byte(key))
+				err = b.Delete([]byte(key))
 				if err != nil {
 					fmt.Printf("Failed to remove %s - %s\n", key, err)
 				}
