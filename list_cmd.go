@@ -110,9 +110,6 @@ func (l *listCmd) showFeedDetails(entry configfile.Feed) {
 //
 func (l *listCmd) Execute(args []string) int {
 
-	// Upgrade our configuration-file if necessary
-	l.config.Upgrade()
-
 	// Now do the parsing
 	entries, err := l.config.Parse()
 	if err != nil {

@@ -69,9 +69,6 @@ func (i *importCmd) Arguments(flags *flag.FlagSet) {
 // Execute is invoked if the user specifies `import` as the subcommand.
 func (i *importCmd) Execute(args []string) int {
 
-	// Upgrade it if necessary
-	i.config.Upgrade()
-
 	_, err := i.config.Parse()
 	if err != nil {
 		fmt.Printf("Error parsing file: %s\n", err.Error())

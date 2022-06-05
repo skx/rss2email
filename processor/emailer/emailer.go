@@ -38,8 +38,10 @@ type Emailer struct {
 
 	// Feed is the source feed from which this item came
 	feed *gofeed.Feed
+
 	// Item is the feed item itself
 	item withstate.FeedItem
+
 	// Config options for the feed.
 	opts []configfile.Option
 }
@@ -53,13 +55,17 @@ func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option) *
 }
 
 // env returns the contents of an environmental variable.
+//
+// This function exists to be used by our email-template.
 func env(s string) string {
-        return (os.Getenv(s))
+	return (os.Getenv(s))
 }
 
 // split converts a string to an array.
+//
+// This function exists to be used by our email-template.
 func split(in string, delim string) []string {
-        return strings.Split(in, delim)
+	return strings.Split(in, delim)
 }
 
 // loadTemplate loads the template used for sending the email notification.
@@ -94,9 +100,9 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	// Function map allows exporting functions to the template
 	//
 	funcMap := template.FuncMap{
-                "env":     env,
+		"env":            env,
 		"quoteprintable": e.toQuotedPrintable,
-		"split":     split,
+		"split":          split,
 	}
 
 	tmpl := template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
@@ -108,8 +114,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 // quoted-printable format.  This is required for our MIME-part
 // body.
 //
-// NOTE: We use this function both directly, and from within our
-// template.
+// NOTE: We use this function both directly, and from within our template.
 func (e *Emailer) toQuotedPrintable(s string) (string, error) {
 	var ac bytes.Buffer
 	w := quotedprintable.NewWriter(&ac)

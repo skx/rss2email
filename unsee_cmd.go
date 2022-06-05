@@ -105,7 +105,6 @@ func (u *unseeCmd) Execute(args []string) int {
 				for _, arg := range args {
 
 					// If so append it.
-					//
 					if u.regexp {
 						match, _ := regexp.MatchString(arg, key)
 						if match {

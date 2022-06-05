@@ -48,6 +48,14 @@ func TestUsage(t *testing.T) {
 	ldt.Info()
 	ldt.Arguments(flag.NewFlagSet("test", flag.ContinueOnError))
 
+	seen := seenCmd{}
+	seen.Info()
+	seen.Arguments(flag.NewFlagSet("test", flag.ContinueOnError))
+
+	unse := unseeCmd{}
+	unse.Info()
+	unse.Arguments(flag.NewFlagSet("test", flag.ContinueOnError))
+
 	vers := versionCmd{}
 	vers.Info()
 	vers.Arguments(flag.NewFlagSet("test", flag.ContinueOnError))

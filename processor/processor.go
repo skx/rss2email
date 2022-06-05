@@ -81,9 +81,6 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Get the configuration-file
 	conf := configfile.New()
 
-	// Upgrade it if necessary
-	conf.Upgrade()
-
 	// Now do the parsing
 	entries, err := conf.Parse()
 	if err != nil {
@@ -234,7 +231,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 	// Look at each per-feed option to determine that
 	for _, opt := range entry.Options {
-		if strings.ToLower(opt.Name)== "tag"  {
+		if strings.ToLower(opt.Name) == "tag" {
 			tag = opt.Value
 		}
 	}
@@ -291,13 +288,6 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// If so it's not new.
 		if p.seenItem(entry.URL, item.Link) {
 			isNew = false
-		} else {
-
-			// If it's not in the BoltDB look at the
-			// legacy path.
-			if !item.IsNew() {
-				isNew = false
-			}
 		}
 
 		// If this entry is new then we must notify, unless
@@ -359,10 +349,6 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		if err != nil {
 			return err
 		}
-
-		// Since we've marked this item as being seen we can
-		// remove the legacy state-file, if it exists.
-		item.RemoveLegacy()
 	}
 
 	// Show how many entries we've found in the feed.

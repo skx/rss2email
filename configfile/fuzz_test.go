@@ -39,9 +39,7 @@ https://example.com
 		tmpfile.Close()
 
 		// Create a new config-reader
-		c := New()
-
-		c.path = tmpfile.Name()
+		c := NewWithPath(tmpfile.Name())
 
 		// Parse, looking for errors
 		_, err = c.Parse()

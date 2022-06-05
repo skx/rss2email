@@ -62,9 +62,6 @@ func (e *exportCmd) Execute(args []string) int {
 	}
 	data := TemplateData{}
 
-	// Upgrade our configuration file if necessary
-	e.config.Upgrade()
-
 	// Now do the parsing
 	entries, err := e.config.Parse()
 	if err != nil {
