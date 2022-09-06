@@ -5,8 +5,8 @@
 package httpfetch
 
 import (
+	"io"
 	"fmt"
-	"io/ioutil"
 	"net/http"
 	"strconv"
 	"time"
@@ -135,7 +135,7 @@ func (h *HTTPFetch) fetch() error {
 	defer resp.Body.Close()
 
 	// save the result
-	data, err2 := ioutil.ReadAll(resp.Body)
+	data, err2 := io.ReadAll(resp.Body)
 	h.content = string(data)
 	return err2
 }

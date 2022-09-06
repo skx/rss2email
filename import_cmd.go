@@ -8,7 +8,7 @@ import (
 	"encoding/xml"
 	"flag"
 	"fmt"
-	"io/ioutil"
+	"os"
 
 	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
@@ -80,7 +80,7 @@ func (i *importCmd) Execute(args []string) int {
 
 		// Read content
 		var data []byte
-		data, err = ioutil.ReadFile(file)
+		data, err = os.ReadFile(file)
 		if err != nil {
 			fmt.Printf("failed to read %s: %s\n", file, err.Error())
 			continue

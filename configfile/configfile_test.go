@@ -1,7 +1,6 @@
 package configfile
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -21,7 +20,7 @@ func TestDefaultPath(t *testing.T) {
 func TestExists(t *testing.T) {
 
 	// Create a temporary file
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	if err != nil {
 		t.Fatalf("error creating temporary file")
 	}
@@ -360,7 +359,7 @@ func TestSaveBogusFile(t *testing.T) {
 func ParserHelper(t *testing.T, content string) *ConfigFile {
 
 	data := []byte(content)
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	if err != nil {
 		t.Fatalf("Error creating temporary file")
 	}

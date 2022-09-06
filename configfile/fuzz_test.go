@@ -4,7 +4,6 @@
 package configfile
 
 import (
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -25,7 +24,7 @@ https://example.com
 
 	f.Fuzz(func(t *testing.T, input []byte) {
 		// Create a temporary file
-		tmpfile, _ := ioutil.TempFile("", "example")
+		tmpfile, _ := os.CreateTemp("", "example")
 
 		// Cleanup when we're done
 		defer os.Remove(tmpfile.Name())

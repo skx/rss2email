@@ -16,7 +16,7 @@ import (
 	"errors"
 	"fmt"
 	"html"
-	"io/ioutil"
+	"io"
 	"mime/quotedprintable"
 	"net/smtp"
 	"os"
@@ -90,7 +90,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	// If the file exists, use it.
 	_, err := os.Stat(override)
 	if !os.IsNotExist(err) {
-		content, err = ioutil.ReadFile(override)
+		content, err = os.ReadFile(override)
 		if err != nil {
 			return nil, fmt.Errorf("failed to read %s: %s", override, err.Error())
 		}
@@ -324,7 +324,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	//
 	// Read the output of Sendmail.
 	//
-	_, err = ioutil.ReadAll(stdout)
+	_, err = io.ReadAll(stdout)
 	if err != nil {
 		fmt.Printf("Error reading mail output: %s\n", err.Error())
 		return nil
