@@ -101,7 +101,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	//
 	funcMap := template.FuncMap{
 		"env":            env,
-		"quoteprintable": e.toQuotedPrintable,
+		"quoteprintable": toQuotedPrintable,
 		"split":          split,
 	}
 
@@ -115,7 +115,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 // body.
 //
 // NOTE: We use this function both directly, and from within our template.
-func (e *Emailer) toQuotedPrintable(s string) (string, error) {
+func toQuotedPrintable(s string) (string, error) {
 	var ac bytes.Buffer
 	w := quotedprintable.NewWriter(&ac)
 	_, err := w.Write([]byte(s))
@@ -186,11 +186,11 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 
 		// The real meat of the mail is the text & HTML
 		// parts.  They need to be encoded, unconditionally.
-		x.Text, err = e.toQuotedPrintable(textstr)
+		x.Text, err = toQuotedPrintable(textstr)
 		if err != nil {
 			return err
 		}
-		x.HTML, err = e.toQuotedPrintable(html.UnescapeString(htmlstr))
+		x.HTML, err = toQuotedPrintable(html.UnescapeString(htmlstr))
 		if err != nil {
 			return err
 		}
