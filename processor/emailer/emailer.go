@@ -103,6 +103,7 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 		"env":            env,
 		"quoteprintable": toQuotedPrintable,
 		"split":          split,
+		"encodeHeader":   encodeHeader,
 	}
 
 	tmpl := template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
@@ -127,6 +128,18 @@ func toQuotedPrintable(s string) (string, error) {
 		return "", err
 	}
 	return ac.String(), nil
+}
+
+// Encode email header entries to comply with the 7bit ASCII restriction
+// of RFC 5322 according to RFC 2047.
+//
+// We use quotedprintable encoding only if necessary.
+func encodeHeader(s string) string {
+	se, err := toQuotedPrintable(s)
+	if (err != nil) || (len(se) == len(s)) {
+		return s
+	}
+	return "=?utf-8?Q?" + strings.Replace(strings.Replace(se, "?", "=3F", -1), " ", "=20", -1) + "?="
 }
 
 // Sendmail is a simple function that emails the given address.
