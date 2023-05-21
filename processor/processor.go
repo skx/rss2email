@@ -324,7 +324,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				// check for regular expressions
 				skip := p.shouldSkip(entry, item.Title, content)
 
-				// chek for age (exclude-older)
+				// check for age (exclude-older)
 				skip = skip || p.shouldSkipOlder(entry, item.Published)
 
 				if !skip {
