@@ -2,6 +2,7 @@ package processor
 
 import (
 	"testing"
+	"time"
 
 	"github.com/skx/rss2email/configfile"
 )
@@ -198,5 +199,53 @@ func TestSkipIncludeTitle(t *testing.T) {
 		if !x.shouldSkip(feed, entry, "content") {
 			t.Fatalf("this shouldn't be included!")
 		}
+	}
+}
+
+// TestSkipOlder ensures that we can exclude items by age
+func TestSkipOlder(t *testing.T) {
+
+	feed := configfile.Feed{
+		URL: "blah",
+		Options: []configfile.Option{
+			{Name: "exclude-older", Value: "1"},
+		},
+	}
+
+	// Create the new processor
+	x, err := New()
+
+	if err != nil {
+		t.Fatalf("error creating processor %s", err.Error())
+	}
+	defer x.Close()
+
+	// Set it as verbose
+	x.SetVerbose(true)
+
+	if !x.shouldSkipOlder(feed, "X") {
+		t.Fatalf("failed to skip non correct published-date")
+	}
+
+	if !x.shouldSkipOlder(feed, "Fri, 02 Dec 2022 16:43:04 +0000") {
+		t.Fatalf("failed to skip old entry by age")
+	}
+
+	if !x.shouldSkipOlder(feed, time.Now().Add(-time.Hour*24*2).Format(time.RFC1123)) {
+		t.Fatalf("failed to skip newer entry by age")
+	}
+
+	if x.shouldSkipOlder(feed, time.Now().Add(-time.Hour*12).Format(time.RFC1123)) {
+		t.Fatalf("skipped new entry by age")
+	}
+
+	// With no options we're not going to skip
+	feed = configfile.Feed{
+		URL:     "blah",
+		Options: []configfile.Option{},
+	}
+
+	if x.shouldSkipOlder(feed, time.Now().Add(-time.Hour*24*128).String()) {
+		t.Fatalf("skipped age with no options!")
 	}
 }
