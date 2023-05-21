@@ -77,6 +77,7 @@ func TestMissingConfig(t *testing.T) {
 		"include-title",
 		"exclude ",
 		"exclude-title",
+		"exclude-older",
 	}
 
 	for _, txt := range expected {
