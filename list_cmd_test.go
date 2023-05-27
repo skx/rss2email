@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -27,7 +26,7 @@ https://example.net/index.rss
  - foo: bar
 `
 	data := []byte(content)
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	if err != nil {
 		t.Fatalf("Error creating temporary file")
 	}

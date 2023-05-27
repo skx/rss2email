@@ -3,7 +3,6 @@ package main
 import (
 	"flag"
 	"github.com/skx/rss2email/configfile"
-	"io/ioutil"
 	"os"
 	"testing"
 )
@@ -67,7 +66,7 @@ func TestBrokenConfig(t *testing.T) {
 
 	data := []byte(`# This is bogus, options must follow URLs
  - foo:bar`)
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	if err != nil {
 		t.Fatalf("Error creating temporary file")
 	}

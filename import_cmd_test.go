@@ -1,7 +1,6 @@
 package main
 
 import (
-	"io/ioutil"
 	"os"
 	"testing"
 
@@ -17,7 +16,7 @@ https://example.net/
  - foo: bar
 `
 	data := []byte(content)
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	if err != nil {
 		t.Fatalf("Error creating temporary file")
 	}
@@ -30,7 +29,7 @@ https://example.net/
 	}
 
 	// Create an OPML file to use as input
-	opml, err := ioutil.TempFile("", "opml")
+	opml, err := os.CreateTemp("", "opml")
 	if err != nil {
 		t.Fatalf("Error creating temporary file for OMPL input")
 	}
@@ -51,7 +50,7 @@ https://example.net/
 </body>
 </opml>
 `)
-	err = ioutil.WriteFile(opml.Name(), d1, 0644)
+	err = os.WriteFile(opml.Name(), d1, 0644)
 	if err != nil {
 		t.Fatalf("failed to write OPML file")
 	}

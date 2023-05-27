@@ -3,7 +3,6 @@ package main
 import (
 	"bytes"
 	"flag"
-	"io/ioutil"
 	"os"
 	"strings"
 	"testing"
@@ -48,7 +47,7 @@ func TestMissingConfig(t *testing.T) {
 
 	// Create a temporary file, so we get a name of something
 	// that doesn't exist
-	tmpfile, err := ioutil.TempFile("", "example")
+	tmpfile, err := os.CreateTemp("", "example")
 	if err != nil {
 		t.Fatalf("failed to create temporary file")
 	}
