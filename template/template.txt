@@ -19,6 +19,7 @@
 
       {{env "USER"}}              -> Return the given environmental variable
       {{quoteprintable .Link}}    -> Quote the specified field.
+      {{encodeHeader .Subject}}   -> Quote the specified field to be used in mail header.
       {{split "STRING:HERE" ":"}} -> Split a string into an array by deliminator
 
      This comment will be stripped from the generated email.
@@ -27,7 +28,7 @@
 Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
 From: {{.From}}
 To: {{.To}}
-Subject: [rss2email] {{if .Tag}}{{.Tag}} {{end}}{{.Subject}}
+Subject: [rss2email] {{if .Tag}}{{encodeHeader .Tag}} {{end}}{{encodeHeader .Subject}}
 X-RSS-Link: {{.Link}}
 X-RSS-Feed: {{.Feed}}
 {{- if .Tag}}
