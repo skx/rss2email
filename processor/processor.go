@@ -320,8 +320,14 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				// Skipping here means that we don't send an email,
 				// however we do mark it as read - so it will only
 				// be processed once.
-				if !p.shouldSkip(entry, item.Title, content) {
 
+				// check for regular expressions
+				skip := p.shouldSkip(entry, item.Title, content)
+
+				// check for age (exclude-older)
+				skip = skip || p.shouldSkipOlder(entry, item.Published)
+
+				if !skip {
 					// Convert the content to text.
 					text := html2text.HTML2Text(content)
 
@@ -646,6 +652,39 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 
 		// True: skip/ignore this entry
 		return true
+	}
+
+	// False: Do not skip/ignore this entry
+	return false
+}
+
+// shouldSkipOlder returns true if this entry should be skipped due to age.
+//
+// Age is configured with "exclude-older" in days.
+func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bool {
+
+	// Walk over the options to see if there are any exclude-age options
+	// specified.
+	for _, opt := range config.Options {
+
+		if opt.Name == "exclude-older" {
+			pub_time, err := time.Parse(time.RFC1123, published)
+			if err != nil {
+				p.message(fmt.Sprintf("exclude-older: skipped due to failed parse of item.published as date %s", err))
+				return true
+			}
+			f, err := strconv.ParseFloat(opt.Value, 32)
+			if err != nil {
+				p.message(fmt.Sprintf("exclude-older: failed to parse config option exclude-older as float %s", err))
+				return false
+			} else {
+				delta := time.Second * time.Duration(f*24*60*60)
+				if pub_time.Add(delta).Before(time.Now()) {
+					p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-older' (age %.1f days)", time.Since(pub_time).Hours()/24))
+					return true
+				}
+			}
+		}
 	}
 
 	// False: Do not skip/ignore this entry

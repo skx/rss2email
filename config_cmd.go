@@ -56,7 +56,6 @@ the following location:
 
      ` + path
 
-
 	doc += `
 
 Configuration File Format
@@ -101,6 +100,8 @@ Key           | Purpose
 delay         | The amount of time to sleep between retried HTTP-fetches.
 exclude       | Exclude any item which matches the given regular-expression.
 exclude-title | Exclude any item with title matching the given regular-expression.
+exclude-older | Exclude any items whose publication date is older than the 
+              | specified number of days.
 include       | Include only items which match the given regular-expression.
 include-title | Include only items with title matching the given regular-expression.
 notify        | Comma-delimited list of emails to send notifications to (if set,
