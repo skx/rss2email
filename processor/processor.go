@@ -668,7 +668,7 @@ func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bo
 	for _, opt := range config.Options {
 
 		if opt.Name == "exclude-older" {
-			pub_time, err := time.Parse(time.RFC1123, published)
+			pubTime, err := time.Parse(time.RFC1123, published)
 			if err != nil {
 				p.message(fmt.Sprintf("exclude-older: skipped due to failed parse of item.published as date %s", err))
 				return true
@@ -677,12 +677,12 @@ func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bo
 			if err != nil {
 				p.message(fmt.Sprintf("exclude-older: failed to parse config option exclude-older as float %s", err))
 				return false
-			} else {
-				delta := time.Second * time.Duration(f*24*60*60)
-				if pub_time.Add(delta).Before(time.Now()) {
-					p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-older' (age %.1f days)", time.Since(pub_time).Hours()/24))
-					return true
-				}
+			}
+
+			delta := time.Second * time.Duration(f*24*60*60)
+			if pubTime.Add(delta).Before(time.Now()) {
+				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-older' (age %.1f days)", time.Since(pubTime).Hours()/24))
+				return true
 			}
 		}
 	}
