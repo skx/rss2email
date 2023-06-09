@@ -49,6 +49,9 @@ FROM alpine
 # Copy the binary.
 COPY --from=builder /go/bin/rss2email /usr/local/bin/
 
+# Set entrypoint
+ENTRYPOINT rss2email
+
 # Create a group and user
 RUN addgroup app && adduser -D -G app -h /app app
 
