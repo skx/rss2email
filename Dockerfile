@@ -46,7 +46,13 @@ RUN ls -ltr /go/bin
 ###########################################################################
 FROM alpine
 
-# Create a working directory
+# Create a group and user
+RUN addgroup app && adduser -D -G app -h /app app
+
+# Tell docker that all future commands should run as the app user
+USER app
+
+# Set working directory
 WORKDIR /app
 
 # Copy the binary.
