@@ -46,6 +46,9 @@ RUN ls -ltr /go/bin
 ###########################################################################
 FROM alpine
 
+# Copy the binary.
+COPY --from=builder /go/bin/rss2email /usr/local/bin/
+
 # Create a group and user
 RUN addgroup app && adduser -D -G app -h /app app
 
@@ -54,6 +57,3 @@ USER app
 
 # Set working directory
 WORKDIR /app
-
-# Copy the binary.
-COPY --from=builder /go/bin/rss2email /app/
