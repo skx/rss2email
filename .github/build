@@ -3,6 +3,9 @@
 # The basename of our binary
 BASE="rss2email"
 
+# I don't even ..
+go env -w GOFLAGS="-buildvcs=false"
+
 #
 # We build on only a single platform/arch.
 #
