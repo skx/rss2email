@@ -3,9 +3,9 @@
 //
 // There are two ways emails are sent:
 //
-//  1.  Via spawning /usr/sbin/sendmail.
+//  1. Via spawning /usr/sbin/sendmail.
 //
-//  2.  Via SMTP.
+//  2. Via SMTP.
 //
 // The choice is made based upon the presence of environmental
 // variables.
@@ -139,7 +139,9 @@ func encodeHeader(s string) string {
 	if (err != nil) || (len(se) == len(s)) {
 		return s
 	}
-	return "=?utf-8?Q?" + strings.Replace(strings.Replace(se, "?", "=3F", -1), " ", "=20", -1) + "?="
+	se = strings.Replace(strings.Replace(se, "?", "=3F", -1), " ", "=20", -1)
+	se = strings.Replace(se, "=\r\n", "", -1) // remove soft line breaks
+	return "=?utf-8?Q?" + se + "?="
 }
 
 // Sendmail is a simple function that emails the given address.
