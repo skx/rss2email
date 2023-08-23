@@ -9,5 +9,5 @@ require (
 	github.com/mmcdole/gofeed v1.2.1
 	github.com/skx/subcommands v0.9.2
 	go.etcd.io/bbolt v1.3.7
-	golang.org/x/net v0.10.0 // indirect
+	golang.org/x/net v0.14.0 // indirect
 )
