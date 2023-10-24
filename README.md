@@ -56,7 +56,7 @@ go install .
 
 **Version NOTES**:
 
-* You'll need go version **1.16** or higher to build.
+* You'll need go version **1.17** or higher to build.
   * Because we use `go embed` to embed our (default) email-template within the binary.
 * If you wish to run the included fuzz-tests against our configuration file parser you'll need at least version **1.18**.
   * See [configfile/FUZZING.md](configfile/FUZZING.md) for details.
