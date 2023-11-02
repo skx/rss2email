@@ -67,9 +67,7 @@ func (c *cronCmd) Arguments(f *flag.FlagSet) {
 	f.BoolVar(&c.send, "send", true, "Should we send emails, or just pretend to?")
 }
 
-//
 // Entry-point
-//
 func (c *cronCmd) Execute(args []string) int {
 
 	// No argument?  That's a bug
@@ -109,7 +107,7 @@ func (c *cronCmd) Execute(args []string) int {
 	errors := p.ProcessFeeds(recipients)
 
 	// If we found errors then show them.
-	if len(errors) > 0 {
+	if len(errors) != 0 {
 		for _, err := range errors {
 			fmt.Fprintln(os.Stderr, err.Error())
 		}

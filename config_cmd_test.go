@@ -13,7 +13,7 @@ import (
 func TestConfig(t *testing.T) {
 
 	bak := out
-	out = new(bytes.Buffer)
+	out = &bytes.Buffer{}
 	defer func() { out = bak }()
 
 	s := configCmd{}

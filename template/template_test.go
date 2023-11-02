@@ -1,6 +1,8 @@
 package template
 
-import "testing"
+import (
+	"testing"
+)
 
 func TestTemplate(t *testing.T) {
 
