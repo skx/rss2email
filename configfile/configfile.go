@@ -3,16 +3,15 @@
 //
 // A configuration file looks like this:
 //
-//       https://example.com/
-//        - foo:bar
+//	https://example.com/
+//	 - foo:bar
 //
-//       https://example.org/
-//       https://example.net/
-//       # comment
+//	https://example.org/
+//	https://example.net/
+//	# comment
 //
 // It is assumed lines contain URLs, but anything prefixed with a "-"
 // is taken to be a parameter using a colon-deliminator.
-//
 package configfile
 
 import (
@@ -147,6 +146,13 @@ func (c *ConfigFile) Parse() ([]Feed, error) {
 				key := strings.TrimSpace(fields[1])
 				val := strings.TrimSpace(fields[2])
 				tmp.Options = append(tmp.Options, Option{Name: key, Value: val})
+			} else {
+				// If we have an URL show it, to help identify the section which is broken
+				if tmp.URL != "" {
+					return c.entries, fmt.Errorf("options should be of the form 'key:value', bogus entry found '%s', beneath feed %s", line, tmp.URL)
+				}
+				return c.entries, fmt.Errorf("options should be of the form 'key:value', bogus entry found '%s'", line)
+
 			}
 		} else {
 
