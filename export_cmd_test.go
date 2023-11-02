@@ -13,7 +13,7 @@ func TestExport(t *testing.T) {
 
 	// Replace the STDIO handle
 	bak := out
-	out = new(bytes.Buffer)
+	out = &bytes.Buffer{}
 	defer func() { out = bak }()
 
 	// Create a simple configuration file

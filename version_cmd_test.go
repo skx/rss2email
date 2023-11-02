@@ -9,7 +9,7 @@ import (
 
 func TestVersion(t *testing.T) {
 	bak := out
-	out = new(bytes.Buffer)
+	out = &bytes.Buffer{}
 	defer func() { out = bak }()
 
 	//
@@ -37,7 +37,7 @@ func TestVersion(t *testing.T) {
 
 func TestVersionVerbose(t *testing.T) {
 	bak := out
-	out = new(bytes.Buffer)
+	out = &bytes.Buffer{}
 	defer func() { out = bak }()
 
 	//

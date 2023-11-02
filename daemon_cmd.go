@@ -51,9 +51,7 @@ func (d *daemonCmd) Arguments(f *flag.FlagSet) {
 	f.BoolVar(&d.verbose, "verbose", false, "Should we be extra verbose?")
 }
 
-//
 // Entry-point
-//
 func (d *daemonCmd) Execute(args []string) int {
 
 	// No argument?  That's a bug
@@ -94,7 +92,7 @@ func (d *daemonCmd) Execute(args []string) int {
 		errors := p.ProcessFeeds(recipients)
 
 		// If we found errors then show them.
-		if len(errors) > 0 {
+		if len(errors) != 0 {
 			for _, err := range errors {
 				fmt.Fprintln(os.Stderr, err.Error())
 			}

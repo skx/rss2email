@@ -14,7 +14,7 @@ import (
 func TestList(t *testing.T) {
 
 	bak := out
-	out = new(bytes.Buffer)
+	out = &bytes.Buffer{}
 	defer func() { out = bak }()
 
 	// Create an instance of the command, and setup a default
