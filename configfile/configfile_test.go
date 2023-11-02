@@ -11,7 +11,7 @@ func TestDefaultPath(t *testing.T) {
 
 	c := New()
 	p := c.Path()
-	if ! strings.Contains(p, "feeds.txt" ) {
+	if !strings.Contains(p, "feeds.txt") {
 		t.Fatalf("expected path to be populated")
 	}
 }
@@ -143,6 +143,21 @@ http://example.com/
 		}
 	}
 
+	os.Remove(c.path)
+}
+
+// TestEmptyOption tests that a key with no value raises an error
+func TestEmptyOption(t *testing.T) {
+
+	c := ParserHelper(t, `
+http://example.com/
+ - insecure
+`)
+
+	_, err := c.Parse()
+	if err == nil {
+		t.Fatalf("Expected an error with an empty option, but got none")
+	}
 	os.Remove(c.path)
 }
 

@@ -5,10 +5,12 @@
 package httpfetch
 
 import (
-	"io"
+	"crypto/tls"
 	"fmt"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 	"time"
 
 	"github.com/mmcdole/gofeed"
@@ -27,6 +29,9 @@ type HTTPFetch struct {
 	// How many times we should attempt to retry a failed
 	// fetch before giving up.
 	maxRetries int
+
+	// insecure will cause invalid SSL certificate options to be ignored
+	insecure bool
 
 	// Between retries we should delay to avoid overwhelming
 	// the remote server.  This specifies how many times we should
@@ -56,6 +61,18 @@ func New(entry configfile.Feed) *HTTPFetch {
 			num, err := strconv.Atoi(opt.Value)
 			if err == nil {
 				state.maxRetries = num
+			}
+		}
+
+		// Disable fatal TLS errors.  Horrid
+		if opt.Name == "insecure" {
+
+			// downcase the value
+			val := strings.ToLower(opt.Value)
+
+			// if it is enabled then set the flag
+			if val == "yes" || val == "true" {
+				state.insecure = true
 			}
 		}
 
@@ -117,6 +134,19 @@ func (h *HTTPFetch) fetch() error {
 
 	// Create a HTTP-client
 	client := &http.Client{}
+
+	// Setup a transport which disables TLS-checks
+	tr := &http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	}
+
+	// If we're ignoring the TLS
+	if h.insecure {
+
+		// Use the non-validating transport
+		client.Transport = tr
+	}
+
 	req, err := http.NewRequest("GET", h.url, nil)
 	if err != nil {
 		return err
