@@ -20,6 +20,7 @@ Table of Contents
 
 
 
+
 # RSS2Email
 
 This project began life as a naive port of the python-based [r2e](https://github.com/wking/rss2email) utility to golang.
@@ -32,6 +33,7 @@ Over time we've now gained a few more features:
   * See [SMTP-setup](#smtp-setup) for details.
 * The ability to include/exclude feed items from the emails.
   * For example receive emails only of feed items that contain the pattern "playstation".
+
 
 
 
@@ -54,6 +56,12 @@ go build .
 go install .
 ```
 
+Finally you can find automatically generated docker images, these are built on a nightly basis, and when releases are made:
+
+* https://github.com/skx/rss2email/pkgs/container/rss2email
+
+
+
 **Version NOTES**:
 
 * You'll need go version **1.17** or higher to build.
@@ -70,6 +78,8 @@ The binary has integrated support for TAB-completion, for bash.  To enable this 
 ```
 source <(rss2email bash-completion)
 ```
+
+
 
 
 # Feed Configuration
@@ -112,6 +122,7 @@ Adding per-feed items allows excluding feed-entries by regular expression, for e
 
 
 
+
 # Usage
 
 Once you've populated your feed list, via a series of `rss2email add ..` commands, or by editing the configuration file directly, you are now ready to actually launch the application.
@@ -140,6 +151,7 @@ The state of feed-entries is recorded beneath `~/.rss2email/state.db`, which is 
 
 
 
+
 # Daemon Mode
 
 Typically you'd invoke `rss2email` with the `cron` sub-command as we documented above.  This works in the naive way you'd expect:
@@ -164,6 +176,7 @@ In short the process runs forever, in the foreground.  This is expected to be dr
 
 
 
+
 # Initial Run
 
 When you add a new feed all the items contained within that feed will initially be unseen/new, and this means you'll receive a flood of emails if you were to run:
@@ -178,6 +191,8 @@ record each item as having been seen, rather than sending you emails:
      $ rss2email cron -send=false user@domain.com
 
 
+
+
 # Assumptions
 
 Because this application is so minimal there are a number of assumptions baked in:
@@ -187,6 +202,7 @@ Because this application is so minimal there are a number of assumptions baked i
 * We assume the recipient and sender email addresses can be the same.
   * i.e. If you mail output to `bob@example.com` that will be used as the sender address.
   * You can change the default sender via the [email-customization](#email-customization) process described next if you prefer though.
+
 
 
 
@@ -205,6 +221,7 @@ To configure SMTP you need to setup the following environmental-variables (envir
 | **SMTP_PASSWORD** | `secret!value`    |
 
 If those values are present then SMTP will be used, otherwise the email will be sent via the local MTA.
+
 
 
 
@@ -230,6 +247,7 @@ If you're a developer who wishes to submit changes to the embedded version you s
 **NOTE**: If you read the earlier section on configuration you'll see that it is possible to add per-feed configuration values to the config file.  One of the supported options is to setup a feed-specific template-file.
 
 
+
 ## Changing default From address
 
 As noted earlier when sending the notification emails the recipient address is used as the sender-address too.   There are no flags for changing the From: address used to send the emails, however using the section above you can [use a customized email-template](#email-customization), and simply update the template to read something like this:
@@ -246,6 +264,7 @@ X-RSS-Feed: {{.Feed}}
 
 
 
+
 # Implementation Overview
 
 The two main commands are `cron` and `daemon` and they work in roughly the same way:
@@ -259,6 +278,8 @@ The two main commands are `cron` and `daemon` and they work in roughly the same 
     * Either by SMTP or by executing `/usr/sbin/sendmail`
 
 The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go) to add/delete/list the contents of the feed-list.
+
+
 
 
 # Github Setup
