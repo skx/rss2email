@@ -256,8 +256,39 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	// Keep track of all the items in the feed.
 	items := []string{}
 
+	//
+	// Issue #111 reported an example feed which
+	// contained duplicate URLs
+	//
+	// We can look over the links in the feed, before
+	// we do anything else, and look to see if we have
+	// duplicates
+	//
+	// Do we have dupes?
+	//
+	dupes := false
+
+	//
+	// Temporary map
+	//
+	seenDupes := make(map[string]int)
+	for _, str := range feed.Items {
+		if seenDupes[str.Link] > 0 {
+			dupes = true
+		}
+
+		seenDupes[str.Link]++
+	}
+
 	// For each entry in the feed ..
 	for _, xp := range feed.Items {
+
+		// If the feed contains duplicate entries
+		// then we try to uniquify them.
+		if dupes {
+			xp.Link += "#"
+			xp.Link += xp.GUID
+		}
 
 		// Wrap the feed-item in a class of our own,
 		// so that we can get access to the content easily.
