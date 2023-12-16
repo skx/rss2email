@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 	"regexp"
@@ -40,9 +41,7 @@ func (u *unseeCmd) Arguments(f *flag.FlagSet) {
 	f.BoolVar(&u.regexp, "regexp", false, "Are our arguments regular expressions, instead of literal URLs?")
 }
 
-//
 // Entry-point.
-//
 func (u *unseeCmd) Execute(args []string) int {
 
 	if len(args) < 1 {
@@ -54,13 +53,15 @@ func (u *unseeCmd) Execute(args []string) int {
 	dir := state.Directory()
 	errM := os.MkdirAll(dir, 0666)
 	if errM != nil {
-		fmt.Printf("failed to run MkdirAll:%s\n", errM)
+		logger.Error("failed to create directory", slog.String("directory", dir), slog.String("error", errM.Error()))
+		return 1
 	}
 
 	// Now create the database, if missing, or open it if it exists.
-	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
+	dbPath := filepath.Join(dir, "state.db")
+	db, err := bbolt.Open(dbPath, 0666, nil)
 	if err != nil {
-		fmt.Printf("Error opening database: %s\n", err.Error())
+		logger.Error("failed to open database", slog.String("database", dbPath), slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -77,8 +78,10 @@ func (u *unseeCmd) Execute(args []string) int {
 			return nil
 		})
 	})
+
 	if err != nil {
-		fmt.Printf("failed to find bucket names:%s\n", err)
+		logger.Error("failed to find bucket names", slog.String("database", dbPath), slog.String("error", err.Error()))
+		return 1
 	}
 
 	// Process each bucket to find the item to remove.
@@ -115,6 +118,8 @@ func (u *unseeCmd) Execute(args []string) int {
 						// Literal string-match
 						if arg == key {
 							remove = append(remove, key)
+
+							logger.Debug("removed item from history", slog.String("item", key), slog.String("database", dbPath), slog.String("bucket", buck))
 						}
 					}
 				}
@@ -124,14 +129,15 @@ func (u *unseeCmd) Execute(args []string) int {
 			for _, key := range remove {
 				err = b.Delete([]byte(key))
 				if err != nil {
-					fmt.Printf("Failed to remove %s - %s\n", key, err)
+					logger.Debug("failed to remove item from history", slog.String("item", key), slog.String("database", dbPath), slog.String("bucket", buck), slog.String("error", err.Error()))
+
 				}
 			}
 			return nil
 		})
 
 		if err != nil {
-			fmt.Printf("error iterating over bucket %s: %s\n", buck, err.Error())
+			logger.Error("failed iterating over bucket", slog.String("database", dbPath), slog.String("bucket", buck), slog.String("error", err.Error()))
 			return 1
 		}
 	}
