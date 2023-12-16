@@ -717,7 +717,7 @@ func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bo
 			pubTime, err := time.Parse(time.RFC1123, published)
 			if err != nil {
 				p.message(fmt.Sprintf("exclude-older: skipped due to failed parse of item.published as date %s", err))
-				return true
+				return false
 			}
 			f, err := strconv.ParseFloat(opt.Value, 32)
 			if err != nil {
