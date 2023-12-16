@@ -45,7 +45,7 @@ func (u *unseeCmd) Arguments(f *flag.FlagSet) {
 func (u *unseeCmd) Execute(args []string) int {
 
 	if len(args) < 1 {
-		fmt.Printf("Please specify the URLs to unsee\n")
+		fmt.Printf("Please specify the URLs to unsee (i.e. remove from the state database).\n")
 		return 1
 	}
 
