@@ -230,6 +230,13 @@ func (p *Processor) message(msg string) {
 // specifically excluded by the per-feed options.
 func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
 
+	// Create a local logger with some dedicated information
+	logger := p.logger.With(
+		slog.Group("feed",
+			slog.String("link", entry.URL),
+		),
+	)
+
 	// Is there a tag set for this feed?
 	tag := ""
 
@@ -240,18 +247,16 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		}
 	}
 
-	// Show what we're doing.
-	p.message(fmt.Sprintf("Fetching feed: %s", entry.URL))
-
 	// Fetch the feed for the input URL
 	helper := httpfetch.New(entry)
 	feed, err := helper.Fetch()
 	if err != nil {
+		logger.Warn("failed to fetch feed")
 		return err
 	}
 
 	// Show how many entries we've found in the feed.
-	p.message(fmt.Sprintf("\tFeed contains %d entries", len(feed.Items)))
+	logger.Debug("feed retrieved", slog.Int("entries", len(feed.Items)))
 
 	// Count how many seen/unseen items there were.
 	seen := 0
@@ -278,6 +283,11 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	seenDupes := make(map[string]int)
 	for _, str := range feed.Items {
 		if seenDupes[str.Link] > 0 {
+
+			// only log the messages once.
+			if !dupes {
+				logger.Warn("feed contains duplicate entries")
+			}
 			dupes = true
 		}
 
@@ -332,9 +342,10 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 			// Bump the count
 			unseen++
 
-			// Show the new item.
-			p.message(fmt.Sprintf("\t\tNew entry in feed: %s", item.Title))
-			p.message(fmt.Sprintf("\t\t\t%s", item.Link))
+			// Show that we got something
+			logger.Debug("new entry in feed",
+				slog.String("title", item.Title),
+				slog.String("link", item.Link))
 
 			// If we're supposed to send email then do that.
 			if p.send {
@@ -392,9 +403,9 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		}
 	}
 
-	// Show how many entries we've found in the feed.
-	p.message(fmt.Sprintf("\t%02d entries already seen", seen))
-	p.message(fmt.Sprintf("\t%02d entries not seen before", unseen))
+	logger.Debug("feed processing complete",
+		slog.Int("seen_count", seen),
+		slog.Int("unseen_count", unseen))
 
 	// Now prune the items in this feed.
 	err = p.pruneFeed(entry.URL, items)
