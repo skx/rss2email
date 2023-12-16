@@ -286,7 +286,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 
 			// only log the messages once.
 			if !dupes {
-				logger.Warn("feed contains duplicate entries")
+				logger.Warn("feed contains duplicate links")
 			}
 			dupes = true
 		}
@@ -343,7 +343,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 			unseen++
 
 			// Show that we got something
-			logger.Debug("new entry in feed",
+			logger.Debug("new entry found in feed",
 				slog.String("title", item.Title),
 				slog.String("link", item.Link))
 
@@ -368,10 +368,10 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				// be processed once.
 
 				// check for regular expressions
-				skip := p.shouldSkip(entry, item.Title, content)
+				skip := p.shouldSkip(logger, entry, item.Title, content)
 
 				// check for age (exclude-older)
-				skip = skip || p.shouldSkipOlder(entry, item.Published)
+				skip = skip || p.shouldSkipOlder(logger, entry, item.Published)
 
 				if !skip {
 					// Convert the content to text.
@@ -618,7 +618,7 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 //
 // Note that if an entry should be skipped it is still marked as
 // having been read, but no email is sent.
-func (p *Processor) shouldSkip(config configfile.Feed, title string, content string) bool {
+func (p *Processor) shouldSkip(logger *slog.Logger, config configfile.Feed, title string, content string) bool {
 
 	// Walk over the options to see if there are any exclude* options
 	// specified.
@@ -628,8 +628,9 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 		if opt.Name == "exclude-title" {
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-title' match of '%s'.", opt.Value))
-
+				logger.Debug("excluding entry due to exclude-title",
+					slog.String("exclude-title", opt.Value),
+					slog.String("item-title", title))
 				// True: skip/ignore this entry
 				return true
 			}
@@ -640,7 +641,9 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude' match of %s.", opt.Value))
+				logger.Debug("excluding entry due to exclude",
+					slog.String("exclude", opt.Value),
+					slog.String("item-title", title))
 
 				// True: skip/ignore this entry
 				return true
@@ -656,8 +659,14 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	include := false
 
+	it := ""
+	i := ""
+
 	for _, opt := range config.Options {
 		if opt.Name == "include-title" {
+
+			// Save
+			it = opt.Value
 
 			// We found (at least one) include option
 			include = true
@@ -666,13 +675,18 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tIncluding as this entry's title matches %s.", opt.Value))
+				logger.Debug("including entry due to 'include-title'",
+					slog.String("include-title", opt.Value),
+					slog.String("item-title", title))
 
 				// False: Do not skip/ignore this entry
 				return false
 			}
 		}
 		if opt.Name == "include" {
+
+			// Save
+			i = opt.Value
 
 			// We found (at least one) include option
 			include = true
@@ -681,7 +695,9 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tIncluding as this entry matches %s.", opt.Value))
+				logger.Debug("including entry due to 'include'",
+					slog.String("include", opt.Value),
+					slog.String("item-title", title))
 
 				// False: Do not skip/ignore this entry
 				return false
@@ -694,7 +710,10 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	// i.e. The entry did not include a string we regarded as mandatory.
 	if include {
-		p.message("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns")
+		logger.Debug("excluding entry due to 'include', or 'include-title'",
+			slog.String("include", i),
+			slog.String("include-title", it),
+			slog.String("item-title", title))
 
 		// True: skip/ignore this entry
 		return true
@@ -707,7 +726,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 // shouldSkipOlder returns true if this entry should be skipped due to age.
 //
 // Age is configured with "exclude-older" in days.
-func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bool {
+func (p *Processor) shouldSkipOlder(logger *slog.Logger, config configfile.Feed, published string) bool {
 
 	// Walk over the options to see if there are any exclude-age options
 	// specified.
@@ -716,18 +735,25 @@ func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bo
 		if opt.Name == "exclude-older" {
 			pubTime, err := time.Parse(time.RFC1123, published)
 			if err != nil {
-				p.message(fmt.Sprintf("exclude-older: skipped due to failed parse of item.published as date %s", err))
+				logger.Warn("failed to parse 'item.published' as date",
+					slog.String("date", published),
+					slog.String("error", err.Error()))
 				return false
 			}
 			f, err := strconv.ParseFloat(opt.Value, 32)
 			if err != nil {
-				p.message(fmt.Sprintf("exclude-older: failed to parse config option exclude-older as float %s", err))
+				logger.Warn("failed to parse 'exclude-older' as float",
+					slog.String("exclude-older", opt.Value),
+					slog.String("error", err.Error()))
+
 				return false
 			}
 
 			delta := time.Second * time.Duration(f*24*60*60)
 			if pubTime.Add(delta).Before(time.Now()) {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-older' (age %.1f days)", time.Since(pubTime).Hours()/24))
+				logger.Debug("excluding entry due to exclude-older setting",
+					slog.String("exclude-older", opt.Value),
+					slog.Float64("days", time.Since(pubTime).Hours()/24))
 				return true
 			}
 		}
