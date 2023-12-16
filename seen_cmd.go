@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"log/slog"
 	"os"
 	"path/filepath"
 
@@ -35,22 +36,22 @@ are no longer regarded as new/unseen.)
 `
 }
 
-//
 // Entry-point.
-//
 func (s *seenCmd) Execute(args []string) int {
 
 	// Ensure we have a state-directory.
 	dir := state.Directory()
 	errM := os.MkdirAll(dir, 0666)
 	if errM != nil {
-		fmt.Printf("failed to mkdirAll %s\n", errM)
+		logger.Error("failed to create directory", slog.String("directory", dir), slog.String("error", errM.Error()))
+		return 1
 	}
 
 	// Now create the database, if missing, or open it if it exists.
-	db, err := bbolt.Open(filepath.Join(dir, "state.db"), 0666, nil)
+	dbPath := filepath.Join(dir, "state.db")
+	db, err := bbolt.Open(dbPath, 0666, nil)
 	if err != nil {
-		fmt.Printf("Error opening database: %s\n", err.Error())
+		logger.Error("failed to open database", slog.String("database", dbPath), slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -68,7 +69,8 @@ func (s *seenCmd) Execute(args []string) int {
 		return err
 	})
 	if err != nil {
-		fmt.Printf("failed to find bucket-names:%s\n", err)
+		logger.Error("failed to find bucket names", slog.String("database", dbPath), slog.String("error", err.Error()))
+		return 1
 	}
 
 	// Now we have a list of buckets, we'll show the contents
@@ -97,7 +99,7 @@ func (s *seenCmd) Execute(args []string) int {
 		})
 
 		if err != nil {
-			fmt.Printf("error iterating over bucket %s: %s\n", buck, err.Error())
+			logger.Error("failed iterating over bucket", slog.String("database", dbPath), slog.String("bucket", string(buck)), slog.String("error", err.Error()))
 			return 1
 		}
 	}
