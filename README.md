@@ -302,9 +302,10 @@ The application is configured to use a common logger, which will output all mess
 There are two environmental variables which can be used to modify the logging output:
 
 * `LOG_ALL`
-  * If this is set to a non-empty string all levels will be shown.
+  * If this is set to a non-empty string all levels will be shown (DEBUG, WARN and ERROR).
 * `LOG_JSON`
-  * If this is set to a non-empty string the logging messages will be output in JSON format, which is useful if you're collecting messages in something like sumologic, loki, or similar.
+  * If this is set to a non-empty string the logging messages will be output in JSON format.
+  * This is useful if you're collecting (container) messages in datadog, loki, sumologic, or something similar.
 
 
 
