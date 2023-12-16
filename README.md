@@ -291,9 +291,11 @@ The application is configured to use a common logger, which will output all mess
   * This will be used when new features are added, and contain implementation-related notices.
   * The messages here will be helpful for debugging, or extending the application.
 * WARN
-  * This level is used for warnings which are not fatal errors.
-  * For example failure to fetch a remote feed, or a broken configuration file.
+  * This level is shown by default.
+  * This level is used for messages which are not fatal errors, but which a user might wish to be aware of.
+    * For example failure to fetch a remote feed, or a count of retried HTTP-fetches.
 * ERROR
+  * This level is shown by default.
   * This level is used for fatal-errors.
   * This should only be used for messages which are immediately followed by an application exit.
 
