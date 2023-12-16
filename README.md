@@ -16,6 +16,7 @@ Table of Contents
 * [Email Customization](#email-customization)
   * [Changing default From address](#changing-default-from-address)
 * [Implementation Overview](#implementation-overview)
+* [Logging Notes](#logging-notes)
 * [Github Setup](#github-setup)
 
 
@@ -278,6 +279,30 @@ The two main commands are `cron` and `daemon` and they work in roughly the same 
     * Either by SMTP or by executing `/usr/sbin/sendmail`
 
 The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go) to add/delete/list the contents of the feed-list.
+
+
+
+
+# Logging Notes
+
+The application is configured to use a common logger, which will output all messages to STDERR.  The codebase will log messages at three levels:
+
+* DEBUG
+  * This will be used when new features are added, and contain implementation-related notices.
+  * The messages here will be helpful for debugging, or extending the application.
+* WARN
+  * This level is used for warnings which are not fatal errors.
+  * For example failure to fetch a remote feed, or a broken configuration file.
+* ERROR
+  * This level is used for fatal-errors.
+  * This should only be used for messages which are immediately followed by an application exit.
+
+There are two environmental variables which can be used to modify the logging output:
+
+* `LOG_ALL`
+  * If this is set to a non-empty string all levels will be shown.
+* `LOG_JSON`
+  * If this is set to a non-empty string the logging messages will be output in JSON format, which is useful if you're collecting messages in something like sumologic, loki, or similar.
 
 
 
