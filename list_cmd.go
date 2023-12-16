@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"time"
 
 	"github.com/skx/rss2email/configfile"
@@ -105,15 +106,13 @@ func (l *listCmd) showFeedDetails(entry configfile.Feed) {
 	fmt.Fprintf(out, "%s\n", entry.URL)
 }
 
-//
 // Entry-point.
-//
 func (l *listCmd) Execute(args []string) int {
 
 	// Now do the parsing
 	entries, err := l.config.Parse()
 	if err != nil {
-		fmt.Printf("Error with config-file: %s\n", err.Error())
+		logger.Error("failed to parse configuration file", slog.String("error", err.Error()))
 		return 1
 	}
 

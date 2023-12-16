@@ -7,7 +7,7 @@ package main
 import (
 	"encoding/xml"
 	"flag"
-	"fmt"
+	"log/slog"
 	"os"
 
 	"github.com/skx/rss2email/configfile"
@@ -71,7 +71,7 @@ func (i *importCmd) Execute(args []string) int {
 
 	_, err := i.config.Parse()
 	if err != nil {
-		fmt.Printf("Error parsing file: %s\n", err.Error())
+		logger.Error("failed to parse configuration file", slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -82,7 +82,7 @@ func (i *importCmd) Execute(args []string) int {
 		var data []byte
 		data, err = os.ReadFile(file)
 		if err != nil {
-			fmt.Printf("failed to read %s: %s\n", file, err.Error())
+			logger.Warn("failed to read file", slog.String("file", file), slog.String("error", err.Error()))
 			continue
 		}
 
@@ -90,14 +90,14 @@ func (i *importCmd) Execute(args []string) int {
 		o := opml{}
 		err = xml.Unmarshal(data, &o)
 		if err != nil {
-			fmt.Printf("failed to parse %s: %s\n", file, err.Error())
+			logger.Warn("failed to parse XML file", slog.String("file", file), slog.String("error", err.Error()))
 			continue
 		}
 
 		for _, outline := range o.Outlines {
 
 			if outline.XMLURL != "" {
-				fmt.Printf("Adding %s\n", outline.XMLURL)
+				logger.Debug("Adding entry from file", slog.String("file", file), slog.String("url", outline.XMLURL))
 				i.config.Add(outline.XMLURL)
 			}
 		}
@@ -107,7 +107,8 @@ func (i *importCmd) Execute(args []string) int {
 	// Did we make a change?  Then add them.
 	err = i.config.Save()
 	if err != nil {
-		fmt.Printf("failed to update feed list: %s\n", err.Error())
+		logger.Error("failed to save the updated feed list", slog.String("error", err.Error()))
+		return 1
 	}
 
 	// All done.

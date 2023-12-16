@@ -6,7 +6,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log/slog"
 
 	"github.com/skx/rss2email/configfile"
 	"github.com/skx/subcommands"
@@ -47,15 +47,13 @@ Example:
 `
 }
 
-//
 // Entry-point.
-//
 func (d *delCmd) Execute(args []string) int {
 
 	// Parse the existing file
 	_, err := d.config.Parse()
 	if err != nil {
-		fmt.Printf("Error parsing file: %s\n", err.Error())
+		logger.Error("failed to parse configuration file", slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -68,10 +66,10 @@ func (d *delCmd) Execute(args []string) int {
 	}
 
 	// Save the list.
-	if ( changed ) {
+	if changed {
 		err = d.config.Save()
 		if err != nil {
-			fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
+			logger.Error("failed to save the updated feed list", slog.String("error", err.Error()))
 			return 1
 		}
 	}

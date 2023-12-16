@@ -6,7 +6,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log/slog"
 	"text/template"
 
 	"github.com/skx/rss2email/configfile"
@@ -65,7 +65,7 @@ func (e *exportCmd) Execute(args []string) int {
 	// Now do the parsing
 	entries, err := e.config.Parse()
 	if err != nil {
-		fmt.Printf("Error with config-file: %s\n", err.Error())
+		logger.Error("failed to parse configuration file", slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -89,7 +89,7 @@ func (e *exportCmd) Execute(args []string) int {
 	t := template.Must(template.New("tmpl").Parse(tmpl))
 	err = t.Execute(out, data)
 	if err != nil {
-		fmt.Printf("error rendering template: %s\n", err.Error())
+		logger.Error("error rendering template", slog.String("error", err.Error()))
 		return 1
 	}
 
