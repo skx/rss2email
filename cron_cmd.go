@@ -103,6 +103,7 @@ func (c *cronCmd) Execute(args []string) int {
 	// Setup the state
 	p.SetVerbose(c.verbose)
 	p.SetSendEmail(c.send)
+	p.SetLogger(logger)
 
 	errors := p.ProcessFeeds(recipients)
 

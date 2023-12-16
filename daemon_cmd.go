@@ -87,6 +87,7 @@ func (d *daemonCmd) Execute(args []string) int {
 		// Setup the state - note we ALWAYS send emails in this mode.
 		p.SetVerbose(d.verbose)
 		p.SetSendEmail(true)
+		p.SetLogger(logger)
 
 		// Process all the feeds
 		errors := p.ProcessFeeds(recipients)

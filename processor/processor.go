@@ -10,6 +10,7 @@ package processor
 
 import (
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -39,6 +40,9 @@ type Processor struct {
 	// database holds a handle to the BoltDB database we use to
 	// store feed-entry state within.
 	dbHandle *bbolt.DB
+
+	// logger stores the logging dbHandle
+	logger *slog.Logger
 }
 
 // New creates a new Processor object.
@@ -731,4 +735,9 @@ func (p *Processor) SetVerbose(state bool) {
 // is false zero emails are generated.
 func (p *Processor) SetSendEmail(state bool) {
 	p.send = state
+}
+
+// SetLogger ensures we have a logging-handle
+func (p *Processor) SetLogger(logger *slog.Logger) {
+	p.logger = logger
 }
