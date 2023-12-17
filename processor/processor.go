@@ -88,7 +88,9 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Now do the parsing
 	entries, err := conf.Parse()
 	if err != nil {
-		errors = append(errors, fmt.Errorf("error with config-file %s - %s", conf.Path(), err))
+		p.logger.Error("failed to parse configuration file",
+			slog.String("configfile", conf.Path()),
+			slog.String("error", err.Error()))
 		return errors
 	}
 
@@ -98,8 +100,15 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Keep track of each feed we've processed
 	feeds := []string{}
 
+	// We're about to process the feeds.
+	p.logger.Debug("about to process feeds",
+		slog.Int("feed_count", len(entries)))
+
 	// For each feed contained in the configuration file
 	for _, entry := range entries {
+
+		p.logger.Debug("starting to process feed",
+			slog.String("feed", entry.URL))
 
 		// Create a bucket to hold the entry-state here,
 		// if we've not done so previously.
@@ -124,6 +133,11 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 		// If we have a DB-error then we return, this shouldn't happen.
 		if err != nil {
+
+			p.logger.Error("error creating bucket",
+				slog.String("feed", entry.URL),
+				slog.String("error", err.Error()))
+
 			errors = append(errors, fmt.Errorf("error creating bucket for %s: %s", entry.URL, err))
 			return (errors)
 		}
@@ -156,7 +170,12 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// If so then we'll add a delay to try to avoid annoying that
 		// host.
 		if host == prev {
-			p.message(fmt.Sprintf("Fetching from same host as previous feed, %s, adding 5s delay", host))
+
+			p.logger.Debug("fetching from same host as previous feed adding delay",
+				slog.Int("sleep", 5),
+				slog.String("host", prev),
+				slog.String("feed", entry.URL))
+
 			sleep = 5
 		}
 
@@ -182,7 +201,13 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 				// no error save it away.
 				num, nErr := strconv.Atoi(opt.Value)
 				if nErr != nil {
-					fmt.Printf("WARNING: %s:%s - failed to parse as sleep-delay %s\n", opt.Name, opt.Value, nErr.Error())
+
+					p.logger.Warn("failed to parse sleep value as number",
+						slog.String("sleep", opt.Value),
+						slog.String("error", nErr.Error()))
+
+					// be conservative
+					sleep = 10
 				} else {
 					sleep = num
 				}
@@ -191,6 +216,10 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 		// If we're supposed to sleep, do so
 		if sleep != 0 {
+
+			p.logger.Warn("sleeping",
+				slog.Int("sleep", sleep))
+
 			time.Sleep(time.Duration(sleep) * time.Second)
 		}
 
@@ -207,8 +236,16 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Reap feeds which are obsolete.
 	err = p.pruneUnknownFeeds(feeds)
 	if err != nil {
+
+		p.logger.Warn("failed to prune unknown feeds",
+			slog.String("error", err.Error()))
+
 		errors = append(errors, err)
 	}
+
+	// We're about to process the feeds.
+	p.logger.Debug("all feeds processed",
+		slog.Int("feed_count", len(entries)))
 
 	// All feeds were processed, return any errors we found along the way
 	return errors
@@ -251,7 +288,8 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	helper := httpfetch.New(entry)
 	feed, err := helper.Fetch()
 	if err != nil {
-		logger.Warn("failed to fetch feed")
+		logger.Warn("failed to fetch feed",
+			slog.String("error", err.Error()))
 		return err
 	}
 
@@ -381,6 +419,11 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 					helper := emailer.New(feed, item, entry.Options)
 					err = helper.Sendmail(recipients, text, content)
 					if err != nil {
+
+						logger.Warn("failed to send email",
+							slog.String("recipients", strings.Join(recipients, ",")),
+							slog.String("error", err.Error()))
+
 						return err
 					}
 				}
@@ -399,17 +442,23 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// due to error, and that keeps happening forever...
 		err = p.recordItem(entry.URL, item.Link)
 		if err != nil {
+			logger.Warn("failed to mark item as processed",
+				slog.String("error", err.Error()))
 			return err
 		}
 	}
 
-	logger.Debug("feed processing complete",
+	logger.Debug("feed processed",
 		slog.Int("seen_count", seen),
 		slog.Int("unseen_count", unseen))
 
 	// Now prune the items in this feed.
 	err = p.pruneFeed(entry.URL, items)
 	if err != nil {
+
+		logger.Debug("failed to prune bolddb",
+			slog.String("error", err.Error()))
+
 		return fmt.Errorf("error pruning boltdb for %s: %s", entry.URL, err)
 	}
 
