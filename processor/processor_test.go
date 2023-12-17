@@ -59,16 +59,6 @@ func TestVerbose(t *testing.T) {
 	}
 
 	defer p.Close()
-
-	if p.verbose {
-		t.Fatalf("unexpected default to verbose")
-	}
-
-	p.SetVerbose(true)
-
-	if !p.verbose {
-		t.Fatalf("unexpected verbose setting")
-	}
 }
 
 // TestSkipExclude ensures that we can exclude items by regexp
@@ -89,9 +79,6 @@ func TestSkipExclude(t *testing.T) {
 		t.Fatalf("error creating processor %s", err.Error())
 	}
 	defer x.Close()
-
-	// Set it as verbose
-	x.SetVerbose(true)
 
 	if !x.shouldSkip(logger, feed, "Title here", "<p>foo, bar baz</p>") {
 		t.Fatalf("failed to skip entry by regexp")
@@ -131,9 +118,6 @@ func TestSkipInclude(t *testing.T) {
 	}
 	defer x.Close()
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
 	if x.shouldSkip(logger, feed, "Title here", "<p>This is good</p>") {
 		t.Fatalf("this should be included because it contains good")
 	}
@@ -171,9 +155,6 @@ func TestSkipIncludeTitle(t *testing.T) {
 		t.Fatalf("error creating processor %s", err.Error())
 	}
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
 	if x.shouldSkip(logger, feed, "Title here", "<p>This is good</p>") {
 		t.Fatalf("this should be included because it contains good")
 	}
@@ -205,9 +186,6 @@ func TestSkipIncludeTitle(t *testing.T) {
 		t.Fatalf("error creating processor %s", err.Error())
 	}
 	defer x.Close()
-
-	// Set it as verbose
-	x.SetVerbose(true)
 
 	// include
 	for _, entry := range valid {
@@ -241,9 +219,6 @@ func TestSkipOlder(t *testing.T) {
 		t.Fatalf("error creating processor %s", err.Error())
 	}
 	defer x.Close()
-
-	// Set it as verbose
-	x.SetVerbose(true)
 
 	if x.shouldSkipOlder(logger, feed, "X") {
 		t.Fatalf("failed to skip non correct published-date")

@@ -34,9 +34,6 @@ type Processor struct {
 	// send controls whether we send emails, or just pretend to.
 	send bool
 
-	// verbose denotes how verbose we should be in execution.
-	verbose bool
-
 	// database holds a handle to the BoltDB database we use to
 	// store feed-entry state within.
 	dbHandle *bbolt.DB
@@ -249,15 +246,6 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 	// All feeds were processed, return any errors we found along the way
 	return errors
-}
-
-// message shows a message if our verbose flag is set.
-//
-// NOTE: This appends a newline to the message.
-func (p *Processor) message(msg string) {
-	if p.verbose {
-		fmt.Printf("%s\n", msg)
-	}
 }
 
 // processFeed takes a configuration entry as input, fetches the appropriate
@@ -561,7 +549,6 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 
 	// Remove each entry that we were supposed to remove.
 	for _, ent := range toRemove {
-		p.message(fmt.Sprintf("expiring feed entry %s", ent))
 
 		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 
@@ -619,9 +606,6 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 	}
 	// For each bucket we need to remove, remove it
 	for _, bucket := range toRemove {
-
-		// We're going to remove the bucket
-		p.message(fmt.Sprintf("removing feed-bucket %s", bucket))
 
 		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 
@@ -810,11 +794,6 @@ func (p *Processor) shouldSkipOlder(logger *slog.Logger, config configfile.Feed,
 
 	// False: Do not skip/ignore this entry
 	return false
-}
-
-// SetVerbose updates the verbosity state of this object.
-func (p *Processor) SetVerbose(state bool) {
-	p.verbose = state
 }
 
 // SetSendEmail updates the state of this object, when the send-flag

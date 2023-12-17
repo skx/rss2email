@@ -16,6 +16,9 @@ import (
 var (
 	// logger contains a shared logging handle, used by our sub-commands.
 	logger *slog.Logger
+
+	// loggerLevel allows changing the log-level at runtime
+	loggerLevel *slog.LevelVar
 )
 
 // Recovery is good
@@ -31,19 +34,19 @@ func main() {
 	//
 	// Setup our default logging level
 	//
-	lvl := new(slog.LevelVar)
-	lvl.Set(slog.LevelWarn)
+	loggerLevel = new(slog.LevelVar)
+	loggerLevel.Set(slog.LevelWarn)
 
 	//
 	// Allow showing "all the logs"
 	//
 	if os.Getenv("LOG_ALL") != "" {
-		lvl.Set(slog.LevelDebug)
+		loggerLevel.Set(slog.LevelDebug)
 	}
 
 	// Those handler options
 	opts := &slog.HandlerOptions{
-		Level:     lvl,
+		Level:     loggerLevel,
 		AddSource: true,
 		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
 			if a.Key == slog.SourceKey {

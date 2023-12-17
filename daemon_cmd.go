@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -54,6 +55,11 @@ func (d *daemonCmd) Arguments(f *flag.FlagSet) {
 // Entry-point
 func (d *daemonCmd) Execute(args []string) int {
 
+	// If running verbosely change our log-level
+	if d.verbose {
+		loggerLevel.Set(slog.LevelDebug)
+	}
+
 	// No argument?  That's a bug
 	if len(args) == 0 {
 		fmt.Printf("Usage: rss2email daemon email1@example.com .. emailN@example.com\n")
@@ -85,7 +91,6 @@ func (d *daemonCmd) Execute(args []string) int {
 		}
 
 		// Setup the state - note we ALWAYS send emails in this mode.
-		p.SetVerbose(d.verbose)
 		p.SetSendEmail(true)
 		p.SetLogger(logger)
 
