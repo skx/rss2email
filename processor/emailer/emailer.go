@@ -272,6 +272,11 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 
 				return err
 			}
+
+			e.logger.Debug("email sent",
+				slog.String("recipient", addr),
+				slog.String("method", "smtp"))
+
 		} else {
 
 			e.logger.Debug("preparing to send email",
@@ -286,8 +291,17 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 					slog.String("error", err.Error()))
 				return err
 			}
+
+			e.logger.Debug("email sent",
+				slog.String("recipient", addr),
+				slog.String("method", "sendmail"))
+
 		}
 	}
+
+	e.logger.Debug("emails sent",
+		slog.Int("recipients", len(addresses)))
+
 	return nil
 }
 
