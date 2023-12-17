@@ -2,8 +2,10 @@ package httpfetch
 
 import (
 	"fmt"
+	"log/slog"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"strings"
 	"testing"
 	"time"
@@ -12,11 +14,31 @@ import (
 	"github.com/skx/rss2email/withstate"
 )
 
+var (
+	// logger contains a shared logging handle, the code we're testing assumes it exists.
+	logger *slog.Logger
+)
+
+// init runs at test-time.
+func init() {
+
+	// setup logging-level
+	lvl := new(slog.LevelVar)
+	lvl.Set(slog.LevelWarn)
+
+	// create a handler
+	opts := &slog.HandlerOptions{Level: lvl}
+	handler := slog.NewTextHandler(os.Stderr, opts)
+
+	// ensure the global-variable is set.
+	logger = slog.New(handler)
+}
+
 // TestNonFeed confirms we can cope with a remote URL which is not a feed.
 func TestNonFeed(t *testing.T) {
 
 	// Not a feed.
-	x := New(configfile.Feed{URL: "http://example.com/"})
+	x := New(configfile.Feed{URL: "http://example.com/"}, logger)
 	x.content = "this is not an XML file, so not a feed"
 
 	// Parse it, which should fail.
@@ -35,7 +57,7 @@ func TestNonFeed(t *testing.T) {
 func TestOneEntry(t *testing.T) {
 
 	// The contents of our feed.
-	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"})
+	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"}, logger)
 	x.content = `<?xml version="1.0"?>
 <rdf:RDF
  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -81,7 +103,7 @@ func TestOneEntry(t *testing.T) {
 func TestRewrite(t *testing.T) {
 
 	// The contents of our feed.
-	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"})
+	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"}, logger)
 	x.content = `<?xml version="1.0"?>
 <rdf:RDF
  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -142,7 +164,7 @@ func TestDelay(t *testing.T) {
 	n := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "delay", Value: "15"},
-		}})
+		}}, logger)
 
 	if n.retryDelay != 15*time.Millisecond {
 		t.Errorf("failed to parse delay value")
@@ -152,7 +174,7 @@ func TestDelay(t *testing.T) {
 	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "delay", Value: "steve"},
-		}})
+		}}, logger)
 
 	if i.retryDelay != 1000*time.Millisecond {
 		t.Errorf("bogus value changed our delay-value")
@@ -166,7 +188,7 @@ func TestRetry(t *testing.T) {
 		Options: []configfile.Option{
 			{Name: "retry", Value: "33"},
 			{Name: "moi", Value: "3"},
-		}})
+		}}, logger)
 
 	if n.maxRetries != 33 {
 		t.Errorf("failed to parse retry value")
@@ -176,7 +198,7 @@ func TestRetry(t *testing.T) {
 	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "retry", Value: "steve"},
-		}})
+		}}, logger)
 
 	if i.maxRetries != 3 {
 		t.Errorf("bogus value changed our default")
@@ -196,7 +218,7 @@ func TestHTTPFetch(t *testing.T) {
 	conf := configfile.Feed{URL: ts.URL}
 
 	// Create a fetcher
-	obj := New(conf)
+	obj := New(conf, logger)
 
 	// Now make the HTTP-fetch
 	_, err := obj.Fetch()
@@ -257,7 +279,7 @@ func TestHTTPFetchValid(t *testing.T) {
 	}
 
 	// Create a fetcher
-	obj := New(conf)
+	obj := New(conf, logger)
 
 	if obj.userAgent != agent {
 		t.Fatalf("failed to setup user-agent")

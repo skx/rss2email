@@ -70,7 +70,7 @@ Example:
 func (l *listCmd) showFeedDetails(entry configfile.Feed) {
 
 	// Fetch the details
-	helper := httpfetch.New(entry)
+	helper := httpfetch.New(entry, logger)
 	feed, err := helper.Fetch()
 	if err != nil {
 		fmt.Fprintf(out, "# %s\n%s\n", err.Error(), entry.URL)

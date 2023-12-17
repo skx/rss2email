@@ -285,7 +285,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	}
 
 	// Fetch the feed for the input URL
-	helper := httpfetch.New(entry)
+	helper := httpfetch.New(entry, logger)
 	feed, err := helper.Fetch()
 	if err != nil {
 		logger.Warn("failed to fetch feed",
