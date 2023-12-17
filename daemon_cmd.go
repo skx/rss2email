@@ -86,7 +86,8 @@ func (d *daemonCmd) Execute(args []string) int {
 		p, err := processor.New()
 
 		if err != nil {
-			fmt.Printf("Error creating feed processor: %s\n", err.Error())
+			logger.Error("failed to create feed processor",
+				slog.String("error", err.Error()))
 			return 1
 		}
 
