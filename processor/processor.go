@@ -444,7 +444,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	err = p.pruneFeed(entry.URL, items)
 	if err != nil {
 
-		logger.Debug("failed to prune bolddb",
+		logger.Warn("failed to prune bolddb",
 			slog.String("error", err.Error()))
 
 		return fmt.Errorf("error pruning boltdb for %s: %s", entry.URL, err)
@@ -472,7 +472,10 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("seenItem failed:%s\n", err)
+		p.logger.Warn("error checking state of item",
+			slog.String("feed", feed),
+			slog.String("item", entry),
+			slog.String("error", err.Error()))
 	}
 
 	return val != ""
@@ -492,6 +495,14 @@ func (p *Processor) recordItem(feed string, entry string) error {
 		err := b.Put([]byte(entry), []byte("seen"))
 		return err
 	})
+
+	if err != nil {
+		p.logger.Warn("error recording state of item",
+			slog.String("feed", feed),
+			slog.String("item", entry),
+			slog.String("error", err.Error()))
+	}
+
 	return err
 }
 
@@ -543,7 +554,9 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 	})
 
 	if err != nil {
-		fmt.Printf("failed to iterate over keys:%s\n", err)
+
+		p.logger.Warn("error getting all bucket keys",
+			slog.String("error", err.Error()))
 		return err
 	}
 
@@ -559,6 +572,11 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 			return b.Delete([]byte(ent))
 		})
 		if err != nil {
+
+			p.logger.Warn("error deleting key from bucket",
+				slog.String("entry", ent),
+				slog.String("error", err.Error()))
+
 			return fmt.Errorf("failed to remove %s - %s", ent, err)
 		}
 	}
@@ -601,7 +619,9 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 	})
 
 	if err != nil {
-		fmt.Printf("failed to find orphaned buckets;%s\n", err)
+		p.logger.Warn("error finding orphaned buckets",
+			slog.String("error", err.Error()))
+
 		return err
 	}
 	// For each bucket we need to remove, remove it
@@ -620,6 +640,12 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 
 				err := b.Delete(k)
 				if err != nil {
+
+					p.logger.Warn("error removing key from bucket",
+						slog.String("bucket", bucket),
+						slog.String("key", string(k)),
+						slog.String("error", err.Error()))
+
 					return (fmt.Errorf("failed to delete bucket key %s:%s - %s", bucket, k, err))
 				}
 			}
@@ -627,6 +653,9 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 			// Now delete the bucket itself
 			err := tx.DeleteBucket([]byte(bucket))
 			if err != nil {
+				p.logger.Warn("error removing  bucket",
+					slog.String("bucket", bucket),
+					slog.String("error", err.Error()))
 				return fmt.Errorf("failed to remove bucket %s: %s", bucket, err)
 			}
 
