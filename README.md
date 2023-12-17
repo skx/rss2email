@@ -65,10 +65,11 @@ Finally you can find automatically generated docker images, these are built on a
 
 **Version NOTES**:
 
-* You'll need go version **1.17** or higher to build.
-  * Because we use `go embed` to embed our (default) email-template within the binary.
-* If you wish to run the included fuzz-tests against our configuration file parser you'll need at least version **1.18**.
-  * See [configfile/FUZZING.md](configfile/FUZZING.md) for details.
+* You'll need go version **1.21** or higher to build.
+  * We use `go embed` to embed our (default) email-template within the binary, this was introduced with golang **v1.17**.
+  * We use the [slog logging package](https://go.dev/blog/slog) introduced with golang **v1.21**.
+  * We use the fuzzing support which was introduced with golang **v1.18** to test our configuration-file loading/parsing.
+    * See [configfile/FUZZING.md](configfile/FUZZING.md) for details of using that.
 
 
 
@@ -306,6 +307,8 @@ There are two environmental variables which can be used to modify the logging ou
 * `LOG_JSON`
   * If this is set to a non-empty string the logging messages will be output in JSON format.
   * This is useful if you're collecting (container) messages in datadog, loki, sumologic, or something similar.
+
+Bot the `cron` and `daemon` sub-commands will switch to showing DEBUG messages if you supply the `-verbose` flag to them, which avoids the need for setting environmental variables.
 
 
 
