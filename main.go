@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
+	"strings"
 
 	"github.com/skx/subcommands"
 )
@@ -42,13 +43,36 @@ func main() {
 
 	// Those handler options
 	opts := &slog.HandlerOptions{
-		Level: lvl,
+		Level:     lvl,
+		AddSource: true,
+		ReplaceAttr: func(groups []string, a slog.Attr) slog.Attr {
+			if a.Key == slog.SourceKey {
+				s := a.Value.Any().(*slog.Source)
+
+				// Assume we have a source-path containing "rss2email"
+				// if we do strip everything before that out.
+				start := strings.Index(s.File, "rss2email")
+				if start > 0 {
+					s.File = s.File[start:]
+				}
+
+				// Assume we have a function containing "rss2email"
+				// if we do strip everything before that out.
+				start = strings.Index(s.Function, "rss2email")
+				if start > 0 {
+					s.Function = s.Function[start:]
+				}
+
+			}
+			return a
+		},
 	}
 
 	//
 	// Default to showing to STDERR in text.
 	//
-	var handler slog.Handler = slog.NewTextHandler(os.Stderr, opts)
+	var handler slog.Handler
+	handler = slog.NewTextHandler(os.Stderr, opts)
 
 	//
 	// But allow JSON formatting too.
