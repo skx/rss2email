@@ -65,7 +65,9 @@ func (e *exportCmd) Execute(args []string) int {
 	// Now do the parsing
 	entries, err := e.config.Parse()
 	if err != nil {
-		logger.Error("failed to parse configuration file", slog.String("error", err.Error()))
+		logger.Error("failed to parse configuration file",
+			slog.String("configfile", e.config.Path()),
+			slog.String("error", err.Error()))
 		return 1
 	}
 

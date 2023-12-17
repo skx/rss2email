@@ -71,7 +71,10 @@ func (i *importCmd) Execute(args []string) int {
 
 	_, err := i.config.Parse()
 	if err != nil {
-		logger.Error("failed to parse configuration file", slog.String("error", err.Error()))
+		logger.Error("failed to parse configuration file",
+			slog.String("configfile", i.config.Path()),
+
+			slog.String("error", err.Error()))
 		return 1
 	}
 
