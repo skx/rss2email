@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strconv"
 	"strings"
@@ -54,6 +55,11 @@ func (d *daemonCmd) Arguments(f *flag.FlagSet) {
 // Entry-point
 func (d *daemonCmd) Execute(args []string) int {
 
+	// If running verbosely change our log-level
+	if d.verbose {
+		loggerLevel.Set(slog.LevelDebug)
+	}
+
 	// No argument?  That's a bug
 	if len(args) == 0 {
 		fmt.Printf("Usage: rss2email daemon email1@example.com .. emailN@example.com\n")
@@ -80,13 +86,14 @@ func (d *daemonCmd) Execute(args []string) int {
 		p, err := processor.New()
 
 		if err != nil {
-			fmt.Printf("Error creating feed processor: %s\n", err.Error())
+			logger.Error("failed to create feed processor",
+				slog.String("error", err.Error()))
 			return 1
 		}
 
 		// Setup the state - note we ALWAYS send emails in this mode.
-		p.SetVerbose(d.verbose)
 		p.SetSendEmail(true)
+		p.SetLogger(logger)
 
 		// Process all the feeds
 		errors := p.ProcessFeeds(recipients)
@@ -113,13 +120,9 @@ func (d *daemonCmd) Execute(args []string) int {
 			}
 		}
 
-		if d.verbose {
-			// show time and sleep
-			fmt.Printf(
-				"%s: sleeping for %d minutes.\n",
-				time.Now().Local().Format("2006-01-02.15:04:05"),
-				n)
-		}
+		logger.Warn("sleeping before polling feeds again",
+			slog.Int("delay.minutes", n))
+
 		time.Sleep(60 * time.Duration(n) * time.Second)
 	}
 

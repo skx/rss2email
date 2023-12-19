@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"fmt"
 	"io"
+	"log/slog"
 	"net/http"
 	"strconv"
 	"strings"
@@ -40,10 +41,13 @@ type HTTPFetch struct {
 
 	// The User-Agent header to send when making our HTTP fetch
 	userAgent string
+
+	// logger contains the logging handle to use, if any
+	logger *slog.Logger
 }
 
 // New creates a new object which will fetch our content.
-func New(entry configfile.Feed) *HTTPFetch {
+func New(entry configfile.Feed, log *slog.Logger) *HTTPFetch {
 
 	// Create object with defaults
 	state := &HTTPFetch{url: entry.URL,
@@ -91,6 +95,16 @@ func New(entry configfile.Feed) *HTTPFetch {
 		}
 	}
 
+	// Create a local logger with some dedicated information
+	state.logger = log.With(
+		slog.Group("httpfetch",
+			slog.String("link", entry.URL),
+			slog.String("user-agent", state.userAgent),
+			slog.Bool("insecure", state.insecure),
+			slog.Int("retry-max", state.maxRetries),
+			slog.Int("retry-delay", int(state.retryDelay/time.Millisecond)/1000),
+		))
+
 	return state
 }
 
@@ -106,10 +120,20 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 	// Download contents, if not already present.
 	for i := 0; h.content == "" && i < h.maxRetries; i++ {
 
+		// Log the fetch attempt
+		h.logger.Debug("fetching URL",
+			slog.Int("attempt", i+1))
+
 		err = h.fetch()
 		if err == nil {
 			break
 		}
+
+		// if we got here we have to retry, but we should
+		// show the error too
+		h.logger.Debug("fetching URL failed",
+			slog.String("error", err.Error()))
+
 		time.Sleep(h.retryDelay)
 
 	}
@@ -123,6 +147,10 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 	fp := gofeed.NewParser()
 	feed, err2 := fp.ParseString(h.content)
 	if err2 != nil {
+
+		h.logger.Warn("failed to parse content",
+			slog.String("error", err2.Error()))
+
 		return nil, fmt.Errorf("error parsing %s contents: %s", h.url, err2.Error())
 	}
 

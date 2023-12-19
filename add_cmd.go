@@ -6,7 +6,7 @@ package main
 
 import (
 	"flag"
-	"fmt"
+	"log/slog"
 
 	"github.com/skx/rss2email/configfile"
 )
@@ -49,7 +49,9 @@ func (a *addCmd) Execute(args []string) int {
 	// Parse the existing file
 	_, err := a.config.Parse()
 	if err != nil {
-		fmt.Printf("Error parsing file: %s\n", err.Error())
+		logger.Error("failed to parse configuration file",
+			slog.String("configfile", a.config.Path()),
+			slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -66,10 +68,10 @@ func (a *addCmd) Execute(args []string) int {
 	}
 
 	// Save the list.
-	if ( changed ) {
+	if changed {
 		err = a.config.Save()
 		if err != nil {
-			fmt.Printf("failed to save the updated feed list: %s\n", err.Error())
+			logger.Error("failed to save the updated feed list", slog.String("error", err.Error()))
 			return 1
 		}
 	}

@@ -1,11 +1,33 @@
 package processor
 
 import (
+	"log/slog"
+	"os"
 	"testing"
 	"time"
 
 	"github.com/skx/rss2email/configfile"
 )
+
+var (
+	// logger contains a shared logging handle, the code we're testing assumes it exists.
+	logger *slog.Logger
+)
+
+// init runs at test-time.
+func init() {
+
+	// setup logging-level
+	lvl := new(slog.LevelVar)
+	lvl.Set(slog.LevelWarn)
+
+	// create a handler
+	opts := &slog.HandlerOptions{Level: lvl}
+	handler := slog.NewTextHandler(os.Stderr, opts)
+
+	// ensure the global-variable is set.
+	logger = slog.New(handler)
+}
 
 func TestSendEmail(t *testing.T) {
 
@@ -37,16 +59,6 @@ func TestVerbose(t *testing.T) {
 	}
 
 	defer p.Close()
-
-	if p.verbose {
-		t.Fatalf("unexpected default to verbose")
-	}
-
-	p.SetVerbose(true)
-
-	if !p.verbose {
-		t.Fatalf("unexpected verbose setting")
-	}
 }
 
 // TestSkipExclude ensures that we can exclude items by regexp
@@ -68,14 +80,11 @@ func TestSkipExclude(t *testing.T) {
 	}
 	defer x.Close()
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
-	if !x.shouldSkip(feed, "Title here", "<p>foo, bar baz</p>") {
+	if !x.shouldSkip(logger, feed, "Title here", "<p>foo, bar baz</p>") {
 		t.Fatalf("failed to skip entry by regexp")
 	}
 
-	if !x.shouldSkip(feed, "test", "<p>This matches the title</p>") {
+	if !x.shouldSkip(logger, feed, "test", "<p>This matches the title</p>") {
 		t.Fatalf("failed to skip entry by title")
 	}
 
@@ -85,7 +94,7 @@ func TestSkipExclude(t *testing.T) {
 		Options: []configfile.Option{},
 	}
 
-	if x.shouldSkip(feed, "Title here", "<p>foo, bar baz</p>") {
+	if x.shouldSkip(logger, feed, "Title here", "<p>foo, bar baz</p>") {
 		t.Fatalf("skipped something with no options!")
 	}
 
@@ -109,14 +118,11 @@ func TestSkipInclude(t *testing.T) {
 	}
 	defer x.Close()
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
-	if x.shouldSkip(feed, "Title here", "<p>This is good</p>") {
+	if x.shouldSkip(logger, feed, "Title here", "<p>This is good</p>") {
 		t.Fatalf("this should be included because it contains good")
 	}
 
-	if !x.shouldSkip(feed, "Title here", "<p>This should be excluded.</p>") {
+	if !x.shouldSkip(logger, feed, "Title here", "<p>This should be excluded.</p>") {
 		t.Fatalf("This should be excluded; doesn't contain 'good'")
 	}
 
@@ -127,7 +133,7 @@ func TestSkipInclude(t *testing.T) {
 		Options: []configfile.Option{},
 	}
 
-	if x.shouldSkip(feed, "Title here", "<p>This is good</p>") {
+	if x.shouldSkip(logger, feed, "Title here", "<p>This is good</p>") {
 		t.Fatalf("nothing specified, shouldn't be skipped")
 	}
 }
@@ -149,13 +155,10 @@ func TestSkipIncludeTitle(t *testing.T) {
 		t.Fatalf("error creating processor %s", err.Error())
 	}
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
-	if x.shouldSkip(feed, "Title here", "<p>This is good</p>") {
+	if x.shouldSkip(logger, feed, "Title here", "<p>This is good</p>") {
 		t.Fatalf("this should be included because it contains good")
 	}
-	if x.shouldSkip(feed, "I like Cake!", "<p>Food is good.</p>") {
+	if x.shouldSkip(logger, feed, "I like Cake!", "<p>Food is good.</p>") {
 		t.Fatalf("this should be included because of the title")
 	}
 
@@ -184,19 +187,16 @@ func TestSkipIncludeTitle(t *testing.T) {
 	}
 	defer x.Close()
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
 	// include
 	for _, entry := range valid {
-		if x.shouldSkip(feed, entry, "content") {
+		if x.shouldSkip(logger, feed, entry, "content") {
 			t.Fatalf("this should be included due to include-title")
 		}
 	}
 
 	// exclude
 	for _, entry := range bogus {
-		if !x.shouldSkip(feed, entry, "content") {
+		if !x.shouldSkip(logger, feed, entry, "content") {
 			t.Fatalf("this shouldn't be included!")
 		}
 	}
@@ -220,22 +220,19 @@ func TestSkipOlder(t *testing.T) {
 	}
 	defer x.Close()
 
-	// Set it as verbose
-	x.SetVerbose(true)
-
-	if !x.shouldSkipOlder(feed, "X") {
+	if x.shouldSkipOlder(logger, feed, "X") {
 		t.Fatalf("failed to skip non correct published-date")
 	}
 
-	if !x.shouldSkipOlder(feed, "Fri, 02 Dec 2022 16:43:04 +0000") {
+	if !x.shouldSkipOlder(logger, feed, "Fri, 02 Dec 2022 16:43:04 +0000") {
 		t.Fatalf("failed to skip old entry by age")
 	}
 
-	if !x.shouldSkipOlder(feed, time.Now().Add(-time.Hour*24*2).Format(time.RFC1123)) {
+	if !x.shouldSkipOlder(logger, feed, time.Now().Add(-time.Hour*24*2).Format(time.RFC1123)) {
 		t.Fatalf("failed to skip newer entry by age")
 	}
 
-	if x.shouldSkipOlder(feed, time.Now().Add(-time.Hour*12).Format(time.RFC1123)) {
+	if x.shouldSkipOlder(logger, feed, time.Now().Add(-time.Hour*12).Format(time.RFC1123)) {
 		t.Fatalf("skipped new entry by age")
 	}
 
@@ -245,7 +242,7 @@ func TestSkipOlder(t *testing.T) {
 		Options: []configfile.Option{},
 	}
 
-	if x.shouldSkipOlder(feed, time.Now().Add(-time.Hour*24*128).String()) {
+	if x.shouldSkipOlder(logger, feed, time.Now().Add(-time.Hour*24*128).String()) {
 		t.Fatalf("skipped age with no options!")
 	}
 }

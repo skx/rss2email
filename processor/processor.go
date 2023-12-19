@@ -10,6 +10,7 @@ package processor
 
 import (
 	"fmt"
+	"log/slog"
 	"net/url"
 	"os"
 	"path/filepath"
@@ -33,12 +34,12 @@ type Processor struct {
 	// send controls whether we send emails, or just pretend to.
 	send bool
 
-	// verbose denotes how verbose we should be in execution.
-	verbose bool
-
 	// database holds a handle to the BoltDB database we use to
 	// store feed-entry state within.
 	dbHandle *bbolt.DB
+
+	// logger stores the logging dbHandle
+	logger *slog.Logger
 }
 
 // New creates a new Processor object.
@@ -84,7 +85,9 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Now do the parsing
 	entries, err := conf.Parse()
 	if err != nil {
-		errors = append(errors, fmt.Errorf("error with config-file %s - %s", conf.Path(), err))
+		p.logger.Error("failed to parse configuration file",
+			slog.String("configfile", conf.Path()),
+			slog.String("error", err.Error()))
 		return errors
 	}
 
@@ -94,8 +97,15 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Keep track of each feed we've processed
 	feeds := []string{}
 
+	// We're about to process the feeds.
+	p.logger.Debug("about to process feeds",
+		slog.Int("feed_count", len(entries)))
+
 	// For each feed contained in the configuration file
 	for _, entry := range entries {
+
+		p.logger.Debug("starting to process feed",
+			slog.String("feed", entry.URL))
 
 		// Create a bucket to hold the entry-state here,
 		// if we've not done so previously.
@@ -120,6 +130,11 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 		// If we have a DB-error then we return, this shouldn't happen.
 		if err != nil {
+
+			p.logger.Error("error creating bucket",
+				slog.String("feed", entry.URL),
+				slog.String("error", err.Error()))
+
 			errors = append(errors, fmt.Errorf("error creating bucket for %s: %s", entry.URL, err))
 			return (errors)
 		}
@@ -152,7 +167,12 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// If so then we'll add a delay to try to avoid annoying that
 		// host.
 		if host == prev {
-			p.message(fmt.Sprintf("Fetching from same host as previous feed, %s, adding 5s delay", host))
+
+			p.logger.Debug("fetching from same host as previous feed adding delay",
+				slog.Int("sleep", 5),
+				slog.String("host", prev),
+				slog.String("feed", entry.URL))
+
 			sleep = 5
 		}
 
@@ -178,7 +198,13 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 				// no error save it away.
 				num, nErr := strconv.Atoi(opt.Value)
 				if nErr != nil {
-					fmt.Printf("WARNING: %s:%s - failed to parse as sleep-delay %s\n", opt.Name, opt.Value, nErr.Error())
+
+					p.logger.Warn("failed to parse sleep value as number",
+						slog.String("sleep", opt.Value),
+						slog.String("error", nErr.Error()))
+
+					// be conservative
+					sleep = 10
 				} else {
 					sleep = num
 				}
@@ -187,6 +213,10 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 
 		// If we're supposed to sleep, do so
 		if sleep != 0 {
+
+			p.logger.Warn("sleeping",
+				slog.Int("sleep", sleep))
+
 			time.Sleep(time.Duration(sleep) * time.Second)
 		}
 
@@ -203,20 +233,19 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 	// Reap feeds which are obsolete.
 	err = p.pruneUnknownFeeds(feeds)
 	if err != nil {
+
+		p.logger.Warn("failed to prune unknown feeds",
+			slog.String("error", err.Error()))
+
 		errors = append(errors, err)
 	}
 
+	// We're about to process the feeds.
+	p.logger.Debug("all feeds processed",
+		slog.Int("feed_count", len(entries)))
+
 	// All feeds were processed, return any errors we found along the way
 	return errors
-}
-
-// message shows a message if our verbose flag is set.
-//
-// NOTE: This appends a newline to the message.
-func (p *Processor) message(msg string) {
-	if p.verbose {
-		fmt.Printf("%s\n", msg)
-	}
 }
 
 // processFeed takes a configuration entry as input, fetches the appropriate
@@ -225,6 +254,13 @@ func (p *Processor) message(msg string) {
 // Feed items which are new/unread will generate an email, unless they are
 // specifically excluded by the per-feed options.
 func (p *Processor) processFeed(entry configfile.Feed, recipients []string) error {
+
+	// Create a local logger with some dedicated information
+	logger := p.logger.With(
+		slog.Group("feed",
+			slog.String("link", entry.URL),
+		),
+	)
 
 	// Is there a tag set for this feed?
 	tag := ""
@@ -236,18 +272,17 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		}
 	}
 
-	// Show what we're doing.
-	p.message(fmt.Sprintf("Fetching feed: %s", entry.URL))
-
 	// Fetch the feed for the input URL
-	helper := httpfetch.New(entry)
+	helper := httpfetch.New(entry, logger)
 	feed, err := helper.Fetch()
 	if err != nil {
+		logger.Warn("failed to fetch feed",
+			slog.String("error", err.Error()))
 		return err
 	}
 
 	// Show how many entries we've found in the feed.
-	p.message(fmt.Sprintf("\tFeed contains %d entries", len(feed.Items)))
+	logger.Debug("feed retrieved", slog.Int("entries", len(feed.Items)))
 
 	// Count how many seen/unseen items there were.
 	seen := 0
@@ -274,6 +309,11 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	seenDupes := make(map[string]int)
 	for _, str := range feed.Items {
 		if seenDupes[str.Link] > 0 {
+
+			// only log the messages once.
+			if !dupes {
+				logger.Warn("feed contains duplicate links")
+			}
 			dupes = true
 		}
 
@@ -328,9 +368,10 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 			// Bump the count
 			unseen++
 
-			// Show the new item.
-			p.message(fmt.Sprintf("\t\tNew entry in feed: %s", item.Title))
-			p.message(fmt.Sprintf("\t\t\t%s", item.Link))
+			// Show that we got something
+			logger.Debug("new entry found in feed",
+				slog.String("title", item.Title),
+				slog.String("link", item.Link))
 
 			// If we're supposed to send email then do that.
 			if p.send {
@@ -353,19 +394,24 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 				// be processed once.
 
 				// check for regular expressions
-				skip := p.shouldSkip(entry, item.Title, content)
+				skip := p.shouldSkip(logger, entry, item.Title, content)
 
 				// check for age (exclude-older)
-				skip = skip || p.shouldSkipOlder(entry, item.Published)
+				skip = skip || p.shouldSkipOlder(logger, entry, item.Published)
 
 				if !skip {
 					// Convert the content to text.
 					text := html2text.HTML2Text(content)
 
 					// Send the mail
-					helper := emailer.New(feed, item, entry.Options)
+					helper := emailer.New(feed, item, entry.Options, logger)
 					err = helper.Sendmail(recipients, text, content)
 					if err != nil {
+
+						logger.Warn("failed to send email",
+							slog.String("recipients", strings.Join(recipients, ",")),
+							slog.String("error", err.Error()))
+
 						return err
 					}
 				}
@@ -384,17 +430,23 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// due to error, and that keeps happening forever...
 		err = p.recordItem(entry.URL, item.Link)
 		if err != nil {
+			logger.Warn("failed to mark item as processed",
+				slog.String("error", err.Error()))
 			return err
 		}
 	}
 
-	// Show how many entries we've found in the feed.
-	p.message(fmt.Sprintf("\t%02d entries already seen", seen))
-	p.message(fmt.Sprintf("\t%02d entries not seen before", unseen))
+	logger.Debug("feed processed",
+		slog.Int("seen_count", seen),
+		slog.Int("unseen_count", unseen))
 
 	// Now prune the items in this feed.
 	err = p.pruneFeed(entry.URL, items)
 	if err != nil {
+
+		logger.Warn("failed to prune bolddb",
+			slog.String("error", err.Error()))
+
 		return fmt.Errorf("error pruning boltdb for %s: %s", entry.URL, err)
 	}
 
@@ -420,7 +472,10 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 		return nil
 	})
 	if err != nil {
-		fmt.Printf("seenItem failed:%s\n", err)
+		p.logger.Warn("error checking state of item",
+			slog.String("feed", feed),
+			slog.String("item", entry),
+			slog.String("error", err.Error()))
 	}
 
 	return val != ""
@@ -440,6 +495,14 @@ func (p *Processor) recordItem(feed string, entry string) error {
 		err := b.Put([]byte(entry), []byte("seen"))
 		return err
 	})
+
+	if err != nil {
+		p.logger.Warn("error recording state of item",
+			slog.String("feed", feed),
+			slog.String("item", entry),
+			slog.String("error", err.Error()))
+	}
+
 	return err
 }
 
@@ -491,13 +554,14 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 	})
 
 	if err != nil {
-		fmt.Printf("failed to iterate over keys:%s\n", err)
+
+		p.logger.Warn("error getting all bucket keys",
+			slog.String("error", err.Error()))
 		return err
 	}
 
 	// Remove each entry that we were supposed to remove.
 	for _, ent := range toRemove {
-		p.message(fmt.Sprintf("expiring feed entry %s", ent))
 
 		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 
@@ -508,6 +572,11 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 			return b.Delete([]byte(ent))
 		})
 		if err != nil {
+
+			p.logger.Warn("error deleting key from bucket",
+				slog.String("entry", ent),
+				slog.String("error", err.Error()))
+
 			return fmt.Errorf("failed to remove %s - %s", ent, err)
 		}
 	}
@@ -550,14 +619,13 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 	})
 
 	if err != nil {
-		fmt.Printf("failed to find orphaned buckets;%s\n", err)
+		p.logger.Warn("error finding orphaned buckets",
+			slog.String("error", err.Error()))
+
 		return err
 	}
 	// For each bucket we need to remove, remove it
 	for _, bucket := range toRemove {
-
-		// We're going to remove the bucket
-		p.message(fmt.Sprintf("removing feed-bucket %s", bucket))
 
 		err := p.dbHandle.Update(func(tx *bbolt.Tx) error {
 
@@ -572,6 +640,12 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 
 				err := b.Delete(k)
 				if err != nil {
+
+					p.logger.Warn("error removing key from bucket",
+						slog.String("bucket", bucket),
+						slog.String("key", string(k)),
+						slog.String("error", err.Error()))
+
 					return (fmt.Errorf("failed to delete bucket key %s:%s - %s", bucket, k, err))
 				}
 			}
@@ -579,6 +653,9 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 			// Now delete the bucket itself
 			err := tx.DeleteBucket([]byte(bucket))
 			if err != nil {
+				p.logger.Warn("error removing  bucket",
+					slog.String("bucket", bucket),
+					slog.String("error", err.Error()))
 				return fmt.Errorf("failed to remove bucket %s: %s", bucket, err)
 			}
 
@@ -603,7 +680,7 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 //
 // Note that if an entry should be skipped it is still marked as
 // having been read, but no email is sent.
-func (p *Processor) shouldSkip(config configfile.Feed, title string, content string) bool {
+func (p *Processor) shouldSkip(logger *slog.Logger, config configfile.Feed, title string, content string) bool {
 
 	// Walk over the options to see if there are any exclude* options
 	// specified.
@@ -613,8 +690,9 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 		if opt.Name == "exclude-title" {
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-title' match of '%s'.", opt.Value))
-
+				logger.Debug("excluding entry due to exclude-title",
+					slog.String("exclude-title", opt.Value),
+					slog.String("item-title", title))
 				// True: skip/ignore this entry
 				return true
 			}
@@ -625,7 +703,9 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude' match of %s.", opt.Value))
+				logger.Debug("excluding entry due to exclude",
+					slog.String("exclude", opt.Value),
+					slog.String("item-title", title))
 
 				// True: skip/ignore this entry
 				return true
@@ -641,8 +721,14 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	include := false
 
+	it := ""
+	i := ""
+
 	for _, opt := range config.Options {
 		if opt.Name == "include-title" {
+
+			// Save
+			it = opt.Value
 
 			// We found (at least one) include option
 			include = true
@@ -651,13 +737,18 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, title)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tIncluding as this entry's title matches %s.", opt.Value))
+				logger.Debug("including entry due to 'include-title'",
+					slog.String("include-title", opt.Value),
+					slog.String("item-title", title))
 
 				// False: Do not skip/ignore this entry
 				return false
 			}
 		}
 		if opt.Name == "include" {
+
+			// Save
+			i = opt.Value
 
 			// We found (at least one) include option
 			include = true
@@ -666,7 +757,9 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 			// so we MUST skip unless there is a match
 			match, _ := regexp.MatchString(opt.Value, content)
 			if match {
-				p.message(fmt.Sprintf("\t\t\tIncluding as this entry matches %s.", opt.Value))
+				logger.Debug("including entry due to 'include'",
+					slog.String("include", opt.Value),
+					slog.String("item-title", title))
 
 				// False: Do not skip/ignore this entry
 				return false
@@ -679,7 +772,10 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 	//
 	// i.e. The entry did not include a string we regarded as mandatory.
 	if include {
-		p.message("\t\t\tExcluding entry, as it didn't match any include, or include-title, patterns")
+		logger.Debug("excluding entry due to 'include', or 'include-title'",
+			slog.String("include", i),
+			slog.String("include-title", it),
+			slog.String("item-title", title))
 
 		// True: skip/ignore this entry
 		return true
@@ -692,7 +788,7 @@ func (p *Processor) shouldSkip(config configfile.Feed, title string, content str
 // shouldSkipOlder returns true if this entry should be skipped due to age.
 //
 // Age is configured with "exclude-older" in days.
-func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bool {
+func (p *Processor) shouldSkipOlder(logger *slog.Logger, config configfile.Feed, published string) bool {
 
 	// Walk over the options to see if there are any exclude-age options
 	// specified.
@@ -701,18 +797,25 @@ func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bo
 		if opt.Name == "exclude-older" {
 			pubTime, err := time.Parse(time.RFC1123, published)
 			if err != nil {
-				p.message(fmt.Sprintf("exclude-older: skipped due to failed parse of item.published as date %s", err))
-				return true
+				logger.Warn("failed to parse 'item.published' as date",
+					slog.String("date", published),
+					slog.String("error", err.Error()))
+				return false
 			}
 			f, err := strconv.ParseFloat(opt.Value, 32)
 			if err != nil {
-				p.message(fmt.Sprintf("exclude-older: failed to parse config option exclude-older as float %s", err))
+				logger.Warn("failed to parse 'exclude-older' as float",
+					slog.String("exclude-older", opt.Value),
+					slog.String("error", err.Error()))
+
 				return false
 			}
 
 			delta := time.Second * time.Duration(f*24*60*60)
 			if pubTime.Add(delta).Before(time.Now()) {
-				p.message(fmt.Sprintf("\t\t\tSkipping due to 'exclude-older' (age %.1f days)", time.Since(pubTime).Hours()/24))
+				logger.Debug("excluding entry due to exclude-older setting",
+					slog.String("exclude-older", opt.Value),
+					slog.Float64("days", time.Since(pubTime).Hours()/24))
 				return true
 			}
 		}
@@ -722,13 +825,13 @@ func (p *Processor) shouldSkipOlder(config configfile.Feed, published string) bo
 	return false
 }
 
-// SetVerbose updates the verbosity state of this object.
-func (p *Processor) SetVerbose(state bool) {
-	p.verbose = state
-}
-
 // SetSendEmail updates the state of this object, when the send-flag
 // is false zero emails are generated.
 func (p *Processor) SetSendEmail(state bool) {
 	p.send = state
+}
+
+// SetLogger ensures we have a logging-handle
+func (p *Processor) SetLogger(logger *slog.Logger) {
+	p.logger = logger
 }

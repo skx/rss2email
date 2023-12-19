@@ -16,6 +16,7 @@ Table of Contents
 * [Email Customization](#email-customization)
   * [Changing default From address](#changing-default-from-address)
 * [Implementation Overview](#implementation-overview)
+* [Logging Notes](#logging-notes)
 * [Github Setup](#github-setup)
 
 
@@ -64,10 +65,11 @@ Finally you can find automatically generated docker images, these are built on a
 
 **Version NOTES**:
 
-* You'll need go version **1.17** or higher to build.
-  * Because we use `go embed` to embed our (default) email-template within the binary.
-* If you wish to run the included fuzz-tests against our configuration file parser you'll need at least version **1.18**.
-  * See [configfile/FUZZING.md](configfile/FUZZING.md) for details.
+* You'll need go version **1.21** or higher to build.
+  * We use `go embed` to embed our (default) email-template within the binary, this was introduced with golang **v1.17**.
+  * We use the [slog logging package](https://go.dev/blog/slog) introduced with golang **v1.21**.
+  * We use the fuzzing support which was introduced with golang **v1.18** to test our configuration-file loading/parsing.
+    * See [configfile/FUZZING.md](configfile/FUZZING.md) for details of using that.
 
 
 
@@ -278,6 +280,35 @@ The two main commands are `cron` and `daemon` and they work in roughly the same 
     * Either by SMTP or by executing `/usr/sbin/sendmail`
 
 The other subcommands mostly just interact with the feed-list, via the use of [configfile/configfile.go](configfile/configfile.go) to add/delete/list the contents of the feed-list.
+
+
+
+
+# Logging Notes
+
+The application is configured to use a common logger, which will output all messages to STDERR.  The codebase will log messages at three levels:
+
+* DEBUG
+  * This will be used when new features are added, and contain implementation-related notices.
+  * The messages here will be helpful for debugging, or extending the application.
+* WARN
+  * This level is shown by default.
+  * This level is used for messages which are not fatal errors, but which a user might wish to be aware of.
+    * For example failure to fetch a remote feed, or a count of retried HTTP-fetches.
+* ERROR
+  * This level is shown by default.
+  * This level is used for fatal-errors.
+  * This should only be used for messages which are immediately followed by an application exit.
+
+There are two environmental variables which can be used to modify the logging output:
+
+* `LOG_ALL`
+  * If this is set to a non-empty string all levels will be shown (DEBUG, WARN and ERROR).
+* `LOG_JSON`
+  * If this is set to a non-empty string the logging messages will be output in JSON format.
+  * This is useful if you're collecting (container) messages in datadog, loki, sumologic, or something similar.
+
+Bot the `cron` and `daemon` sub-commands will switch to showing DEBUG messages if you supply the `-verbose` flag to them, which avoids the need for setting environmental variables.
 
 
 

@@ -7,6 +7,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"log/slog"
 	"os"
 	"strings"
 
@@ -70,6 +71,11 @@ func (c *cronCmd) Arguments(f *flag.FlagSet) {
 // Entry-point
 func (c *cronCmd) Execute(args []string) int {
 
+	// verbose will change the log-level of our logger
+	if c.verbose {
+		loggerLevel.Set(slog.LevelDebug)
+	}
+
 	// No argument?  That's a bug
 	if len(args) == 0 {
 		fmt.Printf("Usage: rss2email cron email1@example.com .. emailN@example.com\n")
@@ -93,7 +99,8 @@ func (c *cronCmd) Execute(args []string) int {
 	// Create the helper
 	p, err := processor.New()
 	if err != nil {
-		fmt.Printf("Error creating feed processor: %s\n", err.Error())
+		logger.Error("failed to create feed processor",
+			slog.String("error", err.Error()))
 		return 1
 	}
 
@@ -101,8 +108,8 @@ func (c *cronCmd) Execute(args []string) int {
 	defer p.Close()
 
 	// Setup the state
-	p.SetVerbose(c.verbose)
 	p.SetSendEmail(c.send)
+	p.SetLogger(logger)
 
 	errors := p.ProcessFeeds(recipients)
 

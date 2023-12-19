@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"html"
 	"io"
+	"log/slog"
 	"mime/quotedprintable"
 	"net/smtp"
 	"os"
@@ -44,14 +45,29 @@ type Emailer struct {
 
 	// Config options for the feed.
 	opts []configfile.Option
+
+	// logger contains a dedicated logging object
+	logger *slog.Logger
 }
 
 // New creates a new Emailer object.
 //
 // The arguments are the source feed, the feed item which is being notified,
 // and any associated configuration values from the source feed.
-func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option) *Emailer {
-	return &Emailer{feed: feed, item: item, opts: opts}
+func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option, log *slog.Logger) *Emailer {
+
+	// Default options
+	obj := &Emailer{feed: feed, item: item, opts: opts}
+
+	// Create a new logger
+	obj.logger = log.With(
+		slog.Group("email",
+			slog.String("link", item.Link),
+			slog.String("title", item.Title),
+		),
+	)
+
+	return obj
 }
 
 // env returns the contents of an environmental variable.
@@ -92,6 +108,11 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	if !os.IsNotExist(err) {
 		content, err = os.ReadFile(override)
 		if err != nil {
+
+			e.logger.Debug("could not load template override file",
+				slog.String("file", override),
+				slog.String("error", err.Error()))
+
 			return nil, fmt.Errorf("failed to read %s: %s", override, err.Error())
 		}
 	}
@@ -149,12 +170,16 @@ func encodeHeader(s string) string {
 // We send a MIME message with both a plain-text and a HTML-version of the
 // message.  This should be nicer for users.
 func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) error {
+
 	var err error
 
 	//
 	// Ensure we have a recipient.
 	//
 	if len(addresses) < 1 {
+
+		e.logger.Error("missing recipient address")
+
 		e := errors.New("empty recipient address, did you not setup a recipient?")
 		return e
 	}
@@ -233,18 +258,50 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 		//
 		if e.isSMTP() {
 
+			e.logger.Debug("preparing to send email",
+				slog.String("recipient", addr),
+				slog.String("method", "smtp"))
+
 			err := e.sendSMTP(addr, buf.Bytes())
 			if err != nil {
+
+				e.logger.Warn("error sending email",
+					slog.String("recipient", addr),
+					slog.String("method", "smtp"),
+					slog.String("error", err.Error()))
+
 				return err
 			}
+
+			e.logger.Debug("email sent",
+				slog.String("recipient", addr),
+				slog.String("method", "smtp"))
+
 		} else {
+
+			e.logger.Debug("preparing to send email",
+				slog.String("recipient", addr),
+				slog.String("method", "sendmail"))
 
 			err := e.sendSendmail(addr, buf.Bytes())
 			if err != nil {
+				e.logger.Warn("error sending email",
+					slog.String("recipient", addr),
+					slog.String("method", "sendmail"),
+					slog.String("error", err.Error()))
 				return err
 			}
+
+			e.logger.Debug("email sent",
+				slog.String("recipient", addr),
+				slog.String("method", "sendmail"))
+
 		}
 	}
+
+	e.logger.Debug("emails sent",
+		slog.Int("recipients", len(addresses)))
+
 	return nil
 }
 
@@ -279,6 +336,11 @@ func (e *Emailer) sendSMTP(to string, content []byte) error {
 	if port != "" {
 		n, err := strconv.Atoi(port)
 		if err != nil {
+
+			e.logger.Warn("error converting SMTP_PORT to integer",
+				slog.String("port", port),
+				slog.String("error", err.Error()))
+
 			return err
 		}
 		p = n
@@ -308,7 +370,11 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	sendmail := exec.Command("/usr/sbin/sendmail", "-i", "-f", addr, addr)
 	stdin, err := sendmail.StdinPipe()
 	if err != nil {
-		fmt.Printf("Error sending email: %s\n", err.Error())
+
+		e.logger.Warn("error creating STDIN pipe to sendmail",
+			slog.String("recipient", addr),
+			slog.String("error", err.Error()))
+
 		return err
 	}
 
@@ -317,7 +383,11 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	//
 	stdout, err := sendmail.StdoutPipe()
 	if err != nil {
-		fmt.Printf("Error sending email: %s\n", err.Error())
+
+		e.logger.Warn("error creating STDOUT pipe to sendmail",
+			slog.String("recipient", addr),
+			slog.String("error", err.Error()))
+
 		return err
 	}
 
@@ -326,12 +396,20 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	//
 	err = sendmail.Start()
 	if err != nil {
-		fmt.Printf("failed to start sendmail:%s\n", err)
+
+		e.logger.Warn("error starting sendmail",
+			slog.String("recipient", addr),
+			slog.String("error", err.Error()))
+
 		return err
 	}
 	_, err = stdin.Write(content)
 	if err != nil {
-		fmt.Printf("Failed to write to sendmail pipe: %s\n", err.Error())
+
+		e.logger.Warn("error writing to sendmail pipe",
+			slog.String("recipient", addr),
+			slog.String("error", err.Error()))
+
 		return err
 	}
 	stdin.Close()
@@ -341,8 +419,12 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	//
 	_, err = io.ReadAll(stdout)
 	if err != nil {
-		fmt.Printf("Error reading mail output: %s\n", err.Error())
-		return nil
+
+		e.logger.Warn("error reading from sendmail pipe",
+			slog.String("recipient", addr),
+			slog.String("error", err.Error()))
+
+		return err
 	}
 
 	//
@@ -350,7 +432,12 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	//
 	err = sendmail.Wait()
 	if err != nil {
-		fmt.Printf("Waiting for process to terminate failed: %s\n", err.Error())
+
+		e.logger.Warn("error awaiting sendmail completion",
+			slog.String("recipient", addr),
+			slog.String("error", err.Error()))
+
+		return err
 	}
 
 	return err
