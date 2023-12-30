@@ -300,10 +300,14 @@ The application is configured to use a common logger, which will output all mess
   * This level is used for fatal-errors.
   * This should only be used for messages which are immediately followed by an application exit.
 
-There are two environmental variables which can be used to modify the logging output:
+There are several environmental variables which can be used to modify the logging output:
 
 * `LOG_ALL`
   * If this is set to a non-empty string all levels will be shown (DEBUG, WARN and ERROR).
+* `LOG_FILE_PATH`
+  * The name of the file to duplicate logging message to, defaults to being `rss2email.log`.
+* `LOG_FILE_DISABLE`
+  * Set this to any non-empty value to disable the logfile entirely.
 * `LOG_JSON`
   * If this is set to a non-empty string the logging messages will be output in JSON format.
   * This is useful if you're collecting (container) messages in datadog, loki, sumologic, or something similar.
