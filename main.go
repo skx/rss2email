@@ -6,6 +6,7 @@ package main
 
 import (
 	"fmt"
+	"io"
 	"log/slog"
 	"os"
 	"strings"
@@ -72,16 +73,52 @@ func main() {
 	}
 
 	//
-	// Default to showing to STDERR in text.
+	// Create a default writer, which the logger will use.
+	// This will mostly go to STDERR, however it might also
+	// be duplicated to a file.
+	//
+	multi := io.MultiWriter(os.Stderr)
+
+	//
+	// Default logfile path can be changed by LOG_FILE
+	// environmental variable.
+	//
+	logPath := "rss2email.log"
+	if os.Getenv("LOG_FILE_PATH") != "" {
+		logPath = os.Getenv("LOG_FILE_PATH")
+	}
+
+	//
+	// Create a logfile, if we can.
+	//
+	file, err := os.OpenFile(logPath, os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+
+	//
+	// No error?  Then update our writer to use it.
+	//
+	if err == nil {
+		defer file.Close()
+
+		//
+		// Unless we've been disabled then update our
+		// writer.
+		//
+		if os.Getenv("LOG_FILE_DISABLE") != "" {
+			multi = io.MultiWriter(file, os.Stderr)
+		}
+	}
+
+	//
+	// Default to showing to STDERR [+file] in text.
 	//
 	var handler slog.Handler
-	handler = slog.NewTextHandler(os.Stderr, opts)
+	handler = slog.NewTextHandler(multi, opts)
 
 	//
 	// But allow JSON formatting too.
 	//
 	if os.Getenv("LOG_JSON") != "" {
-		handler = slog.NewJSONHandler(os.Stderr, opts)
+		handler = slog.NewJSONHandler(multi, opts)
 	}
 
 	//
