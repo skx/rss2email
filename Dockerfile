@@ -46,8 +46,17 @@ RUN ls -ltr /go/bin
 ###########################################################################
 FROM alpine
 
-# Create a working directory
-WORKDIR /app
-
 # Copy the binary.
-COPY --from=builder /go/bin/rss2email /app/
+COPY --from=builder /go/bin/rss2email /usr/local/bin/
+
+# Set entrypoint
+ENTRYPOINT rss2email
+
+# Create a group and user
+RUN addgroup app && adduser -D -G app -h /app app
+
+# Tell docker that all future commands should run as the app user
+USER app
+
+# Set working directory
+WORKDIR /app

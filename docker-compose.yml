@@ -1,7 +1,8 @@
 version: "3.8"
 services:
   rss2email:
-    command: /app/rss2email daemon -verbose steve@steve.fi
+    command: daemon -verbose steve@steve.fi
+    entrypoint: rss2email
     environment:
     - SMTP_USERNAME=steve@example.com
     - SMTP_PASSWORD=blah.blah.blah!
@@ -9,4 +10,4 @@ services:
     restart: always
     image: skx/rss2email
     volumes:
-    - /srv/rss2email/config/:/root/.rss2email/
+    - /srv/rss2email/config/:/app/.rss2email/
