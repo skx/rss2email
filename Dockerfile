@@ -25,9 +25,6 @@ FROM golang:alpine AS builder
 
 LABEL org.opencontainers.image.source=https://github.com/skx/rss2email/
 
-# Ensure we have git
-RUN apk update && apk add --no-cache git
-
 # Create a working-directory
 WORKDIR $GOPATH/src/github.com/skx/rss2email/
 
@@ -50,7 +47,10 @@ FROM alpine
 COPY --from=builder /go/bin/rss2email /usr/local/bin/
 
 # Set entrypoint
-ENTRYPOINT rss2email
+ENTRYPOINT [ "/usr/local/bin/rss2email" ]
+
+# Set default command
+CMD help
 
 # Create a group and user
 RUN addgroup app && adduser -D -G app -h /app app
