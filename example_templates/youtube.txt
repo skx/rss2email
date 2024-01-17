@@ -1,0 +1,104 @@
+{{/* This is the default template which is used by default to generate emails for youtube video feeds.
+
+     These feeds can be obtained with the following URL format:
+     https://www.youtube.com/feeds/videos.xml?channel_id=${CHANNEL_ID}
+     CHANNEL_ID can be retrieved in the channel URL ( for instance: https://www.youtube.com/channel/${CHANNEL_ID} ) .
+
+     As you might imagine it is a Golang text/template file.
+
+     Several fields and functions are available:
+
+      {{.FeedTitle}}  - The human-readable title of the source feed.
+      {{.Feed}}       - The URL of the feed from which the item came.
+      {{.From}}       - The email address which sends the email.
+      {{.Link}}       - The link to the new entry.
+      {{.Subject}}    - The subject of the new entry.
+      {{.To}}         - The recipient of the email.
+
+     There is also access to the {{.RSSFeed}} and {{.RSSItem}} available, in
+     case you need access to other fields which are not exported expliclty.
+     Using that approach you can access {{.RSSItem.GUID}}, for example.
+
+     The following functions are also available:
+
+      {{env "USER"}}              -> Return the given environmental variable
+      {{quoteprintable .Link}}    -> Quote the specified field.
+      {{encodeHeader .Subject}}   -> Quote the specified field to be used in mail header.
+      {{split "STRING:HERE" ":"}} -> Split a string into an array by deliminator
+
+     This comment will be stripped from the generated email.
+     The RSSItem represents the single item related to this e-mail template.
+     The following items represent:
+      {{.RSSItem.Author.Name}}  - The author name
+      {{.RSSItem.Published}}    - The published date
+      {{.RSSItem.Extensions}}   - Represents the rest of the fields that were not parsed. They are saved using the Extensions type[1]. The fields managed by this rss2email are detailed here [2].
+     
+     Youtube uses the Atom format, therefore the description is not parsed by gofeed and is stored in the extensions. The template discovers the field by looking for the description name.
+     [1] https://pkg.go.dev/github.com/mmcdole/gofeed@v1.2.1/extensions#Extensions 
+     [2] https://pkg.go.dev/github.com/mmcdole/gofeed@v1.2.1#readme-default-mappings
+  */ -}}
+Content-Type: multipart/mixed; boundary=21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
+From: {{.From}}
+To: {{.To}}
+Subject: [rss2mail] [video] [{{encodeHeader .RSSItem.Author.Name}}] {{if .Tag}}{{encodeHeader .Tag}} {{end}}{{encodeHeader .Subject}}
+X-RSS-Link: {{.Link}}
+X-RSS-Feed: {{.Feed}}
+{{- if .Tag}}
+X-RSS-Tags: {{.Tag}}
+{{- end}}
+X-RSS-GUID: {{.RSSItem.GUID}}
+Content-Base: {{.Link}}
+Mime-Version: 1.0
+
+--21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1
+Content-Type: multipart/related; boundary=76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497
+
+--76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497
+Content-Type: multipart/alternative; boundary=4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
+
+--4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Subject: {{.Subject}}
+Author: {{.RSSItem.Author.Name}}
+Date published: {{.RSSItem.Published}}
+Link: {{quoteprintable .Link}}
+
+--4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2
+Content-Type: text/html; charset=UTF-8
+Content-Transfer-Encoding: quoted-printable
+
+Subject: {{.Subject}} <br>
+Author: {{.RSSItem.Author.Name}} <br>
+Date published: {{.RSSItem.Published}} <br>
+<a href=3D"{{quoteprintable .Link}}">{{quoteprintable .Link}}</a>
+<p style=3D"white-space: pre-line">
+Description: <br>
+{{- range $key, $value := .RSSItem.Extensions }}
+  {{- range $type, $extensions := $value }}
+    {{- range $index, $extension := $extensions }}
+      {{- if eq $extension.Name "description" }}
+        {{quoteprintable $extension.Value   }}
+      {{- else }}
+        {{- range $attrKey, $attrValue := $extension.Attrs }}
+          {{- if eq $attrKey "description" }}
+            {{quoteprintable $attrValue  }}
+          {{- end }}
+        {{- end }}
+        {{- range $childKey, $childExtensions := $extension.Children }}
+          {{- range $childIndex, $childExtension := $childExtensions }}
+            {{- if eq $childExtension.Name "description" }}
+               {{quoteprintable $childExtension.Value }}
+            {{- end }}
+          {{- end }}
+        {{- end }}
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+</p>
+--4186c39e13b2140c88094b3933206336f2bb3948db7ecf064c7a7d7473f2--
+
+--76a1282373c08a65dd49db1dea2c55111fda9a715c89720a844fabb7d497--
+--21ee3da964c7bf70def62adb9ee1a061747003c026e363e47231258c48f1--
