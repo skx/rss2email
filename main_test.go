@@ -12,7 +12,7 @@ import (
 func init() {
 
 	// setup logging-level
-	lvl := new(slog.LevelVar)
+	lvl := &slog.LevelVar{}
 	lvl.Set(slog.LevelWarn)
 
 	// create a handler

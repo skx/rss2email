@@ -102,8 +102,7 @@ func New(entry configfile.Feed, log *slog.Logger) *HTTPFetch {
 			slog.String("user-agent", state.userAgent),
 			slog.Bool("insecure", state.insecure),
 			slog.Int("retry-max", state.maxRetries),
-			slog.Int("retry-delay", int(state.retryDelay/time.Millisecond)/1000),
-		))
+			slog.Int("retry-delay", int(state.retryDelay/time.Millisecond)/1000)))
 
 	return state
 }

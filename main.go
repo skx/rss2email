@@ -35,7 +35,7 @@ func main() {
 	//
 	// Setup our default logging level
 	//
-	loggerLevel = new(slog.LevelVar)
+	loggerLevel = &slog.LevelVar{}
 	loggerLevel.Set(slog.LevelWarn)
 
 	//
