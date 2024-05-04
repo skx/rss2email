@@ -63,9 +63,7 @@ func New(feed *gofeed.Feed, item withstate.FeedItem, opts []configfile.Option, l
 	obj.logger = log.With(
 		slog.Group("email",
 			slog.String("link", item.Link),
-			slog.String("title", item.Title),
-		),
-	)
+			slog.String("title", item.Title)))
 
 	return obj
 }

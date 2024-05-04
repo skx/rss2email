@@ -3,11 +3,18 @@ services:
   rss2email:
     command: daemon -verbose steve@steve.fi
     entrypoint: rss2email
+    working_dir: /app
+    user: app
     environment:
+    - TZ=UTC
     - SMTP_USERNAME=steve@example.com
     - SMTP_PASSWORD=blah.blah.blah!
     - SMTP_HOST=smtp.gmail.com
-    restart: always
-    image: skx/rss2email
+    - SMTP_PORT=587
+    restart: unless-stopped
+    image: ghcr.io/skx/rss2email:master
     volumes:
-    - /srv/rss2email/config/:/app/.rss2email/
+    - rss2email-data:/app/.rss2email
+
+volumes:
+  rss2email-data:

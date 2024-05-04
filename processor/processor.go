@@ -258,9 +258,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	// Create a local logger with some dedicated information
 	logger := p.logger.With(
 		slog.Group("feed",
-			slog.String("link", entry.URL),
-		),
-	)
+			slog.String("link", entry.URL)))
 
 	// Is there a tag set for this feed?
 	tag := ""
