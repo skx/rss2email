@@ -274,6 +274,12 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	helper := httpfetch.New(entry, logger)
 	feed, err := helper.Fetch()
 	if err != nil {
+
+		if err == httpfetch.ErrUnchanged {
+			logger.Warn("remote feed unchanged, skipping")
+			return nil
+		}
+
 		logger.Warn("failed to fetch feed",
 			slog.String("error", err.Error()))
 		return err
