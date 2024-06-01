@@ -198,7 +198,10 @@ func (h *HTTPFetch) fetch() error {
 	// Do we have a cache-entry
 	prevCache, okCache := cache[h.url]
 	if okCache {
-		fmt.Printf("We have a cached value from a previous fetch!\n")
+		h.logger.Debug("we have cached headers saved from previous requests",
+			slog.String("url", h.url),
+			slog.String("etag", prevCache.Etag),
+			slog.String("last-modified", prevCache.LastModified))
 	}
 
 	// Create a HTTP-client
@@ -224,12 +227,17 @@ func (h *HTTPFetch) fetch() error {
 	// If we've previously fetched this URL populate the caching
 	// values in the request.
 	if okCache {
-		fmt.Printf("Setting cache headers for our outgoing request\n")
-
 		if prevCache.Etag != "" {
+			h.logger.Debug("setting HTTP-header on outgoing request",
+				slog.String("url", h.url),
+				slog.String("If-None-Match", prevCache.Etag))
+
 			req.Header.Set("If-None-Match", prevCache.Etag)
 		}
 		if prevCache.LastModified != "" {
+			h.logger.Debug("setting HTTP-header on outgoing request",
+				slog.String("url", h.url),
+				slog.String("If-Modified-Since", prevCache.LastModified))
 			req.Header.Set("If-Modified-Since", prevCache.LastModified)
 		}
 	}
@@ -247,14 +255,12 @@ func (h *HTTPFetch) fetch() error {
 	defer resp.Body.Close()
 
 	//
-	// Read the reponse headers and save any cache-like things
+	// Read the response headers and save any cache-like things
 	// we can use to avoid excessive load in the future.
 	//
 	x := CacheHelper{Etag: resp.Header.Get("ETag"),
 		LastModified: resp.Header.Get("LastModified"),
 	}
-
-	fmt.Printf("Storing in cache: %v\n", x)
 	cache[h.url] = x
 
 	//
@@ -262,16 +268,24 @@ func (h *HTTPFetch) fetch() error {
 	//
 	status := resp.StatusCode
 	if status >= 300 && status < 400 {
-		fmt.Printf("Unchanged!\n")
+		h.logger.Debug("response from request was unchanged",
+			slog.String("url", h.url),
+			slog.String("status", resp.Status),
+			slog.Int("code", resp.StatusCode))
 		return ErrUnchanged
 	}
-
-	fmt.Printf("HTTP fetch returned %s:%d\n", resp.Status, resp.StatusCode)
 
 	// Otherwise we save the result away and
 	// return any error/not as a result of reading
 	// the body.
 	data, err2 := io.ReadAll(resp.Body)
 	h.content = string(data)
+
+	h.logger.Debug("response from request",
+		slog.String("url", h.url),
+		slog.String("status", resp.Status),
+		slog.Int("code", resp.StatusCode),
+		slog.Int("size", len(h.content)))
+
 	return err2
 }
