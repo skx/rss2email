@@ -37,6 +37,9 @@ type CacheHelper struct {
 
 	// LastModified contains the Last-Modified header the server sent, if any.
 	LastModified string
+
+	// Updated contains the timestamp of the last update of this feed item.
+	Updated time.Time
 }
 
 // init is called once at startup, and creates the cache-map we use to avoid
@@ -66,6 +69,11 @@ type HTTPFetch struct {
 	// do that.
 	retryDelay time.Duration
 
+	// frequency controls the poll frequency.  If this is set to 1hr then
+	// we don't fetch the feed until 1 hour after the last fetch, even if
+	// we were executed as a daemon with a SLEEP setting of 5 (minutes).
+	frequency time.Duration
+
 	// The User-Agent header to send when making our HTTP fetch
 	userAgent string
 
@@ -80,6 +88,7 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 	state := &HTTPFetch{url: entry.URL,
 		maxRetries: 3,
 		retryDelay: 1000 * time.Millisecond,
+		frequency:  1 * time.Second,
 		userAgent:  fmt.Sprintf("rss2email %s (https://github.com/skx/rss2email)", version),
 	}
 
@@ -119,6 +128,14 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 		// User-Agent
 		if opt.Name == "user-agent" {
 			state.userAgent = opt.Value
+		}
+
+		// Polling frequency
+		if opt.Name == "frequency" {
+			num, err := strconv.Atoi(opt.Value)
+			if err == nil {
+				state.frequency = time.Duration(num) * time.Minute
+			}
 		}
 	}
 
@@ -240,6 +257,15 @@ func (h *HTTPFetch) fetch() error {
 				slog.String("If-Modified-Since", prevCache.LastModified))
 			req.Header.Set("If-Modified-Since", prevCache.LastModified)
 		}
+
+		// If there is a frequency for this feed AND the time has not yet
+		// been reached then we terminate early
+		if time.Since(prevCache.Updated) < h.frequency {
+			h.logger.Debug("avoiding this fetch as the last time %s the feed was updated is less than %d ago",
+				slog.Time("last", prevCache.Updated),
+				slog.Duration("duration", h.frequency))
+			return ErrUnchanged
+		}
 	}
 
 	// Populate the HTTP User-Agent header.
@@ -260,6 +286,7 @@ func (h *HTTPFetch) fetch() error {
 	//
 	x := CacheHelper{Etag: resp.Header.Get("ETag"),
 		LastModified: resp.Header.Get("Last-Modified"),
+		Updated:      time.Now(),
 	}
 	cache[h.url] = x
 
