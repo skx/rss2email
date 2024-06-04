@@ -23,6 +23,8 @@
 ###########################################################################
 FROM golang:alpine AS builder
 
+ARG VERSION
+
 LABEL org.opencontainers.image.source=https://github.com/skx/rss2email/
 
 # Create a working-directory
@@ -31,13 +33,8 @@ WORKDIR $GOPATH/src/github.com/skx/rss2email/
 # Copy the source to it
 COPY . .
 
-# Get the dependencies
-RUN go get -d -v
-
-# Build the binary.
-RUN go build -o /go/bin/rss2email
-
-RUN ls -ltr /go/bin
+# Build the binary - ensuring we pass the build-argument
+RUN go build -ldflags "-X main.version=$VERSION" -o /go/bin/rss2email
 
 # STEP2 - Deploy-image
 ###########################################################################
