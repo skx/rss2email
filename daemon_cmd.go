@@ -91,6 +91,9 @@ func (d *daemonCmd) Execute(args []string) int {
 			return 1
 		}
 
+		// Ensure we send our version
+		p.SetVersion(version)
+
 		// Setup the state - note we ALWAYS send emails in this mode.
 		p.SetSendEmail(true)
 		p.SetLogger(logger)

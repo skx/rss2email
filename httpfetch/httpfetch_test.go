@@ -38,7 +38,7 @@ func init() {
 func TestNonFeed(t *testing.T) {
 
 	// Not a feed.
-	x := New(configfile.Feed{URL: "http://example.com/"}, logger)
+	x := New(configfile.Feed{URL: "http://example.com/"}, logger, "v1.2.3")
 	x.content = "this is not an XML file, so not a feed"
 
 	// Parse it, which should fail.
@@ -51,13 +51,17 @@ func TestNonFeed(t *testing.T) {
 	if !strings.Contains(err.Error(), "Failed to detect feed type") {
 		t.Fatalf("got an error, but not what we expected; %s", err.Error())
 	}
+
+	if !strings.Contains(x.userAgent, "v1.2.3") {
+		t.Fatalf("our default agent doesn't contain our version string: '%s'", x.userAgent)
+	}
 }
 
 // TestOneEntry confirms a feed contains a single entry
 func TestOneEntry(t *testing.T) {
 
 	// The contents of our feed.
-	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"}, logger)
+	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"}, logger, "unversioned")
 	x.content = `<?xml version="1.0"?>
 <rdf:RDF
  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -103,7 +107,7 @@ func TestOneEntry(t *testing.T) {
 func TestRewrite(t *testing.T) {
 
 	// The contents of our feed.
-	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"}, logger)
+	x := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss"}, logger, "unversioned")
 	x.content = `<?xml version="1.0"?>
 <rdf:RDF
  xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
@@ -164,7 +168,7 @@ func TestDelay(t *testing.T) {
 	n := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "delay", Value: "15"},
-		}}, logger)
+		}}, logger, "unversioned")
 
 	if n.retryDelay != 15*time.Millisecond {
 		t.Errorf("failed to parse delay value")
@@ -174,7 +178,7 @@ func TestDelay(t *testing.T) {
 	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "delay", Value: "steve"},
-		}}, logger)
+		}}, logger, "unversioned")
 
 	if i.retryDelay != 1000*time.Millisecond {
 		t.Errorf("bogus value changed our delay-value")
@@ -188,7 +192,7 @@ func TestRetry(t *testing.T) {
 		Options: []configfile.Option{
 			{Name: "retry", Value: "33"},
 			{Name: "moi", Value: "3"},
-		}}, logger)
+		}}, logger, "unversioned")
 
 	if n.maxRetries != 33 {
 		t.Errorf("failed to parse retry value")
@@ -198,7 +202,7 @@ func TestRetry(t *testing.T) {
 	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "retry", Value: "steve"},
-		}}, logger)
+		}}, logger, "unversioned")
 
 	if i.maxRetries != 3 {
 		t.Errorf("bogus value changed our default")
@@ -218,7 +222,7 @@ func TestHTTPFetch(t *testing.T) {
 	conf := configfile.Feed{URL: ts.URL}
 
 	// Create a fetcher
-	obj := New(conf, logger)
+	obj := New(conf, logger, "unversioned")
 
 	// Now make the HTTP-fetch
 	_, err := obj.Fetch()
@@ -279,7 +283,7 @@ func TestHTTPFetchValid(t *testing.T) {
 	}
 
 	// Create a fetcher
-	obj := New(conf, logger)
+	obj := New(conf, logger, "unversioned")
 
 	if obj.userAgent != agent {
 		t.Fatalf("failed to setup user-agent")

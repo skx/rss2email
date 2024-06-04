@@ -74,13 +74,13 @@ type HTTPFetch struct {
 }
 
 // New creates a new object which will fetch our content.
-func New(entry configfile.Feed, log *slog.Logger) *HTTPFetch {
+func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 
 	// Create object with defaults
 	state := &HTTPFetch{url: entry.URL,
 		maxRetries: 3,
 		retryDelay: 1000 * time.Millisecond,
-		userAgent:  "rss2email (https://github.com/skx/rss2email)",
+		userAgent:  fmt.Sprintf("rss2email %s (https://github.com/skx/rss2email)", version),
 	}
 
 	// Are any of our options overridden?
