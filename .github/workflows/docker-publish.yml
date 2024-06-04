@@ -39,7 +39,9 @@ jobs:
 
       - name: Get our version
         id: get-build-version
-        run: echo "VERSION=`echo $(git describe --tags)`" >> $GITHUB_ENV
+        run: |
+          echo "VERSION="`git describe --tags`"" >> $GITHUB_ENV
+          echo "Our version is $(git describe --tags)"
 
       # Install the cosign tool except on PR
       # https://github.com/sigstore/cosign-installer
