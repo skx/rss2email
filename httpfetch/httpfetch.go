@@ -6,6 +6,7 @@ package httpfetch
 
 import (
 	"crypto/tls"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -17,6 +18,32 @@ import (
 	"github.com/mmcdole/gofeed"
 	"github.com/skx/rss2email/configfile"
 )
+
+var (
+	// cache contains the values we can use to be cache-friendly
+	cache map[string]CacheHelper
+
+	// ErrUnchanged is returned by our HTTP-fetcher if the content was previously
+	// fetched and has not changed.
+	ErrUnchanged = errors.New("UNCHANGED")
+)
+
+// CacheHelper is a struct used to store modification-data relating to the
+// URL we're fetching.
+type CacheHelper struct {
+
+	// Etag contains the Etag the server sent, if any.
+	Etag string
+
+	// LastModified contains the Last-Modified header the server sent, if any.
+	LastModified string
+}
+
+// init is called once at startup, and creates the cache-map we use to avoid
+// making too many HTTP-probes against remote URLs (i.e. feeds)
+func init() {
+	cache = make(map[string]CacheHelper)
+}
 
 // HTTPFetch is our state-storing structure
 type HTTPFetch struct {
@@ -47,13 +74,13 @@ type HTTPFetch struct {
 }
 
 // New creates a new object which will fetch our content.
-func New(entry configfile.Feed, log *slog.Logger) *HTTPFetch {
+func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 
 	// Create object with defaults
 	state := &HTTPFetch{url: entry.URL,
 		maxRetries: 3,
 		retryDelay: 1000 * time.Millisecond,
-		userAgent:  "rss2email (https://github.com/skx/rss2email)",
+		userAgent:  fmt.Sprintf("rss2email %s (https://github.com/skx/rss2email)", version),
 	}
 
 	// Are any of our options overridden?
@@ -123,9 +150,18 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 		h.logger.Debug("fetching URL",
 			slog.Int("attempt", i+1))
 
+		// fetch the contents
 		err = h.fetch()
+
+		// no error? that means we're good and we've downloaded
 		if err == nil {
 			break
+		}
+
+		// we've got a page that matches a previous fetch?
+		// We'll return that then
+		if err == ErrUnchanged {
+			return nil, ErrUnchanged
 		}
 
 		// if we got here we have to retry, but we should
@@ -159,6 +195,15 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 // fetch fetches the text from the remote URL.
 func (h *HTTPFetch) fetch() error {
 
+	// Do we have a cache-entry
+	prevCache, okCache := cache[h.url]
+	if okCache {
+		h.logger.Debug("we have cached headers saved from previous requests",
+			slog.String("url", h.url),
+			slog.String("etag", prevCache.Etag),
+			slog.String("last-modified", prevCache.LastModified))
+	}
+
 	// Create a HTTP-client
 	client := &http.Client{}
 
@@ -179,6 +224,24 @@ func (h *HTTPFetch) fetch() error {
 		return err
 	}
 
+	// If we've previously fetched this URL populate the caching
+	// values in the request.
+	if okCache {
+		if prevCache.Etag != "" {
+			h.logger.Debug("setting HTTP-header on outgoing request",
+				slog.String("url", h.url),
+				slog.String("If-None-Match", prevCache.Etag))
+
+			req.Header.Set("If-None-Match", prevCache.Etag)
+		}
+		if prevCache.LastModified != "" {
+			h.logger.Debug("setting HTTP-header on outgoing request",
+				slog.String("url", h.url),
+				slog.String("If-Modified-Since", prevCache.LastModified))
+			req.Header.Set("If-Modified-Since", prevCache.LastModified)
+		}
+	}
+
 	// Populate the HTTP User-Agent header.
 	//
 	// Some sites (e.g. reddit) fail without a header set.
@@ -191,8 +254,38 @@ func (h *HTTPFetch) fetch() error {
 	}
 	defer resp.Body.Close()
 
-	// save the result
+	//
+	// Read the response headers and save any cache-like things
+	// we can use to avoid excessive load in the future.
+	//
+	x := CacheHelper{Etag: resp.Header.Get("ETag"),
+		LastModified: resp.Header.Get("Last-Modified"),
+	}
+	cache[h.url] = x
+
+	//
+	// Did the remote page not change?
+	//
+	status := resp.StatusCode
+	if status >= 300 && status < 400 {
+		h.logger.Debug("response from request was unchanged",
+			slog.String("url", h.url),
+			slog.String("status", resp.Status),
+			slog.Int("code", resp.StatusCode))
+		return ErrUnchanged
+	}
+
+	// Otherwise we save the result away and
+	// return any error/not as a result of reading
+	// the body.
 	data, err2 := io.ReadAll(resp.Body)
 	h.content = string(data)
+
+	h.logger.Debug("response from request",
+		slog.String("url", h.url),
+		slog.String("status", resp.Status),
+		slog.Int("code", resp.StatusCode),
+		slog.Int("size", len(h.content)))
+
 	return err2
 }

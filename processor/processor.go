@@ -38,8 +38,11 @@ type Processor struct {
 	// store feed-entry state within.
 	dbHandle *bbolt.DB
 
-	// logger stores the logging dbHandle
+	// logger stores the logging dbHandle.
 	logger *slog.Logger
+
+	// version stores the version of our application.
+	version string
 }
 
 // New creates a new Processor object.
@@ -271,9 +274,15 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	}
 
 	// Fetch the feed for the input URL
-	helper := httpfetch.New(entry, logger)
+	helper := httpfetch.New(entry, logger, p.version)
 	feed, err := helper.Fetch()
 	if err != nil {
+
+		if err == httpfetch.ErrUnchanged {
+			logger.Warn("remote feed unchanged, skipping")
+			return nil
+		}
+
 		logger.Warn("failed to fetch feed",
 			slog.String("error", err.Error()))
 		return err
@@ -832,4 +841,10 @@ func (p *Processor) SetSendEmail(state bool) {
 // SetLogger ensures we have a logging-handle
 func (p *Processor) SetLogger(logger *slog.Logger) {
 	p.logger = logger
+}
+
+// SetVersion ensures we can pass the version of our client to our HTTP-fetcher,
+// which means that the version will end up in our (default) user-agent.
+func (p *Processor) SetVersion(version string) {
+	p.version = version
 }
