@@ -259,7 +259,7 @@ func (h *HTTPFetch) fetch() error {
 	// we can use to avoid excessive load in the future.
 	//
 	x := CacheHelper{Etag: resp.Header.Get("ETag"),
-		LastModified: resp.Header.Get("LastModified"),
+		LastModified: resp.Header.Get("Last-Modified"),
 	}
 	cache[h.url] = x
 
