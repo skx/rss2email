@@ -40,7 +40,7 @@ jobs:
       - name: Get our version
         id: get-build-version
         run: |
-          echo "VERSION="`git describe --tags`"" >> $GITHUB_ENV
+          echo "MYVERSION="`git describe --tags`"" >> $GITHUB_ENV
           echo "Our version is $(git describe --tags)"
 
       # Install the cosign tool except on PR
@@ -89,7 +89,7 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
-            VERSION=${{steps.get-build-version.outputs.VERSION}}
+            VERSION=$MYVERSION
 
       # Sign the resulting Docker image digest except on PRs.
       # This will only write to the public Rekor transparency log when the Docker
