@@ -21,16 +21,19 @@ import (
 )
 
 var (
-	// cache contains the values we can use to be cache-friendly
+	// cache contains the values we can use to be cache-friendly.
 	cache map[string]CacheHelper
 
 	// ErrUnchanged is returned by our HTTP-fetcher if the content was previously
-	// fetched and has not changed.
+	// fetched and has not changed since then.
 	ErrUnchanged = errors.New("UNCHANGED")
 )
 
 // CacheHelper is a struct used to store modification-data relating to the
 // URL we're fetching.
+//
+// We use this to make conditional HTTP-requests, rather than fetching the
+// feed from scratch each time.
 type CacheHelper struct {
 
 	// Etag contains the Etag the server sent, if any.
@@ -39,7 +42,7 @@ type CacheHelper struct {
 	// LastModified contains the Last-Modified header the server sent, if any.
 	LastModified string
 
-	// Updated contains the timestamp of the last update of this feed item.
+	// Updated contains the timestamp of when the feed was last fetched (successfully).
 	Updated time.Time
 }
 
@@ -93,7 +96,7 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 	}
 
 	// Get the user's sleep period - if overridden this will become the
-	// default frequency for each feed item
+	// default frequency for each feed item.
 	sleep := os.Getenv("SLEEP")
 	if sleep == "" {
 		state.frequency = 15 * time.Minute
@@ -128,7 +131,7 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 			}
 		}
 
-		// Sleep-delay between fetch-attempts.
+		// Sleep-delay between failed fetch-attempts.
 		if opt.Name == "delay" {
 
 			num, err := strconv.Atoi(opt.Value)
@@ -183,19 +186,19 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 		// fetch the contents
 		err = h.fetch()
 
-		// no error? that means we're good and we've downloaded
+		// no error? that means we're good and we've retrieved
+		// the content.
 		if err == nil {
 			break
 		}
 
-		// we've got a page that matches a previous fetch?
-		// We'll return that then
+		// The remote content hasn't changed?
 		if err == ErrUnchanged {
 			return nil, ErrUnchanged
 		}
 
 		// if we got here we have to retry, but we should
-		// show the error too
+		// show the error too.
 		h.logger.Debug("fetching URL failed",
 			slog.String("error", err.Error()))
 
@@ -225,11 +228,10 @@ func (h *HTTPFetch) Fetch() (*gofeed.Feed, error) {
 // fetch fetches the text from the remote URL.
 func (h *HTTPFetch) fetch() error {
 
-	// Do we have a cache-entry
+	// Do we have a cache-entry?
 	prevCache, okCache := cache[h.url]
 	if okCache {
-		h.logger.Debug("we have cached headers saved from previous requests",
-			slog.String("url", h.url),
+		h.logger.Debug("we have cached headers saved from a previous request",
 			slog.String("etag", prevCache.Etag),
 			slog.String("last-modified", prevCache.LastModified))
 	}
@@ -242,21 +244,32 @@ func (h *HTTPFetch) fetch() error {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	}
 
-	// If we're ignoring the TLS
+	// If we're ignoring the TLS then use a non-validating transport.
 	if h.insecure {
-
-		// Use the non-validating transport
 		client.Transport = tr
 	}
 
+	// We only support making HTTP GET requests.
 	req, err := http.NewRequest("GET", h.url, nil)
 	if err != nil {
 		return err
 	}
 
-	// If we've previously fetched this URL populate the caching
-	// values in the request.
+	// If we've previously fetched this URL set the appropriate
+	// cache-related headers in our new request.
 	if okCache {
+
+		// If there is a frequency for this feed AND the time has not yet
+		// been reached then we terminate early.
+		if time.Since(prevCache.Updated) < h.frequency {
+			h.logger.Debug("avoiding this fetch, the feed was retrieved already within the frequency limit",
+				slog.Time("last", prevCache.Updated),
+				slog.Duration("duration", h.frequency))
+			return ErrUnchanged
+		}
+
+		// Otherwise set the cache-related headers.
+
 		if prevCache.Etag != "" {
 			h.logger.Debug("setting HTTP-header on outgoing request",
 				slog.String("url", h.url),
@@ -271,19 +284,9 @@ func (h *HTTPFetch) fetch() error {
 			req.Header.Set("If-Modified-Since", prevCache.LastModified)
 		}
 
-		// If there is a frequency for this feed AND the time has not yet
-		// been reached then we terminate early
-		if time.Since(prevCache.Updated) < h.frequency {
-			h.logger.Debug("avoiding this fetch, the feed was retrieved already within the frequency limit",
-				slog.Time("last", prevCache.Updated),
-				slog.Duration("duration", h.frequency))
-			return ErrUnchanged
-		}
 	}
 
-	// Populate the HTTP User-Agent header.
-	//
-	// Some sites (e.g. reddit) fail without a header set.
+	// Populate the HTTP User-Agent header - some sites (e.g. reddit) fail without this.
 	req.Header.Set("User-Agent", h.userAgent)
 
 	// Make the actual HTTP request.
@@ -293,11 +296,10 @@ func (h *HTTPFetch) fetch() error {
 	}
 	defer resp.Body.Close()
 
-	//
 	// Read the response headers and save any cache-like things
 	// we can use to avoid excessive load in the future.
-	//
-	x := CacheHelper{Etag: resp.Header.Get("ETag"),
+	x := CacheHelper{
+		Etag:         resp.Header.Get("ETag"),
 		LastModified: resp.Header.Get("Last-Modified"),
 		Updated:      time.Now(),
 	}
@@ -309,7 +311,6 @@ func (h *HTTPFetch) fetch() error {
 	status := resp.StatusCode
 	if status >= 300 && status < 400 {
 		h.logger.Debug("response from request was unchanged",
-			slog.String("url", h.url),
 			slog.String("status", resp.Status),
 			slog.Int("code", resp.StatusCode))
 		return ErrUnchanged
