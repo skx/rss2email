@@ -261,7 +261,7 @@ func (h *HTTPFetch) fetch() error {
 		// If there is a frequency for this feed AND the time has not yet
 		// been reached then we terminate early
 		if time.Since(prevCache.Updated) < h.frequency {
-			h.logger.Debug("avoiding this fetch as the last time %s the feed was updated is less than %d ago",
+			h.logger.Debug("avoiding this fetch, the feed was retrieved already within the frequency limit",
 				slog.Time("last", prevCache.Updated),
 				slog.Duration("duration", h.frequency))
 			return ErrUnchanged
