@@ -11,6 +11,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strconv"
 	"strings"
 	"time"
@@ -87,9 +88,20 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 	// Create object with defaults
 	state := &HTTPFetch{url: entry.URL,
 		maxRetries: 3,
-		retryDelay: 1000 * time.Millisecond,
-		frequency:  1 * time.Second,
+		retryDelay: 5 * time.Second,
 		userAgent:  fmt.Sprintf("rss2email %s (https://github.com/skx/rss2email)", version),
+	}
+
+	// Get the user's sleep period - if overridden this will become the
+	// default frequency for each feed item
+	sleep := os.Getenv("SLEEP")
+	if sleep == "" {
+		state.frequency = 15 * time.Minute
+	} else {
+		v, err := strconv.Atoi(sleep)
+		if err == nil {
+			state.frequency = time.Duration(v) * time.Minute
+		}
 	}
 
 	// Are any of our options overridden?
@@ -121,7 +133,7 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 
 			num, err := strconv.Atoi(opt.Value)
 			if err == nil {
-				state.retryDelay = time.Duration(num) * time.Millisecond
+				state.retryDelay = time.Duration(num) * time.Second
 			}
 		}
 
@@ -146,7 +158,8 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 			slog.String("user-agent", state.userAgent),
 			slog.Bool("insecure", state.insecure),
 			slog.Int("retry-max", state.maxRetries),
-			slog.Int("retry-delay", int(state.retryDelay/time.Millisecond)/1000)))
+			slog.Duration("retry-delay", state.retryDelay),
+			slog.Duration("frequency", state.frequency)))
 
 	return state
 }

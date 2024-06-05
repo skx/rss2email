@@ -97,13 +97,12 @@ Per-Feed Configuration Options
 
 Key           | Purpose
 --------------+--------------------------------------------------------------
-delay         | The amount of time to sleep between retried HTTP-fetches.
+delay         | The amount of time to sleep between retrying a failed HTTP-fetch.
 exclude       | Exclude any item which matches the given regular-expression.
 exclude-title | Exclude any item with title matching the given regular-expression.
 exclude-older | Exclude any items whose publication date is older than the
               | specified number of days.
-frequency     | How frequently to poll this feed, in minutes.  This is independent of
-              | sleep delays.
+frequency     | How frequently to poll this feed, in minutes.
 include       | Include only items which match the given regular-expression.
 include-title | Include only items with title matching the given regular-expression.
 insecure      | Ignore TLS failures when fetching feeds over https.
@@ -120,15 +119,18 @@ user-agent    | Configure a specific User-Agent when making HTTP requests.
 Polling Frequency
 -----------------
 
-Assuming you have a feed you only want to check once an hour, with a default
-sleep-delay of fifteen minutes the deamon command would poll the feed too often.
+Assuming you have a feed you only want to check once an hour, with the default
+behaviour our daemon command would poll the feed too often - as it processes
+its lists of feeds every five minutes by default.
 
-However if you changed the sleep-delay to 60 then other feeds which you want to
-track more closely would get delayed notifications.
+However if you changed the global sleep-delay to 60 then other feeds which
+you might want to track more closely would get delayed notifications.
 
 The "frequency" argument tracks the time between the last fetch of a feed, and
-allows you to say "Fetch this feed only if it was fetched >XX minutes ago", even
-if the sleep-delay is set to something short like a minute.
+allows you to say "Fetch this feed only if it was fetched >XX minutes ago".
+
+Note that frequencies of less than 5 minutes will be ignored, as that is how
+the sleep between executions takes.
 
 
 Regular Expression Tips
