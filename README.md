@@ -166,10 +166,18 @@ The `daemon` process does a similar thing, however it does __not__ terminate.  I
 
 * Read the contents of each URL in the feed-list.
 * For each feed-item which is new generate and send an email.
-* Sleep for 15 minutes by default.
-  * Set the `SLEEP` environmental variable if you wish to change this.
-  * e.g. "`export SLEEP=5`" will cause a five minute delay between restarts.
+* Sleep for 5 minutes.
 * Begin the process once more.
+
+With this behaviour every feed will be fetched and processed every five minutes, which is almost certainly too frequently.  To change this we have a notion of "frequency" - a feed will never be fetched more frequently than the given frequency value.
+
+* Set the `SLEEP` environmental variable if you wish to change globally.
+  * e.g. "`export SLEEP=15`" will cause our main loop to fetch the feeds only once every fifteen minutes.
+* Set the per-feed `frequency` option to a different value.
+  * That would mean all feeds would get fetched every fifteen minutes.
+  * Except for the specific one that has a different value.
+
+> NOTE: Frequency values of less than five minutes will be ignored.
 
 In short the process runs forever, in the foreground.  This is expected to be driven by `docker` or a systemd-service.  Creating the appropriate configuration is left as an exercise, but you might examine the following two files for inspiration:
 

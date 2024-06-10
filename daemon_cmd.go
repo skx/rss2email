@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"log/slog"
 	"os"
-	"strconv"
 	"strings"
 	"time"
 
@@ -112,21 +111,11 @@ func (d *daemonCmd) Execute(args []string) int {
 		p.Close()
 
 		// Default time to sleep - in minutes
-		n := 15
-
-		// Get the user's sleep period
-		sleep := os.Getenv("SLEEP")
-		if sleep != "" {
-			v, err := strconv.Atoi(sleep)
-			if err == nil {
-				n = v
-			}
-		}
+		n := 5
 
 		logger.Warn("sleeping before polling feeds again",
 			slog.Int("delay.minutes", n))
 
-		time.Sleep(60 * time.Duration(n) * time.Second)
+		time.Sleep(time.Duration(n) * time.Minute)
 	}
-
 }

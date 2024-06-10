@@ -170,17 +170,17 @@ func TestDelay(t *testing.T) {
 			{Name: "delay", Value: "15"},
 		}}, logger, "unversioned")
 
-	if n.retryDelay != 15*time.Millisecond {
+	if n.retryDelay != 15*time.Second {
 		t.Errorf("failed to parse delay value")
 	}
 
-	// Invalid number
+	// Invalid number - should have the default value
 	i := New(configfile.Feed{URL: "https://blog.steve.fi/index.rss",
 		Options: []configfile.Option{
 			{Name: "delay", Value: "steve"},
 		}}, logger, "unversioned")
 
-	if i.retryDelay != 1000*time.Millisecond {
+	if i.retryDelay != 5*time.Second {
 		t.Errorf("bogus value changed our delay-value")
 	}
 }
