@@ -33,16 +33,37 @@ func recoverPanic() {
 func main() {
 
 	//
-	// Setup our default logging level
+	// Setup our default logging level, which will show
+	// both warnings and errors.
 	//
 	loggerLevel = &slog.LevelVar{}
 	loggerLevel.Set(slog.LevelWarn)
 
 	//
-	// Allow showing "all the logs"
+	// If the user wants a different level they can choose it.
+	//
+	level := os.Getenv("LOG_LEVEL")
+
+	//
+	// Legacy/Compatibility
 	//
 	if os.Getenv("LOG_ALL") != "" {
+		level = "DEBUG"
+	}
+
+	// Simplify things by only caring about upper-case
+	level = strings.ToUpper(level)
+
+	switch level {
+	case "DEBUG":
 		loggerLevel.Set(slog.LevelDebug)
+	case "WARN":
+		loggerLevel.Set(slog.LevelWarn)
+	case "ERROR":
+		loggerLevel.Set(slog.LevelError)
+	default:
+		fmt.Printf("Unknown logging-level '%s'\n", level)
+		return
 	}
 
 	// Those handler options

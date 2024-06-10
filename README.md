@@ -310,8 +310,11 @@ The application is configured to use a common logger, which will output all mess
 
 There are several environmental variables which can be used to modify the logging output:
 
-* `LOG_ALL`
-  * If this is set to a non-empty string all levels will be shown (DEBUG, WARN and ERROR).
+* `LOG_LEVEL`
+  * This may be set to one of several values:
+    * `ERROR`: Show only errors.
+    * `WARN`: Show errors, and warnings.
+    * `DEBUG`: Show errors, warnings, and internal debugging messages (very verbose).
 * `LOG_FILE_PATH`
   * The name of the file to duplicate logging message to, defaults to being `rss2email.log`.
 * `LOG_FILE_DISABLE`
