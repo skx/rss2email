@@ -61,6 +61,8 @@ func main() {
 		loggerLevel.Set(slog.LevelWarn)
 	case "ERROR":
 		loggerLevel.Set(slog.LevelError)
+	case "":
+		// NOP
 	default:
 		fmt.Printf("Unknown logging-level '%s'\n", level)
 		return
