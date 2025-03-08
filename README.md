@@ -34,7 +34,7 @@ Over time we've now gained a few more features:
   * See [SMTP-setup](#smtp-setup) for details.
 * The ability to include/exclude feed items from the emails.
   * For example receive emails only of feed items that contain the pattern "playstation".
-
+* A well-behaved HTTP-polling behaviour, using the appropriate cache-related HTTP-headers.
 
 
 
@@ -53,7 +53,6 @@ To install from source simply clone the repository and build in the usual manner
 ```sh
 git clone https://github.com/skx/rss2email
 cd rss2email
-go build .
 go install .
 ```
 
@@ -66,7 +65,7 @@ Finally you can find automatically generated docker images, these are built on a
 **Version NOTES**:
 
 * You'll need go version **1.21** or higher to build.
-  * We use `go embed` to embed our (default) email-template within the binary, this was introduced with golang **v1.17**.
+  * We use `go embed` to embed the (default) email-template within the binary, this was introduced with golang **v1.17**.
   * We use the [slog logging package](https://go.dev/blog/slog) introduced with golang **v1.21**.
   * We use the fuzzing support which was introduced with golang **v1.18** to test our configuration-file loading/parsing.
     * See [configfile/FUZZING.md](configfile/FUZZING.md) for details of using that.

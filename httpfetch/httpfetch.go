@@ -6,18 +6,21 @@ package httpfetch
 
 import (
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
 
 	"github.com/mmcdole/gofeed"
 	"github.com/skx/rss2email/configfile"
+	statePath "github.com/skx/rss2email/state"
 )
 
 var (
@@ -93,6 +96,25 @@ func New(entry configfile.Feed, log *slog.Logger, version string) *HTTPFetch {
 		maxRetries: 3,
 		retryDelay: 5 * time.Second,
 		userAgent:  fmt.Sprintf("rss2email %s (https://github.com/skx/rss2email)", version),
+	}
+
+	// Path to the cache file, which we read from-disk if we can.
+	fileName := filepath.Join(statePath.Directory(), "httpcache.json")
+	data, err := os.ReadFile(fileName)
+
+	// If we got an error, and it wasn't a not-found log it
+	if err != nil && !os.IsNotExist(err) {
+		log.Debug("failed to read cache-values",
+			slog.String("path", fileName),
+			slog.String("error", err.Error()))
+	} else {
+		// We can't even log it usefully.
+		err = json.Unmarshal(data, &cache)
+		if err != nil {
+			log.Debug("failed to unmarshall cache-values",
+				slog.String("path", fileName),
+				slog.String("error", err.Error()))
+		}
 	}
 
 	// Get the user's sleep period - if overridden this will become the
@@ -304,6 +326,18 @@ func (h *HTTPFetch) fetch() error {
 		Updated:      time.Now(),
 	}
 	cache[h.url] = x
+
+	// Save cache.
+	encoded, errEncoding := json.Marshal(cache)
+	if errEncoding == nil {
+		fileName := filepath.Join(statePath.Directory(), "httpcache.json")
+		errWrite := os.WriteFile(fileName, encoded, 0644)
+		if errWrite != nil {
+			h.logger.Debug("failed to write cache to json",
+				slog.String("path", fileName),
+				slog.String("error", errWrite.Error()))
+		}
+	}
 
 	//
 	// Did the remote page not change?
