@@ -217,7 +217,7 @@ func (p *Processor) ProcessFeeds(recipients []string) []error {
 		// If we're supposed to sleep, do so
 		if sleep != 0 {
 
-			p.logger.Warn("sleeping",
+			p.logger.Debug("sleeping",
 				slog.Int("sleep", sleep))
 
 			time.Sleep(time.Duration(sleep) * time.Second)
@@ -279,7 +279,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	if err != nil {
 
 		if err == httpfetch.ErrUnchanged {
-			logger.Warn("remote feed unchanged, skipping")
+			logger.Debug("remote feed unchanged, skipping")
 			return nil
 		}
 
