@@ -85,7 +85,7 @@ func (i *importCmd) Execute(args []string) int {
 		var data []byte
 		data, err = os.ReadFile(file)
 		if err != nil {
-			logger.Warn("failed to read file", slog.String("file", file), slog.String("error", err.Error()))
+			logger.Error("failed to read file", slog.String("file", file), slog.String("error", err.Error()))
 			continue
 		}
 
@@ -93,7 +93,7 @@ func (i *importCmd) Execute(args []string) int {
 		o := opml{}
 		err = xml.Unmarshal(data, &o)
 		if err != nil {
-			logger.Warn("failed to parse XML file", slog.String("file", file), slog.String("error", err.Error()))
+			logger.Error("failed to parse XML file", slog.String("file", file), slog.String("error", err.Error()))
 			continue
 		}
 
