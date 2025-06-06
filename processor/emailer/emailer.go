@@ -263,7 +263,7 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 			err := e.sendSMTP(addr, buf.Bytes())
 			if err != nil {
 
-				e.logger.Warn("error sending email",
+				e.logger.Error("error sending email",
 					slog.String("recipient", addr),
 					slog.String("method", "smtp"),
 					slog.String("error", err.Error()))
@@ -283,7 +283,7 @@ func (e *Emailer) Sendmail(addresses []string, textstr string, htmlstr string) e
 
 			err := e.sendSendmail(addr, buf.Bytes())
 			if err != nil {
-				e.logger.Warn("error sending email",
+				e.logger.Error("error sending email",
 					slog.String("recipient", addr),
 					slog.String("method", "sendmail"),
 					slog.String("error", err.Error()))
@@ -369,7 +369,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	stdin, err := sendmail.StdinPipe()
 	if err != nil {
 
-		e.logger.Warn("error creating STDIN pipe to sendmail",
+		e.logger.Error("error creating STDIN pipe to sendmail",
 			slog.String("recipient", addr),
 			slog.String("error", err.Error()))
 
@@ -382,7 +382,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	stdout, err := sendmail.StdoutPipe()
 	if err != nil {
 
-		e.logger.Warn("error creating STDOUT pipe to sendmail",
+		e.logger.Error("error creating STDOUT pipe to sendmail",
 			slog.String("recipient", addr),
 			slog.String("error", err.Error()))
 
@@ -395,7 +395,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	err = sendmail.Start()
 	if err != nil {
 
-		e.logger.Warn("error starting sendmail",
+		e.logger.Error("error starting sendmail",
 			slog.String("recipient", addr),
 			slog.String("error", err.Error()))
 
@@ -404,7 +404,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	_, err = stdin.Write(content)
 	if err != nil {
 
-		e.logger.Warn("error writing to sendmail pipe",
+		e.logger.Error("error writing to sendmail pipe",
 			slog.String("recipient", addr),
 			slog.String("error", err.Error()))
 
@@ -418,7 +418,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	_, err = io.ReadAll(stdout)
 	if err != nil {
 
-		e.logger.Warn("error reading from sendmail pipe",
+		e.logger.Error("error reading from sendmail pipe",
 			slog.String("recipient", addr),
 			slog.String("error", err.Error()))
 
@@ -431,7 +431,7 @@ func (e *Emailer) sendSendmail(addr string, content []byte) error {
 	err = sendmail.Wait()
 	if err != nil {
 
-		e.logger.Warn("error awaiting sendmail completion",
+		e.logger.Error("error awaiting sendmail completion",
 			slog.String("recipient", addr),
 			slog.String("error", err.Error()))
 

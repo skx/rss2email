@@ -283,7 +283,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 			return nil
 		}
 
-		logger.Warn("failed to fetch feed",
+		logger.Error("failed to fetch feed",
 			slog.String("error", err.Error()))
 		return err
 	}
@@ -415,7 +415,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 					err = helper.Sendmail(recipients, text, content)
 					if err != nil {
 
-						logger.Warn("failed to send email",
+						logger.Error("failed to send email",
 							slog.String("recipients", strings.Join(recipients, ",")),
 							slog.String("error", err.Error()))
 
@@ -437,7 +437,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 		// due to error, and that keeps happening forever...
 		err = p.recordItem(entry.URL, item.Link)
 		if err != nil {
-			logger.Warn("failed to mark item as processed",
+			logger.Error("failed to mark item as processed",
 				slog.String("error", err.Error()))
 			return err
 		}
@@ -451,7 +451,7 @@ func (p *Processor) processFeed(entry configfile.Feed, recipients []string) erro
 	err = p.pruneFeed(entry.URL, items)
 	if err != nil {
 
-		logger.Warn("failed to prune bolddb",
+		logger.Error("failed to prune bolddb",
 			slog.String("error", err.Error()))
 
 		return fmt.Errorf("error pruning boltdb for %s: %s", entry.URL, err)
@@ -479,7 +479,7 @@ func (p *Processor) seenItem(feed string, entry string) bool {
 		return nil
 	})
 	if err != nil {
-		p.logger.Warn("error checking state of item",
+		p.logger.Error("error checking state of item",
 			slog.String("feed", feed),
 			slog.String("item", entry),
 			slog.String("error", err.Error()))
@@ -504,7 +504,7 @@ func (p *Processor) recordItem(feed string, entry string) error {
 	})
 
 	if err != nil {
-		p.logger.Warn("error recording state of item",
+		p.logger.Error("error recording state of item",
 			slog.String("feed", feed),
 			slog.String("item", entry),
 			slog.String("error", err.Error()))
@@ -562,7 +562,7 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 
 	if err != nil {
 
-		p.logger.Warn("error getting all bucket keys",
+		p.logger.Error("error getting all bucket keys",
 			slog.String("error", err.Error()))
 		return err
 	}
@@ -580,7 +580,7 @@ func (p *Processor) pruneFeed(feed string, items []string) error {
 		})
 		if err != nil {
 
-			p.logger.Warn("error deleting key from bucket",
+			p.logger.Error("error deleting key from bucket",
 				slog.String("entry", ent),
 				slog.String("error", err.Error()))
 
@@ -626,7 +626,7 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 	})
 
 	if err != nil {
-		p.logger.Warn("error finding orphaned buckets",
+		p.logger.Error("error finding orphaned buckets",
 			slog.String("error", err.Error()))
 
 		return err
@@ -648,7 +648,7 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 				err := b.Delete(k)
 				if err != nil {
 
-					p.logger.Warn("error removing key from bucket",
+					p.logger.Error("error removing key from bucket",
 						slog.String("bucket", bucket),
 						slog.String("key", string(k)),
 						slog.String("error", err.Error()))
@@ -660,7 +660,7 @@ func (p *Processor) pruneUnknownFeeds(feeds []string) error {
 			// Now delete the bucket itself
 			err := tx.DeleteBucket([]byte(bucket))
 			if err != nil {
-				p.logger.Warn("error removing  bucket",
+				p.logger.Error("error removing bucket",
 					slog.String("bucket", bucket),
 					slog.String("error", err.Error()))
 				return fmt.Errorf("failed to remove bucket %s: %s", bucket, err)
