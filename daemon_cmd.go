@@ -113,7 +113,7 @@ func (d *daemonCmd) Execute(args []string) int {
 		// Default time to sleep - in minutes
 		n := 5
 
-		logger.Warn("sleeping before polling feeds again",
+		logger.Debug("sleeping before polling feeds again",
 			slog.Int("delay.minutes", n))
 
 		time.Sleep(time.Duration(n) * time.Minute)
