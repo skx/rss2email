@@ -166,7 +166,7 @@ func encodeHeader(s string) string {
 }
 
 // Encode email header entry to comply List-ID restriction of RFC 2919
-// ccording to DRUMS.
+// according to DRUMS.
 //
 // The function has some special code to handle an URL.
 func makeListIdHeader(s string) string {
@@ -175,7 +175,7 @@ func makeListIdHeader(s string) string {
 	sh = strings.TrimPrefix(sh, "https://")
 
 	// Only allow valid atext characters and dots; replace others with dots
-	re := regexp.MustCompile(`[^A-Za-z0-9!#$%&'*+\-=?^_` + "`" + `{|}~.]+`)
+	re := regexp.MustCompile(`[^A-Za-z0-9!$%&'*+\-=^_` + "`" + `{|}~.]+`)
 	sh = re.ReplaceAllString(sh, ".")
 
 	// Collapse multiple dots
