@@ -41,13 +41,13 @@ func TestMakeListIdHeader(t *testing.T) {
 		if got != tt.expected {
 			t.Errorf("makeListIdHeader(%q) = %q; want %q", tt.input, got, tt.expected)
 		}
-        // Check that every character in got is allowed
+		// Check that every character in got is allowed
 		// from https://datatracker.ietf.org/doc/html/rfc2822#section-3.2.4
-        allowed := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'*+-/=?^_`{|}~."
-        for i, c := range got {
-            if !strings.ContainsRune(allowed, c) {
-                t.Errorf("makeListIdHeader(%q) produced invalid char %q at position %d", tt.input, c, i)
-            }
-        }
+		allowed := "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!#$%&'*+-/=?^_`{|}~."
+		for i, c := range got {
+			if !strings.ContainsRune(allowed, c) {
+				t.Errorf("makeListIdHeader(%q) produced invalid char %q at position %d", tt.input, c, i)
+			}
+		}
 	}
 }
