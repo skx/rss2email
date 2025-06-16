@@ -165,7 +165,7 @@ func encodeHeader(s string) string {
 	return "=?utf-8?Q?" + se + "?="
 }
 
-// Encode email header entry to comply List-ID restriction of RFC 2919
+// makeListIdHeader encodes email header entry to comply List-ID restriction of RFC 2919
 // according to DRUMS.
 //
 // The function has some special code to handle an URL.
