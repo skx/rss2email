@@ -23,6 +23,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strconv"
 	"strings"
 	"text/template"
@@ -119,10 +120,11 @@ func (e *Emailer) loadTemplate() (*template.Template, error) {
 	// Function map allows exporting functions to the template
 	//
 	funcMap := template.FuncMap{
-		"env":            env,
-		"quoteprintable": toQuotedPrintable,
-		"split":          split,
-		"encodeHeader":   encodeHeader,
+		"env":              env,
+		"quoteprintable":   toQuotedPrintable,
+		"split":            split,
+		"encodeHeader":     encodeHeader,
+		"makeListIdHeader": makeListIdHeader,
 	}
 
 	tmpl := template.Must(template.New("email.tmpl").Funcs(funcMap).Parse(string(content)))
@@ -161,6 +163,28 @@ func encodeHeader(s string) string {
 	se = strings.Replace(strings.Replace(se, "?", "=3F", -1), " ", "=20", -1)
 	se = strings.Replace(se, "=\r\n", "", -1) // remove soft line breaks
 	return "=?utf-8?Q?" + se + "?="
+}
+
+// makeListIdHeader encodes email header entry to comply List-ID restriction of RFC 2919
+// according to DRUMS.
+//
+// The function has some special code to handle an URL.
+func makeListIdHeader(s string) string {
+	// Strip scheme
+	sh := strings.TrimPrefix(s, "http://")
+	sh = strings.TrimPrefix(sh, "https://")
+
+	// Only allow valid atext characters and dots; replace others with dots
+	re := regexp.MustCompile(`[^A-Za-z0-9!$%&'*+\-=^_` + "`" + `{|}~.]+`)
+	sh = re.ReplaceAllString(sh, ".")
+
+	// Collapse multiple dots
+	sh = regexp.MustCompile(`\.+`).ReplaceAllString(sh, ".")
+
+	// Clean url
+	sh = strings.Trim(sh, ".")
+
+	return sh + ".localhost"
 }
 
 // Sendmail is a simple function that emails the given address.
